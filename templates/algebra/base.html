@@ -3,23 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>{% block title %}Álgebra Lineal{% endblock %}</title>
+  <title>{% block title %}KiwiSolve — Álgebra Lineal{% endblock %}</title>
   {% load static %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'algebra/styles.css' %}">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="logo">𝔄</span>
-      <h1>Álgebra Lineal</h1>
+      <img class="logo-img" src="{% static 'algebra/KiwiSolveLogo.png' %}" alt="KiwiSolve"/>
+      <h1>KiwiSolve <small>Calculadora de Álgebra Lineal</small></h1>
     </div>
+    {% with request.resolver_match.url_name as url_name %}
     <nav class="pills">
-      <a href="{% url 'index' %}">Inicio</a>
-      <a href="{% url 'suma' %}">Suma</a>
-      <a href="{% url 'multiplicacion' %}">Multiplicación</a>
-      <a href="{% url 'gauss' %}">Gauss</a>
-      <a href="{% url 'gauss_jordan' %}">Gauss-Jordan</a>
+      <a href="{% url 'index' %}" class="{% if url_name == 'index' %}active{% endif %}">Inicio</a>
+      <a href="{% url 'suma' %}" class="{% if url_name == 'suma' %}active{% endif %}">Suma</a>
+      <a href="{% url 'multiplicacion' %}" class="{% if url_name == 'multiplicacion' %}active{% endif %}">Multiplicación</a>
+      <a href="{% url 'gauss' %}" class="{% if url_name == 'gauss' %}active{% endif %}">Gauss</a>
+      <a href="{% url 'gauss_jordan' %}" class="{% if url_name == 'gauss_jordan' %}active{% endif %}">Gauss-Jordan</a>
     </nav>
+    {% endwith %}
+    <button id="themeToggle" class="icon-btn" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
   </header>
   <main class="container container-narrow">
     {% block content %}{% endblock %}

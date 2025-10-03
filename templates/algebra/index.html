@@ -1,33 +1,114 @@
 {% extends "algebra/base.html" %}
-{% block title %}Inicio{% endblock %}
+{% block title %}Inicio — KiwiSolve{% endblock %}
 {% block content %}
-<section class="intro">
-  <p>Herramientas para álgebra lineal con soporte de fracciones exactas. Puedes introducir enteros, fracciones como <code>3/4</code> o decimales.</p>
-  <div class="cards">
-    <a class="card" href="{% url 'suma' %}">
-      <h3>Suma de matrices</h3>
-      <p>Calcula A + B con tamaño compatible.</p>
+<section class="hero">
+  {% load static %}
+  <div class="hero-logo">
+    <img src="{% static 'algebra/KiwiSolveLogo.png' %}" alt="KiwiSolve" />
+  </div>
+  <div>
+    <h2>KiwiSolve · Álgebra lineal al alcance</h2>
+    <p class="lead">Calculadora web con fracciones exactas: trabaja con enteros, fracciones como <code>3/4</code> o decimales.
+    Perfecta para tareas, clase y práctica.</p>
+  </div>
+  
+</section>
+
+<section class="section" aria-labelledby="algebra-title">
+  <div class="section-header">
+    <h3 id="algebra-title">Módulos de Álgebra Lineal</h3>
+    <span class="badge">4 herramientas</span>
+  </div>
+  <div class="cards cards-2x2">
+    <a class="card media is-suma" href="{% url 'suma' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Suma de matrices</h3>
+        <p>Calcula A + B con dimensiones compatibles.</p>
+      </div>
     </a>
-    <a class="card" href="{% url 'multiplicacion' %}">
-      <h3>Multiplicación de matrices</h3>
-      <p>Calcula A · B y muestra el procedimiento por columnas.</p>
+    <a class="card media is-mul" href="{% url 'multiplicacion' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Multiplicación</h3>
+        <p>Calcula A · B y, si quieres, muestra el procedimiento.</p>
+      </div>
     </a>
-    <a class="card" href="{% url 'gauss' %}">
-      <h3>Eliminación de Gauss</h3>
-      <p>Lleva A|b a forma escalonada y analiza el sistema.</p>
+    <a class="card media is-gauss" href="{% url 'gauss' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 16h4v4H4v-4zM10 12h4v8h-4v-8zM16 6h4v14h-4V6z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Eliminación de Gauss</h3>
+        <p>Convierte A|b a forma escalonada y analiza el sistema.</p>
+      </div>
     </a>
-    <a class="card" href="{% url 'gauss_jordan' %}">
-      <h3>Gauss-Jordan</h3>
-      <p>Obtiene la forma escalonada reducida por filas y solución.</p>
+    <a class="card media is-gj" href="{% url 'gauss_jordan' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18h16M4 12h10M4 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Gauss‑Jordan</h3>
+        <p>Obtén la forma reducida por filas y solución.</p>
+      </div>
     </a>
   </div>
-  <details class="help">
-    <summary>¿Cómo introducir datos?</summary>
-    <ul>
-      <li>Usa el generador de matrices para elegir filas/columnas y editar celdas.</li>
-      <li>Valores aceptados: <code>7</code>, <code>-2</code>, <code>3/5</code>, <code>-4/7</code>, <code>1.25</code>.</li>
-      <li>Para sistemas lineales, completa A y el vector b (última columna).</li>
-    </ul>
-  </details>
+</section>
+
+<section class="section panel" aria-labelledby="howto-title">
+  <div class="panel-header">
+    <h3 id="howto-title" class="panel-title">¿Cómo introducir datos?</h3>
+  </div>
+  <div class="howto-grid">
+    <div class="howto-item media is-gen">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="14" y="4" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="4" y="14" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="14" y="14" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <strong>Genera la matriz</strong>
+        <p>Elige filas y columnas, luego escribe en cada celda.</p>
+      </div>
+    </div>
+    <div class="howto-item media is-ok">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <strong>Formatos válidos</strong>
+        <p><code>7</code>, <code>-2</code>, <code>3/5</code>, <code>-4/7</code>, <code>1.25</code>.</p>
+      </div>
+    </div>
+    <div class="howto-item media is-sys">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 7h12M4 12h12M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M19 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <strong>Sistemas lineales</strong>
+        <p>Completa la matriz A y el vector <em>b</em> (última columna).</p>
+      </div>
+    </div>
+  </div>
 </section>
 {% endblock %}

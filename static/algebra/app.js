@@ -183,5 +183,19 @@
       }
     });
     fab?.addEventListener('click', ()=> kp?.classList.toggle('hidden'));
+
+    // Theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if(saved){ root.setAttribute('data-theme', saved); }
+    themeToggle?.addEventListener('click', ()=>{
+      const current = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      if(current==='light') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', current);
+      themeToggle.textContent = current==='dark' ? '☀️' : '🌙';
+    });
+    if(root.getAttribute('data-theme')==='dark'){ themeToggle.textContent = '☀️'; }
   });
 })();
