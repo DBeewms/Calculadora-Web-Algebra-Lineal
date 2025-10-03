@@ -1,0 +1,69 @@
+{% extends "algebra/base.html" %}
+{% block title %}Gauss{% endblock %}
+{% block content %}
+<h2>Eliminación de Gauss (A|b)</h2>
+<form method="post" class="matrix-form" data-mode="aug">{% csrf_token %}
+  <div class="controls">
+    <div class="control"><label>Filas</label><input type="number" min="1" value="2" data-target="rows"/></div>
+    <div class="control"><label>Columnas (A)</label><input type="number" min="1" value="2" data-target="cols"/></div>
+    <label class="inline"><input type="checkbox" name="show_steps" checked> Mostrar pasos</label>
+    <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+  </div>
+  <div class="matrix-aug panel">
+    <div class="matrix" data-name="matrizA"></div>
+    <div class="aug-bar">|</div>
+    <div class="matrix" data-name="vectorB" data-cols="1"></div>
+    <input type="hidden" name="matrizA"/>
+    <input type="hidden" name="vectorB"/>
+    <input type="hidden" name="matrizAug"/>
+  </div>
+  <div class="actions">
+    <button type="submit" class="btn primary">Calcular</button>
+  </div>
+</form>
+
+{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+
+{% if resultado %}
+<section class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Resultado</h3>
+    <div class="panel-actions">
+      <span class="badge">A {{ dims.A }}</span>
+      <span class="badge">b {{ dims.b }}</span>
+      <span class="badge">Forma escalonada</span>
+    </div>
+  </div>
+  <div class="matrix-result">
+    <table class="matriz">
+      {% for fila in resultado %}
+        <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel-actions">
+    <button type="button" class="btn ghost" data-action="copy-result">Copiar</button>
+  </div>
+</section>
+{% endif %}
+
+{% if pasos %}
+<details open class="panel">
+  <summary class="panel-title">Pasos del procedimiento</summary>
+  <ol class="steps timeline">
+    {% for p in pasos %}
+      <li>
+        <div class="step-title">{{ p.operacion }}</div>
+        <div class="step-matrix">
+          <table class="matriz mini">
+            {% for fila in p.matriz %}
+              <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+            {% endfor %}
+          </table>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</details>
+{% endif %}
+{% endblock %}

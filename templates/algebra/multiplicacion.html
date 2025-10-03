@@ -1,0 +1,86 @@
+{% extends "algebra/base.html" %}
+{% block title %}Multiplicación{% endblock %}
+{% block content %}
+<h2>Multiplicación de matrices (A · B)</h2>
+<form method="post" class="matrix-form" data-mode="mul">{% csrf_token %}
+  <div class="controls">
+    <div class="control">
+      <label>Filas (A)</label>
+      <input type="number" min="1" value="2" data-target="rowsA"/>
+    </div>
+    <div class="control">
+      <label>Columnas (A) = Filas (B)</label>
+      <input type="number" min="1" value="2" data-target="colsArowsB"/>
+    </div>
+    <div class="control">
+      <label>Columnas (B)</label>
+      <input type="number" min="1" value="2" data-target="colsB"/>
+    </div>
+    <label class="inline"><input type="checkbox" name="show_steps" checked> Mostrar pasos</label>
+    <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+  </div>
+  <div class="grid matrices panel">
+    <div>
+      <label>Matriz A</label>
+      <div class="matrix" data-name="matrizA"></div>
+      <input type="hidden" name="matrizA"/>
+    </div>
+    <div>
+      <label>Matriz B</label>
+      <div class="matrix" data-name="matrizB"></div>
+      <input type="hidden" name="matrizB"/>
+    </div>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+    <button type="button" class="btn ghost" data-action="example" data-example="mul">Ejemplo</button>
+    <button type="submit" class="btn primary">Calcular</button>
+  </div>
+</form>
+
+{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+
+{% if resultado %}
+<section class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Resultado</h3>
+    <div class="panel-actions">
+      <span class="badge">A {{ dims.A }}</span>
+      <span class="badge">B {{ dims.B }}</span>
+      <span class="badge">C {{ dims.C }}</span>
+      <span class="badge">A · B</span>
+    </div>
+  </div>
+  <div class="matrix-result">
+    <table class="matriz">
+      {% for fila in resultado %}
+        <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel-actions">
+    <button type="button" class="btn ghost" data-action="copy-result">Copiar</button>
+  </div>
+</section>
+{% endif %}
+
+{% if pasos %}
+<details open class="panel">
+  <summary class="panel-title">Procedimiento (combinación lineal por columnas)</summary>
+  <ol class="steps timeline">
+    {% for p in pasos %}
+      <li>
+        <div class="step-title">{{ p.operacion }}</div>
+        <div class="step-matrix">
+          <table class="matriz mini">
+            {% for fila in p.matriz %}
+              <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+            {% endfor %}
+          </table>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</details>
+{% endif %}
+{% endblock %}

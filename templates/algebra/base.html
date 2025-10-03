@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Álgebra Lineal{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'algebra/styles.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">𝔄</span>
+      <h1>Álgebra Lineal</h1>
+    </div>
+    <nav class="pills">
+      <a href="{% url 'index' %}">Inicio</a>
+      <a href="{% url 'suma' %}">Suma</a>
+      <a href="{% url 'multiplicacion' %}">Multiplicación</a>
+      <a href="{% url 'gauss' %}">Gauss</a>
+      <a href="{% url 'gauss_jordan' %}">Gauss-Jordan</a>
+    </nav>
+  </header>
+  <main class="container container-narrow">
+    {% block content %}{% endblock %}
+  </main>
+  <div id="keypad" class="keypad hidden">
+    <div class="keypad-row">
+      <button type="button" data-k="7">7</button>
+      <button type="button" data-k="8">8</button>
+      <button type="button" data-k="9">9</button>
+      <button type="button" data-k="/">/</button>
+    </div>
+    <div class="keypad-row">
+      <button type="button" data-k="4">4</button>
+      <button type="button" data-k="5">5</button>
+      <button type="button" data-k="6">6</button>
+      <button type="button" data-k="-">-</button>
+    </div>
+    <div class="keypad-row">
+      <button type="button" data-k="1">1</button>
+      <button type="button" data-k="2">2</button>
+      <button type="button" data-k="3">3</button>
+      <button type="button" data-k=".">.</button>
+    </div>
+    <div class="keypad-row">
+      <button type="button" data-k="0">0</button>
+      <button type="button" data-k=",">,</button>
+      <button type="button" data-k="back" class="danger">⌫</button>
+      <button type="button" data-k="hide">✕</button>
+    </div>
+  </div>
+  <button id="keypadToggle" class="fab" aria-label="Mostrar teclado">⌨</button>
+  <script src="{% static 'algebra/app.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "algebra/base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+<section class="intro">
+  <p>Herramientas para álgebra lineal con soporte de fracciones exactas. Puedes introducir enteros, fracciones como <code>3/4</code> o decimales.</p>
+  <div class="cards">
+    <a class="card" href="{% url 'suma' %}">
+      <h3>Suma de matrices</h3>
+      <p>Calcula A + B con tamaño compatible.</p>
+    </a>
+    <a class="card" href="{% url 'multiplicacion' %}">
+      <h3>Multiplicación de matrices</h3>
+      <p>Calcula A · B y muestra el procedimiento por columnas.</p>
+    </a>
+    <a class="card" href="{% url 'gauss' %}">
+      <h3>Eliminación de Gauss</h3>
+      <p>Lleva A|b a forma escalonada y analiza el sistema.</p>
+    </a>
+    <a class="card" href="{% url 'gauss_jordan' %}">
+      <h3>Gauss-Jordan</h3>
+      <p>Obtiene la forma escalonada reducida por filas y solución.</p>
+    </a>
+  </div>
+  <details class="help">
+    <summary>¿Cómo introducir datos?</summary>
+    <ul>
+      <li>Usa el generador de matrices para elegir filas/columnas y editar celdas.</li>
+      <li>Valores aceptados: <code>7</code>, <code>-2</code>, <code>3/5</code>, <code>-4/7</code>, <code>1.25</code>.</li>
+      <li>Para sistemas lineales, completa A y el vector b (última columna).</li>
+    </ul>
+  </details>
+</section>
+{% endblock %}

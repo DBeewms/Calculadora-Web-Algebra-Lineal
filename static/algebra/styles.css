@@ -1,0 +1,72 @@
+:root{ --primary:#0099A8; --muted:#6b7280; --bg:#f7f7fb; --border:#e3e5f0; --card:#ffffff; }
+*{ box-sizing:border-box }
+body{ font-family:system-ui,Segoe UI,Arial,sans-serif; margin:0; color:#1f2233; background:var(--bg) }
+.topbar{ display:flex; gap:16px; align-items:center; justify-content:space-between; padding:14px 20px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10 }
+.brand{ display:flex; align-items:center; gap:10px }
+.brand .logo{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, #7c3aed, #06b6d4); color:#fff; font-weight:800 }
+.topbar h1{ font-size:18px; margin:0 }
+.pills{ display:flex; gap:8px }
+.pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:#0f172a; background:#fff }
+.pills a:hover{ border-color:#cbd5e1 }
+.container{ padding:24px }
+.container-narrow{ max-width:980px; margin:0 auto }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px }
+label{ display:block; margin-bottom:6px; font-weight:600 }
+textarea{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff }
+button{
+  margin-top:12px; padding:10px 16px; border:none; border-radius:999px;
+  background:var(--primary); color:#fff; font-weight:700; cursor:pointer
+}
+button:hover{ opacity:.9 }
+.btn{ background:var(--primary) }
+.btn.primary{ background:var(--primary) }
+.inline{ display:inline-flex; align-items:center; gap:6px; margin-left:10px; color:var(--muted) }
+.controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px }
+.control input{ width:80px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff }
+.matriz{ border-collapse:collapse; margin-top:12px; background:#fff }
+.matriz td{ border:1px solid var(--border); padding:6px 10px; text-align:center }
+.matriz.mini td{ padding:3px 6px }
+.matriz.editable td{ padding:2px }
+.matriz.editable input{ width:70px; padding:8px 10px; border:1px solid var(--border); border-radius:6px }
+.matrix-aug{ display:flex; gap:12px; align-items:center }
+.aug-bar{ font-weight:700; font-size:18px }
+.matrix-result{ overflow:auto; max-width:100% }
+.alert-error{ margin-top:12px; padding:10px; border:1px solid #e88; border-radius:8px; background:#fee; color:#900 }
+
+/* Cards on index */
+.cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:16px 0 }
+.card{ display:block; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:inherit; text-decoration:none }
+.card h3{ margin:0 0 6px 0 }
+.card p{ margin:0; color:var(--muted) }
+.intro details.help{ margin-top:12px }
+
+/* Steps */
+.steps{ margin-top:8px }
+.steps.timeline{ position:relative; margin-left:6px; padding-left:18px }
+.steps.timeline:before{ content:""; position:absolute; left:6px; top:0; bottom:0; width:2px; background:var(--border) }
+.steps.timeline li{ position:relative; margin:0 0 14px 0; list-style:none }
+.steps.timeline li:before{ content:""; position:absolute; left:-1px; top:6px; width:10px; height:10px; background:var(--primary); border-radius:50% }
+.step-title{ font-weight:600; margin-bottom:6px }
+.step-matrix{ overflow:auto; border:1px dashed var(--border); border-radius:8px; padding:6px; background:#fff }
+
+/* Panels & badges */
+.panel{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin:12px 0 }
+.panel-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px }
+.panel-title{ font-size:18px; font-weight:700; margin:0 }
+.panel-actions{ display:flex; gap:8px }
+.badge{ display:inline-block; background:#eef4f5; color:#0f5f66; border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600 }
+.actions{ display:flex; gap:8px; margin-top:12px }
+.btn.secondary{ background:#e9eef0; color:#0f172a }
+.btn.ghost{ background:transparent; color:var(--primary); border:1px solid var(--primary) }
+
+/* Floating action button */
+.fab{ position:fixed; right:18px; bottom:86px; width:48px; height:48px; border-radius:50%; border:none; background:linear-gradient(135deg, #7c3aed, #06b6d4); color:#fff; font-weight:800; cursor:pointer; box-shadow:0 8px 28px rgba(0,0,0,.2) }
+.fab:hover{ filter:brightness(1.05) }
+
+/* Keypad */
+.keypad{ position:fixed; right:16px; bottom:16px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; box-shadow:0 8px 28px rgba(0,0,0,.1); z-index:1000 }
+.keypad.hidden{ display:none }
+.keypad-row{ display:flex; gap:8px; margin:6px 0 }
+.keypad button{ min-width:42px; height:36px; border:1px solid var(--border); background:#f9fafb; border-radius:8px; cursor:pointer }
+.keypad button:hover{ background:#eef2f7 }
+.keypad button.danger{ color:#b91c1c; border-color:#fecaca; background:#fee2e2 }
