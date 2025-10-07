@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'algebra/styles.css' %}">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <header class="topbar">
@@ -25,38 +27,21 @@
       <a href="{% url 'gauss_jordan' %}" class="{% if url_name == 'gauss_jordan' %}active{% endif %}">Gauss-Jordan</a>
     </nav>
     {% endwith %}
-    <button id="themeToggle" class="icon-btn" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
+    <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
+      <span class="tt-track"></span>
+      <span class="tt-icon sun" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l1.41-1.41M16.24 8.34l1.41-1.41"/></svg>
+      </span>
+      <span class="tt-icon moon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 21a9 9 0 0 0 9-8.21Z"/></svg>
+      </span>
+      <span class="tt-handle"></span>
+    </button>
   </header>
   <main class="container container-narrow">
     {% block content %}{% endblock %}
   </main>
-  <div id="keypad" class="keypad hidden">
-    <div class="keypad-row">
-      <button type="button" data-k="7">7</button>
-      <button type="button" data-k="8">8</button>
-      <button type="button" data-k="9">9</button>
-      <button type="button" data-k="/">/</button>
-    </div>
-    <div class="keypad-row">
-      <button type="button" data-k="4">4</button>
-      <button type="button" data-k="5">5</button>
-      <button type="button" data-k="6">6</button>
-      <button type="button" data-k="-">-</button>
-    </div>
-    <div class="keypad-row">
-      <button type="button" data-k="1">1</button>
-      <button type="button" data-k="2">2</button>
-      <button type="button" data-k="3">3</button>
-      <button type="button" data-k=".">.</button>
-    </div>
-    <div class="keypad-row">
-      <button type="button" data-k="0">0</button>
-      <button type="button" data-k=",">,</button>
-      <button type="button" data-k="back" class="danger">⌫</button>
-      <button type="button" data-k="hide">✕</button>
-    </div>
-  </div>
-  <button id="keypadToggle" class="fab" aria-label="Mostrar teclado">⌨</button>
   <script src="{% static 'algebra/app.js' %}"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

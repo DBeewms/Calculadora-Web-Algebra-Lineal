@@ -307,6 +307,191 @@ def analizar_solucion(R, pivotes):
 
     return resultado
 
+# ================== Funciones de alto nivel para vistas ==================
+
+def _variables_libres(n, pivotes):
+    libres = []
+    c = 0
+    while c < n:
+        es_libre = True
+        k = 0
+        while k < len(pivotes):
+            if pivotes[k] == c:
+                es_libre = False
+                break
+            k += 1
+        if es_libre:
+            libres.append(c)
+        c += 1
+    return libres
+
+def construir_expresiones_parametricas_rref(R, pivotes):
+    """Construye expresiones de variables dependientes (pivote) en función
+    de variables libres para una matriz aumentada en forma escalonada reducida.
+
+    Devuelve dict con:
+      - expresiones: lista de strings 'x_i = ...'
+      - libres: indices columnas libres
+      - mapa_parametros: {columna_libre: nombre_parametro}
+    """
+    m = len(R)
+    n = len(R[0]) - 1
+    libres = _variables_libres(n, pivotes)
+    # Usar directamente los nombres de las variables libres (x_j) en lugar de parámetros t
+    expresiones = []
+    # Para cada fila (en orden) asociada a pivote
+    r = 0
+    while r < len(pivotes) and r < m:
+        pcol = pivotes[r]
+        # b es término independiente
+        b = R[r][n]
+        partes = []
+        if not es_cero(b):
+            partes.append(texto_fraccion(b))
+        # Para cada libre f aparece con signo negativo al trasladar al otro lado
+        li = 0
+        while li < len(libres):
+            fcol = libres[li]
+            coef = R[r][fcol]
+            if not es_cero(coef):
+                # x_p = b - coef * x_f  (mostramos directo x{fcol+1})
+                # Simplificar coef = 1 o -1 en representación
+                frac_txt = texto_fraccion(coef)
+                if frac_txt == '1':
+                    term = f"- x{fcol+1}"
+                elif frac_txt == '-1':
+                    term = f"+ x{fcol+1}"  # porque -(-1)*x => + x
+                else:
+                    term = f"- {frac_txt}·x{fcol+1}"
+                partes.append(term)
+            li += 1
+        if not partes:
+            rhs = "0"
+        else:
+            # Unir y limpiar dobles espacios
+            rhs = " ".join(partes).replace("  ", " ")
+            # Si comienza con '- ' dejarlo así, si contiene patrones '- -' simplificar se omite por simplicidad
+        expresiones.append(f"x{pcol+1} = {rhs}")
+        r += 1
+    return {"expresiones": expresiones, "libres": libres}
+
+def gauss_info(M, registrar_pasos=False):
+    """Devuelve toda la información necesaria para la vista de Gauss:
+    {
+      'matriz': R (forma escalonada),
+      'pivotes': [...],
+      'pasos': [...]*opcional,
+      'analisis': { tipo, vector_solucion, libres, ... }
+    }
+    """
+    R, pivotes, pasos = eliminacion_gauss(M)
+    base = analizar_solucion_gauss(R, pivotes)
+    analisis = {"solucion": base["solucion"], "tipo_forma": base.get("tipo_forma", "ESCALONADA"), "pivotes": pivotes}
+    analisis["pivotes_nombres"] = [f"x{p+1}" for p in pivotes]
+    analisis["pivotes_nums"] = [p+1 for p in pivotes]
+    n = len(R[0]) - 1
+    if base["solucion"] == "UNICA":
+        # Vector solución única
+        vector_sol = []
+        j = 0
+        while j < n:
+            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            j += 1
+        analisis["vector_solucion"] = vector_sol
+    elif base["solucion"] == "INFINITAS":
+        libres = base.get("libres", _variables_libres(n, pivotes))
+        analisis["libres"] = libres
+        analisis["libres_nombres"] = [f"x{c+1}" for c in libres]
+        analisis["libres_detalle"] = [f"x{c+1} libre" for c in libres]
+        vector_sol = []
+        j = 0
+        while j < n:
+            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            j += 1
+        analisis["vector_solucion"] = vector_sol
+    else:  # INCONSISTENTE
+        # Identificar fila inconsistente para mensaje (opcional)
+        m = len(R)
+        ncols = len(R[0]) - 1
+        fila_inc = -1
+        i = 0
+        while i < m:
+            todos_ceros = True
+            j = 0
+            while j < ncols:
+                if not es_cero(R[i][j]):
+                    todos_ceros = False
+                    break
+                j += 1
+            if todos_ceros and not es_cero(R[i][ncols]):
+                fila_inc = i
+                break
+            i += 1
+        if fila_inc != -1:
+            analisis["detalle"] = f"Fila {fila_inc+1} indica 0 = {texto_fraccion(R[fila_inc][ncols])}"
+    info = {"matriz": R, "pivotes": pivotes, "analisis": analisis}
+    if registrar_pasos:
+        info["pasos"] = pasos
+    return info
+
+def gauss_jordan_info(M, registrar_pasos=False):
+    """Devuelve información extendida para la vista Gauss-Jordan, incluyendo
+    expresiones paramétricas cuando hay variables libres."""
+    R, pivotes, pasos = _gauss_jordan_detallado(M)
+    base = analizar_solucion(R, pivotes)
+    analisis = {
+        "solucion": base["solucion"],
+        "tipo_forma": base.get("tipo_forma", "ESCALONADA_REDUCIDA"),
+        "pivotes": pivotes,
+    }
+    analisis["pivotes_nombres"] = [f"x{p+1}" for p in pivotes]
+    analisis["pivotes_nums"] = [p+1 for p in pivotes]
+    n = len(R[0]) - 1
+    if base["solucion"] == "UNICA":
+        vector_sol = []
+        j = 0
+        while j < n:
+            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            j += 1
+        analisis["vector_solucion"] = vector_sol
+    elif base["solucion"] == "INFINITAS":
+        datos_param = construir_expresiones_parametricas_rref(R, pivotes)
+        libres = datos_param["libres"]
+        analisis["libres"] = libres
+        analisis["libres_nombres"] = [f"x{c+1}" for c in libres]
+        analisis["expresiones"] = datos_param["expresiones"]
+        analisis["libres_detalle"] = [f"x{c+1} libre" for c in libres]
+        vector_sol = []
+        j = 0
+        while j < n:
+            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            j += 1
+        analisis["vector_solucion"] = vector_sol
+    else:  # INCONSISTENTE
+        # Detectar fila inconsistente
+        m = len(R)
+        ncols = len(R[0]) - 1
+        fila_inc = -1
+        i = 0
+        while i < m:
+            todos_ceros = True
+            j = 0
+            while j < ncols:
+                if not es_cero(R[i][j]):
+                    todos_ceros = False
+                    break
+                j += 1
+            if todos_ceros and not es_cero(R[i][ncols]):
+                fila_inc = i
+                break
+            i += 1
+        if fila_inc != -1:
+            analisis["detalle"] = f"Fila {fila_inc+1} indica 0 = {texto_fraccion(R[fila_inc][ncols])}"
+    info = {"matriz": R, "pivotes": pivotes, "analisis": analisis}
+    if registrar_pasos:
+        info["pasos"] = pasos
+    return info
+
 # ----------------------- Operaciones con matrices -----------------------
 
 def _validar_dimensiones_iguales(A, B):

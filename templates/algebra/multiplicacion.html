@@ -16,7 +16,12 @@
       <label>Columnas (B)</label>
       <input type="number" min="1" value="2" data-target="colsB"/>
     </div>
-    <label class="inline"><input type="checkbox" name="show_steps" checked> Mostrar pasos</label>
+    <label class="toggle" id="toggle-steps-mul">
+      <input type="checkbox" name="show_steps" checked>
+      <span class="toggle-track"></span>
+      <span class="toggle-thumb"></span>
+      <span class="toggle-label">Mostrar pasos</span>
+    </label>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
   </div>
   <div class="grid matrices panel">
@@ -58,9 +63,6 @@
       {% endfor %}
     </table>
   </div>
-  <div class="panel-actions">
-    <button type="button" class="btn ghost" data-action="copy-result">Copiar</button>
-  </div>
 </section>
 {% endif %}
 
@@ -83,4 +85,11 @@
   </ol>
 </details>
 {% endif %}
+{% block extra_js %}
+{% if error %}
+<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
+{% elif resultado %}
+<script>Swal.fire({icon:'success', title:'Multiplicación lista', timer:1800, showConfirmButton:false});</script>
+{% endif %}
+{% endblock %}
 {% endblock %}

@@ -53,9 +53,13 @@
       {% endfor %}
     </table>
   </div>
-  <div class="panel-actions">
-    <button type="button" class="btn ghost" data-action="copy-result">Copiar</button>
-  </div>
 </section>
 {% endif %}
+{% block extra_js %}
+{% if error %}
+<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
+{% elif resultado %}
+<script>Swal.fire({icon:'success', title:'Operación completada', timer:1800, showConfirmButton:false});</script>
+{% endif %}
+{% endblock %}
 {% endblock %}

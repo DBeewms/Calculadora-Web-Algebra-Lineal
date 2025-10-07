@@ -6,7 +6,12 @@
   <div class="controls">
     <div class="control"><label>Filas</label><input type="number" min="1" value="2" data-target="rows"/></div>
     <div class="control"><label>Columnas (A)</label><input type="number" min="1" value="2" data-target="cols"/></div>
-    <label class="inline"><input type="checkbox" name="show_steps" checked> Mostrar pasos</label>
+    <label class="toggle" id="toggle-steps-gauss">
+      <input type="checkbox" name="show_steps" checked>
+      <span class="toggle-track"></span>
+      <span class="toggle-thumb"></span>
+      <span class="toggle-label">Mostrar pasos</span>
+    </label>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
   </div>
   <div class="matrix-aug panel">
@@ -18,31 +23,63 @@
     <input type="hidden" name="matrizAug"/>
   </div>
   <div class="actions">
+    <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+    <button type="button" class="btn ghost" data-action="example" data-example="aug">Ejemplo</button>
     <button type="submit" class="btn primary">Calcular</button>
   </div>
 </form>
 
 {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
 
-{% if resultado %}
-<section class="panel">
+{% if resultado and analisis %}
+<section class="panel highlight">
   <div class="panel-header">
-    <h3 class="panel-title">Resultado</h3>
+    <h3 class="panel-title">Resultado y análisis</h3>
     <div class="panel-actions">
-      <span class="badge">A {{ dims.A }}</span>
-      <span class="badge">b {{ dims.b }}</span>
+      <span class="badge">Matriz de coeficientes A {{ dims.A }}</span>
+      <span class="badge">Vector columna b {{ dims.b }}</span>
       <span class="badge">Forma escalonada</span>
     </div>
   </div>
-  <div class="matrix-result">
-    <table class="matriz">
-      {% for fila in resultado %}
-        <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
-      {% endfor %}
-    </table>
-  </div>
-  <div class="panel-actions">
-    <button type="button" class="btn ghost" data-action="copy-result">Copiar</button>
+  <div class="panel-body">
+  <!-- Etiquetas integradas en los badges superiores -->
+    <div class="matrix-result">
+      <table class="matriz">
+        {% for fila in resultado %}
+          <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+        {% endfor %}
+      </table>
+    </div>
+    <hr style="margin:16px 0; border:none; border-top:1px solid var(--border)"/>
+    <p><strong>Clasificación:</strong>
+      {% if analisis.solucion == 'UNICA' %}<span class="tag success">Solución única</span>
+      {% elif analisis.solucion == 'INFINITAS' %}<span class="tag info">Infinitas soluciones</span>
+      {% else %}<span class="tag danger">Inconsistente</span>{% endif %}
+    </p>
+    {% if analisis.solucion != 'INCONSISTENTE' %}
+    <p><strong>Columnas pivote:</strong>
+      {% if analisis.pivotes_nums and analisis.pivotes_nums|length > 0 %}
+        {% for num in analisis.pivotes_nums %}{{ num }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      {% else %}—{% endif %}
+    </p>
+    {% endif %}
+    {% if analisis.solucion == 'UNICA' %}
+      <div>
+        <strong>Vector solución:</strong>
+        <ul class="inline-cards">{% for linea in analisis.vector_solucion %}<li>{{ linea }}</li>{% endfor %}</ul>
+      </div>
+    {% elif analisis.solucion == 'INFINITAS' %}
+      <div>
+        <p><strong>Variables libres:</strong>
+          {% if analisis.libres_nombres %}{% for name in analisis.libres_nombres %}{{ name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}—{% endif %}
+        </p>
+        <p><em>Solución particular (libres = 0):</em></p>
+        <ul class="inline-cards mini">{% for linea in analisis.vector_solucion %}<li>{{ linea }}</li>{% endfor %}</ul>
+        <p class="muted small">Para la parametrización completa utiliza Gauss-Jordan.</p>
+      </div>
+    {% elif analisis.solucion == 'INCONSISTENTE' %}
+      <p><strong>Inconsistencia:</strong> {{ analisis.detalle }}</p>
+    {% endif %}
   </div>
 </section>
 {% endif %}
@@ -66,4 +103,11 @@
   </ol>
 </details>
 {% endif %}
+{% block extra_js %}
+{% if error %}
+<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
+{% elif resultado %}
+<script>Swal.fire({icon:'success', title:'Gauss completado', timer:1800, showConfirmButton:false});</script>
+{% endif %}
+{% endblock %}
 {% endblock %}

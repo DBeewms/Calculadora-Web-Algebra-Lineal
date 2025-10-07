@@ -102,100 +102,82 @@
     form.querySelectorAll('[data-action="example"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const ex = btn.getAttribute('data-example');
+        // Generador entero aleatorio entre a y b inclusive
+        const rnd = (a,b)=> Math.floor(Math.random()*(b-a+1))+a;
         if(mode==='sum' && ex==='sum'){
-          // A= [[1,2],[3,4]]; B= [[5,6],[7,8]]
-          const [boxA, boxB] = matrices;
+          const r = rnd(1,5); const c = rnd(1,5);
+          form.querySelector('[data-target="rows"]').value = r;
+          form.querySelector('[data-target="cols"]').value = c;
           doResize();
-          const fillsA = ['1','2','3','4'];
-          const fillsB = ['5','6','7','8'];
-          [...boxA.querySelectorAll('input')].forEach((i,idx)=> i.value=fillsA[idx]||'0');
-          [...boxB.querySelectorAll('input')].forEach((i,idx)=> i.value=fillsB[idx]||'0');
+          const [boxA, boxB] = matrices;
+          // Relleno secuencial por filas
+          let val = 1;
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          val = 1;
+          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
         }
         if(mode==='mul' && ex==='mul'){
-          const [boxA, boxB] = matrices;
-          form.querySelector('[data-target="rowsA"]').value = 2;
-          form.querySelector('[data-target="colsArowsB"]').value = 2;
-          form.querySelector('[data-target="colsB"]').value = 2;
+          const rA = rnd(1,5), p = rnd(1,5), cB = rnd(1,5);
+          form.querySelector('[data-target="rowsA"]').value = rA;
+          form.querySelector('[data-target="colsArowsB"]').value = p;
+          form.querySelector('[data-target="colsB"]').value = cB;
           doResize();
-          const fillsA = ['1','2','3','4'];
-          const fillsB = ['5','6','7','8'];
-          [...boxA.querySelectorAll('input')].forEach((i,idx)=> i.value=fillsA[idx]||'0');
-          [...boxB.querySelectorAll('input')].forEach((i,idx)=> i.value=fillsB[idx]||'0');
+          const [boxA, boxB] = matrices;
+          let val = 1;
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          val = 1;
+          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
         }
         if(mode==='aug'){
+          // Dimensiones aleatorias y relleno secuencial A y b
+          const filas = rnd(1,5);
+          const cols = rnd(1,5);
+          form.querySelector('[data-target="rows"]').value = filas;
+          form.querySelector('[data-target="cols"]').value = cols;
           const [boxA, boxB] = matrices;
-          form.querySelector('[data-target="rows"]').value = 2;
-          form.querySelector('[data-target="cols"]').value = 2;
           doResize();
-          const fillsA = ['1','2','3','4'];
-          const fillsb = ['5','11'];
-          [...boxA.querySelectorAll('input')].forEach((i,idx)=> i.value=fillsA[idx]||'0');
-          [...boxB.querySelectorAll('input')].forEach((i,idx)=> i.value=fillsb[idx]||'0');
+          let val = 1;
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input')[0].value = String(val++));
         }
         updateHidden(form);
       });
     });
 
-    form.querySelectorAll('[data-action="copy-result"]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const table = btn.closest('.panel').querySelector('table.matriz');
-        if(!table) return;
-        const text = Array.from(table.querySelectorAll('tr')).map(tr=>
-          Array.from(tr.querySelectorAll('td')).map(td=> td.innerText.trim()).join(' ')
-        ).join('\n');
-        navigator.clipboard.writeText(text).catch(()=>{});
-        btn.textContent = 'Copiado';
-        setTimeout(()=> btn.textContent='Copiar', 1200);
-      });
-    });
   }
 
   document.addEventListener('DOMContentLoaded', ()=>{
     document.querySelectorAll('form.matrix-form').forEach(initForm);
-  // Keypad behavior
-  const kp = document.getElementById('keypad');
-  const fab = document.getElementById('keypadToggle');
-    let currentInput = null;
-    document.addEventListener('focusin', (e)=>{
-      const t = e.target;
-      if(t && t.tagName==='INPUT' && t.closest('.matrix')){
-        currentInput = t;
-        kp?.classList.remove('hidden');
+    // Toggle switches activation style
+    document.querySelectorAll('.toggle input[type="checkbox"]').forEach(chk=>{
+      const root = chk.closest('.toggle');
+      function sync(){
+        if(chk.checked) root.classList.add('active'); else root.classList.remove('active');
       }
+      chk.addEventListener('change', sync); sync();
     });
-    kp?.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button');
-      if(!btn || !currentInput) return;
-      const k = btn.getAttribute('data-k');
-      if(k==='hide'){ kp.classList.add('hidden'); return; }
-      if(k==='back'){
-        currentInput.value = currentInput.value.slice(0, -1);
-      }else{
-        currentInput.value += k;
-      }
-      currentInput.dispatchEvent(new Event('input', {bubbles:true}));
-      currentInput.focus();
-    });
-    // Toggle keypad via keyboard shortcut or future button
-    document.addEventListener('keydown', (e)=>{
-      if(e.key==='F2'){
-        kp?.classList.toggle('hidden');
-      }
-    });
-    fab?.addEventListener('click', ()=> kp?.classList.toggle('hidden'));
-
-    // Theme toggle
+    // Theme toggle (switch)
+    // Theme toggle (switch)
     const themeToggle = document.getElementById('themeToggle');
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
-    if(saved){ root.setAttribute('data-theme', saved); }
+    if(saved && saved==='dark'){ root.setAttribute('data-theme','dark'); }
     themeToggle?.addEventListener('click', ()=>{
-      const current = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      if(current==='light') root.removeAttribute('data-theme');
-      else root.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', current);
-      themeToggle.textContent = current==='dark' ? '☀️' : '🌙';
+      const dark = root.getAttribute('data-theme')==='dark';
+      if(dark){ root.removeAttribute('data-theme'); localStorage.setItem('theme','light'); }
+      else { root.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); }
     });
-    if(root.getAttribute('data-theme')==='dark'){ themeToggle.textContent = '☀️'; }
+    // Toggle visual de mostrar/ocultar pasos sin recargar
+    document.querySelectorAll('label.toggle input[name="show_steps"]').forEach(chk=>{
+      chk.addEventListener('change', ()=>{
+        const container = chk.closest('form').parentElement; // paneles estarán después del form
+        if(!container) return;
+        const stepsPanel = container.querySelector('details.panel, details');
+        if(stepsPanel){
+          if(chk.checked){ stepsPanel.style.display=''; stepsPanel.open = true; }
+          else { stepsPanel.style.display='none'; }
+        }
+      });
+    });
   });
 })();

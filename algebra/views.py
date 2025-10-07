@@ -92,16 +92,16 @@ def gauss(request: HttpRequest):
         try:
             M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
             want_steps = bool(request.POST.get("show_steps"))
-            if want_steps:
-                R, pasos = op.gauss(M, registrar_pasos=True)
-                ctx["resultado"] = _render_matriz(R)
+            info = op.gauss_info(M, registrar_pasos=want_steps)
+            R = info["matriz"]
+            ctx["resultado"] = _render_matriz(R)
+            ctx["analisis"] = info.get("analisis")
+            ctx["pivotes"] = info.get("pivotes")
+            if want_steps and "pasos" in info:
                 ctx["pasos"] = [
                     {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
-                    for p in pasos
+                    for p in info["pasos"]
                 ]
-            else:
-                R = op.gauss(M, registrar_pasos=False)
-                ctx["resultado"] = _render_matriz(R)
             if M:
                 m = len(M); n = len(M[0]) - 1
                 ctx["dims"] = {"A": f"{m}×{n}", "b": f"{m}×1"}
@@ -115,16 +115,16 @@ def gauss_jordan(request: HttpRequest):
         try:
             M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
             want_steps = bool(request.POST.get("show_steps"))
-            if want_steps:
-                R, pasos = op.gauss_jordan(M, registrar_pasos=True)
-                ctx["resultado"] = _render_matriz(R)
+            info = op.gauss_jordan_info(M, registrar_pasos=want_steps)
+            R = info["matriz"]
+            ctx["resultado"] = _render_matriz(R)
+            ctx["analisis"] = info.get("analisis")
+            ctx["pivotes"] = info.get("pivotes")
+            if want_steps and "pasos" in info:
                 ctx["pasos"] = [
                     {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
-                    for p in pasos
+                    for p in info["pasos"]
                 ]
-            else:
-                R = op.gauss_jordan(M, registrar_pasos=False)
-                ctx["resultado"] = _render_matriz(R)
             if M:
                 m = len(M); n = len(M[0]) - 1
                 ctx["dims"] = {"A": f"{m}×{n}", "b": f"{m}×1"}
