@@ -4,8 +4,8 @@
 <h2>Eliminación de Gauss (A|b)</h2>
 <form method="post" class="matrix-form" data-mode="aug">{% csrf_token %}
   <div class="controls">
-    <div class="control"><label>Filas</label><input type="number" min="1" value="2" data-target="rows"/></div>
-    <div class="control"><label>Columnas (A)</label><input type="number" min="1" value="2" data-target="cols"/></div>
+  <div class="control"><label>Ecuaciones</label><input type="number" min="1" value="2" data-target="rows"/></div>
+  <div class="control"><label>Variables</label><input type="number" min="1" value="2" data-target="cols"/></div>
     <label class="toggle" id="toggle-steps-gauss">
       <input type="checkbox" name="show_steps" checked>
       <span class="toggle-track"></span>
@@ -56,26 +56,15 @@
       {% elif analisis.solucion == 'INFINITAS' %}<span class="tag info">Infinitas soluciones</span>
       {% else %}<span class="tag danger">Inconsistente</span>{% endif %}
     </p>
-    {% if analisis.solucion != 'INCONSISTENTE' %}
-    <p><strong>Columnas pivote:</strong>
-      {% if analisis.pivotes_nums and analisis.pivotes_nums|length > 0 %}
-        {% for num in analisis.pivotes_nums %}{{ num }}{% if not forloop.last %}, {% endif %}{% endfor %}
-      {% else %}—{% endif %}
-    </p>
-    {% endif %}
+    {# Se omite la visualización de columnas pivote en modo Gauss #}
     {% if analisis.solucion == 'UNICA' %}
       <div>
-        <strong>Vector solución:</strong>
+        <strong>Vector solución (por sustitución hacia atrás):</strong>
         <ul class="inline-cards">{% for linea in analisis.vector_solucion %}<li>{{ linea }}</li>{% endfor %}</ul>
       </div>
     {% elif analisis.solucion == 'INFINITAS' %}
-      <div>
-        <p><strong>Variables libres:</strong>
-          {% if analisis.libres_nombres %}{% for name in analisis.libres_nombres %}{{ name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}—{% endif %}
-        </p>
-        <p><em>Solución particular (libres = 0):</em></p>
-        <ul class="inline-cards mini">{% for linea in analisis.vector_solucion %}<li>{{ linea }}</li>{% endfor %}</ul>
-        <p class="muted small">Para la parametrización completa utiliza Gauss-Jordan.</p>
+      <div class="muted small" style="margin-top:8px">
+        Infinitas soluciones. Usa Gauss-Jordan para obtener la parametrización explícita.
       </div>
     {% elif analisis.solucion == 'INCONSISTENTE' %}
       <p><strong>Inconsistencia:</strong> {{ analisis.detalle }}</p>
