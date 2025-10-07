@@ -82,6 +82,26 @@
         buildMatrix(boxA, r, c);
         boxB.setAttribute('data-cols', '1');
         buildMatrix(boxB, r, 1);
+      } else if(mode === 'simple') {
+        const r = +form.querySelector('[data-target="rows"]').value || 2;
+        const c = +form.querySelector('[data-target="cols"]').value || 2;
+        const [boxA] = matrices;
+        buildMatrix(boxA, r, c);
+        // Render vector solución trivial (ceros) no editable
+        const zeroBox = form.querySelector('.zero-vector');
+        if(zeroBox){
+          zeroBox.innerHTML = '';
+          const table = document.createElement('table');
+          table.className = 'matriz mini';
+          for(let i=0;i<r;i++){
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.textContent = '0';
+            tr.appendChild(td);
+            table.appendChild(tr);
+          }
+          zeroBox.appendChild(table);
+        }
       }
       updateHidden(form);
     }
@@ -139,6 +159,16 @@
           let val = 1;
           [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
           [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input')[0].value = String(val++));
+        }
+        if(mode==='simple' && ex==='simple'){
+          const filas = rnd(1,5);
+          const cols = rnd(1,5);
+          form.querySelector('[data-target="rows"]').value = filas;
+          form.querySelector('[data-target="cols"]').value = cols;
+          doResize();
+          const [boxA] = matrices;
+          let val = 1;
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
         }
         updateHidden(form);
       });

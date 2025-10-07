@@ -325,52 +325,47 @@ def _variables_libres(n, pivotes):
         c += 1
     return libres
 
-def construir_expresiones_parametricas_rref(R, pivotes):
-    """Construye expresiones de variables dependientes (pivote) en función
-    de variables libres para una matriz aumentada en forma escalonada reducida.
+def construir_expresiones_parametricas(R, pivotes):
+    """Construye expresiones de variables dependientes (variables con pivote)
+    en función de las variables libres, asumiendo que 'R' es una matriz
+    aumentada ya en forma escalonada reducida por filas
+
+    Notas de formato:
+        - Cada fila asociada a un pivote corresponde a una ecuación del tipo
+                  x_pivote = (término independiente) - (coeficientes * variables libres)
+        - Si no hay término independiente ni coeficientes se coloca 0.
+        - Coeficientes 1 y -1 se simplifican para mejorar legibilidad.
 
     Devuelve dict con:
-      - expresiones: lista de strings 'x_i = ...'
-      - libres: indices columnas libres
-      - mapa_parametros: {columna_libre: nombre_parametro}
+        - 'expresiones': lista de cadenas 'x_i = ...'
+        - 'libres': índices (0‑based) de las columnas libres.
     """
     m = len(R)
     n = len(R[0]) - 1
     libres = _variables_libres(n, pivotes)
-    # Usar directamente los nombres de las variables libres (x_j) en lugar de parámetros t
     expresiones = []
-    # Para cada fila (en orden) asociada a pivote
     r = 0
     while r < len(pivotes) and r < m:
         pcol = pivotes[r]
-        # b es término independiente
         b = R[r][n]
         partes = []
         if not es_cero(b):
             partes.append(texto_fraccion(b))
-        # Para cada libre f aparece con signo negativo al trasladar al otro lado
         li = 0
         while li < len(libres):
             fcol = libres[li]
             coef = R[r][fcol]
             if not es_cero(coef):
-                # x_p = b - coef * x_f  (mostramos directo x{fcol+1})
-                # Simplificar coef = 1 o -1 en representación
                 frac_txt = texto_fraccion(coef)
                 if frac_txt == '1':
                     term = f"- x{fcol+1}"
                 elif frac_txt == '-1':
-                    term = f"+ x{fcol+1}"  # porque -(-1)*x => + x
+                    term = f"+ x{fcol+1}"
                 else:
                     term = f"- {frac_txt}·x{fcol+1}"
                 partes.append(term)
             li += 1
-        if not partes:
-            rhs = "0"
-        else:
-            # Unir y limpiar dobles espacios
-            rhs = " ".join(partes).replace("  ", " ")
-            # Si comienza con '- ' dejarlo así, si contiene patrones '- -' simplificar se omite por simplicidad
+        rhs = "0" if not partes else " ".join(partes).replace("  ", " ")
         expresiones.append(f"x{pcol+1} = {rhs}")
         r += 1
     return {"expresiones": expresiones, "libres": libres}
@@ -455,7 +450,7 @@ def gauss_jordan_info(M, registrar_pasos=False):
             j += 1
         analisis["vector_solucion"] = vector_sol
     elif base["solucion"] == "INFINITAS":
-        datos_param = construir_expresiones_parametricas_rref(R, pivotes)
+        datos_param = construir_expresiones_parametricas(R, pivotes)
         libres = datos_param["libres"]
         analisis["libres"] = libres
         analisis["libres_nombres"] = [f"x{c+1}" for c in libres]
@@ -491,6 +486,69 @@ def gauss_jordan_info(M, registrar_pasos=False):
     if registrar_pasos:
         info["pasos"] = pasos
     return info
+
+def gauss_jordan_homogeneo_info(A, registrar_pasos=False):
+    """Analiza el sistema homogéneo A x = 0.
+    Estrategia general:
+        1. Formamos la matriz aumentada (A | 0) añadiendo una sola columna de ceros.
+        2. Reutilizamos la misma rutina de análisis para sistemas generales (gauss_jordan_info).
+             - Esa rutina clasifica como 'UNICA' (equivalente a solo trivial) o 'INFINITAS'.
+             - En un sistema homogéneo nunca aparece el caso inconsistente.
+        3. Traducimos:
+                 'UNICA'     -> solucion = 'TRIVIAL'    (solo vector cero)  -> independencia lineal True
+                 'INFINITAS' -> solucion = 'NO_TRIVIAL' (existen libres)    -> independencia lineal False
+        4. Si hay variables libres, reconstruimos las expresiones de las variables con pivote
+           en función de las libres para mostrarlas como dependencias.
+    """
+    if A is None or len(A) == 0:
+        raise ValueError("La matriz A no puede ser vacía.")
+    # Construimos matriz aumentada (A|0)
+    M = []
+    i = 0
+    while i < len(A):
+        fila = list(A[i]) + [[0,1]]  # término independiente cero
+        M.append(fila)
+        i += 1
+    info = gauss_jordan_info(M, registrar_pasos=registrar_pasos)
+    R = info["matriz"]
+    anal_base = info["analisis"]
+    pivotes = anal_base.get("pivotes", [])
+    n = len(R[0]) - 1
+    # En un sistema homogéneo no existe el caso inconsistente
+    libres = []
+    if anal_base["solucion"] == "UNICA":
+        solucion_tipo = "TRIVIAL"
+        independencia = True
+    else:
+    # Caso 'INFINITAS' del analizador general => hay variables libres => solución no trivial
+        solucion_tipo = "NO_TRIVIAL"
+        datos_param = construir_expresiones_parametricas(R, pivotes)
+        libres = datos_param["libres"]
+        independencia = False
+    analisis = {
+        "solucion": solucion_tipo,
+        "independencia": independencia,  # True => LI, False => LD
+        "pivotes": pivotes,
+        "pivotes_nums": [p+1 for p in pivotes],
+        "pivotes_nombres": [f"x{p+1}" for p in pivotes],
+    }
+    # Si existen variables libres, agregamos detalles de su lista y expresiones de dependencia
+    if libres:
+        analisis["libres"] = libres
+        analisis["libres_nombres"] = [f"x{c+1}" for c in libres]
+        datos_param = construir_expresiones_parametricas(R, pivotes)
+        analisis["expresiones"] = datos_param["expresiones"]
+    # Vector solución trivial siempre x = 0; si no trivial también mostramos particular cero
+    vector_sol = []
+    j = 0
+    while j < n:
+        vector_sol.append(f"x{j+1} = 0")
+        j += 1
+    analisis["vector_trivial"] = vector_sol
+    out = {"matriz": R, "analisis": analisis}
+    if registrar_pasos and "pasos" in info:
+        out["pasos"] = info["pasos"]
+    return out
 
 # ----------------------- Operaciones con matrices -----------------------
 

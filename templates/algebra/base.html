@@ -25,6 +25,7 @@
       <a href="{% url 'multiplicacion' %}" class="{% if url_name == 'multiplicacion' %}active{% endif %}">Multiplicación</a>
       <a href="{% url 'gauss' %}" class="{% if url_name == 'gauss' %}active{% endif %}">Gauss</a>
       <a href="{% url 'gauss_jordan' %}" class="{% if url_name == 'gauss_jordan' %}active{% endif %}">Gauss-Jordan</a>
+      <a href="{% url 'homogeneo' %}" class="{% if url_name == 'homogeneo' %}active{% endif %}">Ax = 0</a>
     </nav>
     {% endwith %}
     <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">

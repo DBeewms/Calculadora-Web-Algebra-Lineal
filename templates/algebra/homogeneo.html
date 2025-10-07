@@ -1,0 +1,104 @@
+{% extends "algebra/base.html" %}
+{% block title %}Sistema homogéneo{% endblock %}
+{% block content %}
+<h2>Sistema homogéneo A x = 0</h2>
+<form method="post" class="matrix-form" data-mode="simple">{% csrf_token %}
+  <div class="controls">
+    <div class="control"><label>Ecuaciones</label><input type="number" min="1" value="2" data-target="rows"/></div>
+    <div class="control"><label>Variables</label><input type="number" min="1" value="2" data-target="cols"/></div>
+    <label class="toggle" id="toggle-steps-hom">
+      <input type="checkbox" name="show_steps" checked>
+      <span class="toggle-track"></span>
+      <span class="toggle-thumb"></span>
+      <span class="toggle-label">Mostrar pasos</span>
+    </label>
+    <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+  </div>
+  <div class="matrix-aug panel" style="padding-top:8px">
+    <div class="matrix" data-name="matrizA"></div>
+    <div class="aug-bar">|</div>
+    <div class="matrix zero-vector" aria-label="Vector solución trivial"></div>
+    <input type="hidden" name="matrizA"/>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+    <button type="button" class="btn ghost" data-action="example" data-example="simple">Ejemplo</button>
+    <button type="submit" class="btn primary">Resolver</button>
+  </div>
+</form>
+
+{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+
+{% if resultado and analisis %}
+<section class="panel highlight">
+  <div class="panel-header">
+    <h3 class="panel-title">Resultado y análisis</h3>
+    <div class="panel-actions">
+      <span class="badge">Matriz A {{ dims.A }}</span>
+      <span class="badge">Forma escalonada reducida</span>
+      <span class="badge">Ax = 0</span>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="matrix-result">
+      <table class="matriz">
+        {% for fila in resultado %}
+          <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+        {% endfor %}
+      </table>
+    </div>
+    <hr style="margin:16px 0; border:none; border-top:1px solid var(--border)"/>
+    <p><strong>Tipo de solución:</strong>
+      {% if analisis.solucion == 'TRIVIAL' %}<span class="tag success">Solo solución trivial</span>
+      {% else %}<span class="tag info">Existe solución no trivial</span>{% endif %}
+    </p>
+    <p><strong>Independencia lineal:</strong>
+      {% if analisis.independencia %}<span class="tag success">Vectores (columnas de A) linealmente independientes</span>
+      {% else %}<span class="tag danger">Vectores linealmente dependientes</span>{% endif %}
+    </p>
+    {% if analisis.solucion == 'TRIVIAL' %}
+      <div>
+        <strong>Solución trivial:</strong>
+        <ul class="inline-cards mini">{% for linea in analisis.vector_trivial %}<li>{{ linea }}</li>{% endfor %}</ul>
+      </div>
+    {% else %}
+      <div>
+        <p><strong>Variables libres:</strong>
+          {% if analisis.libres_nombres %}{% for name in analisis.libres_nombres %}{{ name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}—{% endif %}
+        </p>
+        <p><strong>Dependencias (expresan variables pivote en función de libres):</strong></p>
+        <ul class="inline-cards">{% for ex in analisis.expresiones %}<li>{{ ex }}</li>{% endfor %}</ul>
+        <p class="muted small">Cualquier variable libre ≠ 0 produce una solución no trivial.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if pasos %}
+<details open class="panel">
+  <summary class="panel-title">Pasos del procedimiento</summary>
+  <ol class="steps timeline">
+    {% for p in pasos %}
+      <li>
+        <div class="step-title">{{ p.operacion }}</div>
+        <div class="step-matrix">
+          <table class="matriz mini">
+            {% for fila in p.matriz %}
+              <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+            {% endfor %}
+          </table>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</details>
+{% endif %}
+{% block extra_js %}
+{% if error %}
+<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
+{% elif resultado %}
+<script>Swal.fire({icon:'success', title:'Análisis homogéneo listo', timer:1800, showConfirmButton:false});</script>
+{% endif %}
+{% endblock %}
+{% endblock %}

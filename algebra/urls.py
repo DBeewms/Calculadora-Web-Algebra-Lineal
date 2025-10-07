@@ -7,4 +7,5 @@ urlpatterns = [
     path("multiplicacion/", views.multiplicacion, name="multiplicacion"),
     path("gauss/", views.gauss, name="gauss"),
     path("gauss-jordan/", views.gauss_jordan, name="gauss_jordan"),
+    path("homogeneo/", views.homogeneo, name="homogeneo"),
 ]

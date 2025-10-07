@@ -131,3 +131,25 @@ def gauss_jordan(request: HttpRequest):
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/gauss_jordan.html", ctx)
+
+def homogeneo(request: HttpRequest):
+    """Vista para resolver A x = 0 y analizar independencia lineal.
+    Reutiliza Gauss-Jordan sobre (A|0)."""
+    ctx = {}
+    if request.method == "POST":
+        try:
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            want_steps = bool(request.POST.get("show_steps"))
+            info = op.gauss_jordan_homogeneo_info(A, registrar_pasos=want_steps)
+            ctx["resultado"] = _render_matriz(info["matriz"])
+            ctx["analisis"] = info["analisis"]
+            if want_steps and "pasos" in info:
+                ctx["pasos"] = [
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
+                    for p in info["pasos"]
+                ]
+            if A:
+                ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}"}
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/homogeneo.html", ctx)
