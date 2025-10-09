@@ -72,7 +72,7 @@ def _gauss_jordan_detallado(M):
         fila_pivote += 1
         col += 1
     # Estado final
-    registrar("Matriz en forma escalonada reducida por filas (final)")
+    registrar("Matriz en forma escalonada reducida por filas")
     # Identificar columnas pivote
     pivotes = []
     r = 0
@@ -163,10 +163,9 @@ def eliminacion_gauss(M):
     return [R, pivotes, pasos]
 
 def gauss(M, registrar_pasos=False):
-    """Envuelve la eliminación de Gauss devolviendo formato amigable a las vistas.
-
-    - Si registrar_pasos es True: retorna (R, pasos)
-    - En caso contrario: retorna sólo R
+    """
+    Si registrar_pasos es True: retorna (R, pasos)
+    En caso contrario, retorna sólo R
     """
     R, _pivotes, pasos = eliminacion_gauss(M)
     return (R, pasos) if registrar_pasos else R
