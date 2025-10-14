@@ -71,10 +71,33 @@
       } else if(mode === 'mul'){
         const rA = +form.querySelector('[data-target="rowsA"]').value || 2;
         const pc = +form.querySelector('[data-target="colsArowsB"]').value || 2;
-        const cB = +form.querySelector('[data-target="colsB"]').value || 2;
+        const colsBInput = form.querySelector('[data-target="colsB"]');
+        let cB = +(colsBInput?.value) || 2;
+        const symbolicChk = form.querySelector('input[name="vector_symbolic"]');
         const [boxA, boxB] = matrices;
         buildMatrix(boxA, rA, pc);
+        if(symbolicChk && symbolicChk.checked){
+          cB = 1; // vector columna
+          if(colsBInput){
+            colsBInput.value = '1';
+            colsBInput.disabled = true;
+            colsBInput.title = 'Bloqueado: vector simbólico fuerza 1 columna en B';
+          }
+        } else {
+          if(colsBInput){
+            colsBInput.disabled = false;
+            colsBInput.title = '';
+          }
+        }
         buildMatrix(boxB, pc, cB);
+        if(symbolicChk && symbolicChk.checked){
+          // Colocar placeholders x1, x2, ... por fila
+          let idx = 1;
+          [...boxB.querySelectorAll('tr')].forEach(tr=>{
+            const inp = tr.querySelector('input');
+            if(inp){ inp.placeholder = 'x' + (idx++); inp.inputMode = 'text'; }
+          });
+        }
       } else if(mode === 'aug'){
         const r = +form.querySelector('[data-target="rows"]').value || 2;
         const c = +form.querySelector('[data-target="cols"]').value || 2;
@@ -178,6 +201,70 @@
 
   document.addEventListener('DOMContentLoaded', ()=>{
     document.querySelectorAll('form.matrix-form').forEach(initForm);
+    // Mostrar/Ocultar control de precisión según formato de resultado
+    document.querySelectorAll('form.matrix-form').forEach(form=>{
+      const fmt = form.querySelector('select[name="result_format"]');
+      const precInput = form.querySelector('input[name="precision"]');
+      if(!fmt || !precInput) return;
+      const precCtl = precInput.closest('.control');
+      const syncPrec = ()=>{
+        if(fmt.value === 'dec') { precCtl.style.display = ''; }
+        else { precCtl.style.display = 'none'; }
+      };
+      syncPrec();
+      fmt.addEventListener('change', syncPrec);
+    });
+    // Sincronizar el toggle de vector simbólico con el tamaño de B y bloquear Columnas(B)
+    document.querySelectorAll('form.matrix-form[data-mode="mul"]').forEach(form=>{
+      const chk = form.querySelector('input[name="vector_symbolic"]');
+      const colsBInput = form.querySelector('[data-target="colsB"]');
+      const colsBCtl = colsBInput ? colsBInput.closest('.control') : null;
+      if(!chk || !colsBInput) return;
+      const resizeBtn = form.querySelector('[data-action="resize"]');
+      const syncSymbolic = ()=>{
+        if(chk.checked){
+          colsBInput.value = '1';
+          colsBInput.disabled = true;
+          colsBInput.setAttribute('readonly','readonly');
+          colsBInput.title = 'Bloqueado: vector simbólico fuerza 1 columna en B';
+          if(colsBCtl) colsBCtl.style.display = 'none';
+        } else {
+          colsBInput.disabled = false;
+          colsBInput.removeAttribute('readonly');
+          colsBInput.title = '';
+          if(colsBCtl) colsBCtl.style.display = '';
+        }
+        resizeBtn?.click();
+      };
+      // Si intentan escribir mientras está activo, forzar 1
+      colsBInput.addEventListener('input', ()=>{
+        if(chk.checked){
+          colsBInput.value = '1';
+        }
+      });
+      colsBInput.addEventListener('change', ()=>{
+        if(chk.checked){ colsBInput.value = '1'; }
+      });
+      colsBInput.addEventListener('keydown', (e)=>{
+        if(chk.checked){ e.preventDefault(); }
+      });
+      colsBInput.addEventListener('wheel', (e)=>{
+        if(chk.checked){ e.preventDefault(); }
+      }, { passive:false });
+      chk.addEventListener('change', syncSymbolic);
+      // Sincroniza estado inicial al cargar
+      syncSymbolic();
+    });
+
+    // Guardia adicional: en formularios de multiplicación, si simbólico está activo, mantener colsB=1
+    document.querySelectorAll('form.matrix-form[data-mode="mul"]').forEach(form=>{
+      const chk = form.querySelector('input[name="vector_symbolic"]');
+      const colsBInput = form.querySelector('[data-target="colsB"]');
+      if(!chk || !colsBInput) return;
+      form.addEventListener('input', ()=>{
+        if(chk.checked){ colsBInput.value = '1'; }
+      });
+    });
     // Toggle switches activation style
     document.querySelectorAll('.toggle input[type="checkbox"]').forEach(chk=>{
       const root = chk.closest('.toggle');

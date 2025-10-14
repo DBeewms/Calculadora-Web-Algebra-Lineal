@@ -1,6 +1,6 @@
 from . import utilidades as u
 from .utilidades import (
-    texto_fraccion, copiar_matriz, es_cero, es_uno, negativo_fraccion,
+    texto_fraccion, texto_numero, copiar_matriz, es_cero, es_uno, negativo_fraccion,
     dividir_fracciones, sumar_fracciones, restar_fracciones,
     multiplicar_fracciones, simplificar_fraccion,
 )
@@ -28,7 +28,7 @@ def fila_sumar_multiplo(M, i, j, c):
         M[i][k] = sumar_fracciones(M[i][k], termino)
         k = k + 1
 
-def _gauss_jordan_detallado(M):
+def _gauss_jordan_detallado(M, text_fn=texto_fraccion):
     """Aplica Gauss-Jordan (forma escalonada reducida) y devuelve
     (R, pivotes, pasos) con todo el detalle."""
     R = copiar_matriz(M)
@@ -60,14 +60,14 @@ def _gauss_jordan_detallado(M):
         if not es_uno(piv):
             inv = dividir_fracciones([1,1], piv)
             fila_escalar(R, fila_pivote, inv)
-            registrar("F" + str(fila_pivote+1) + " → (1/" + texto_fraccion(piv) + ")·F" + str(fila_pivote+1))
+            registrar("F" + str(fila_pivote+1) + " → (1/" + text_fn(piv) + ")·F" + str(fila_pivote+1))
         # Anular el resto de la columna
         r = 0
         while r < m:
             if r != fila_pivote and not es_cero(R[r][col]):
                 factor = R[r][col]
                 fila_sumar_multiplo(R, r, fila_pivote, negativo_fraccion(factor))
-                registrar("F" + str(r+1) + " → F" + str(r+1) + " − (" + texto_fraccion(factor) + ")·F" + str(fila_pivote+1))
+                registrar("F" + str(r+1) + " → F" + str(r+1) + " − (" + text_fn(factor) + ")·F" + str(fila_pivote+1))
             r += 1
         fila_pivote += 1
         col += 1
@@ -92,16 +92,16 @@ def _gauss_jordan_detallado(M):
         c += 1
     return [R, pivotes, pasos]
 
-def gauss_jordan(M, registrar_pasos=False):
+def gauss_jordan(M, registrar_pasos=False, text_fn=texto_fraccion):
     """Envuelve Gauss-Jordan devolviendo sólo lo necesario para la vista.
 
     - Si registrar_pasos es True: retorna (R, pasos)
     - En caso contrario: retorna sólo R
     """
-    R, _pivotes, pasos = _gauss_jordan_detallado(M)
+    R, _pivotes, pasos = _gauss_jordan_detallado(M, text_fn=text_fn)
     return (R, pasos) if registrar_pasos else R
 
-def eliminacion_gauss(M):
+def eliminacion_gauss(M, text_fn=texto_fraccion):
     # Eliminación de Gauss para forma escalonada superior
     R = copiar_matriz(M)
     m = len(R)
@@ -131,13 +131,13 @@ def eliminacion_gauss(M):
         if not es_uno(piv):
             inv = dividir_fracciones([1,1], piv)
             fila_escalar(R, fila_pivote, inv)
-            registrar("F" + str(fila_pivote+1) + " → (1/" + texto_fraccion(piv) + ")·F" + str(fila_pivote+1))
+            registrar("F" + str(fila_pivote+1) + " → (1/" + text_fn(piv) + ")·F" + str(fila_pivote+1))
         r = fila_pivote + 1
         while r < m:
             if not es_cero(R[r][col]):
                 factor = R[r][col]
                 fila_sumar_multiplo(R, r, fila_pivote, negativo_fraccion(factor))
-                registrar("F" + str(r+1) + " → F" + str(r+1) + " − (" + texto_fraccion(factor) + ")·F" + str(fila_pivote+1))
+                registrar("F" + str(r+1) + " → F" + str(r+1) + " − (" + text_fn(factor) + ")·F" + str(fila_pivote+1))
             r += 1
         fila_pivote += 1
         col += 1
@@ -162,12 +162,12 @@ def eliminacion_gauss(M):
         c += 1
     return [R, pivotes, pasos]
 
-def gauss(M, registrar_pasos=False):
+def gauss(M, registrar_pasos=False, text_fn=texto_fraccion):
     """
     Si registrar_pasos es True: retorna (R, pasos)
     En caso contrario, retorna sólo R
     """
-    R, _pivotes, pasos = eliminacion_gauss(M)
+    R, _pivotes, pasos = eliminacion_gauss(M, text_fn=text_fn)
     return (R, pasos) if registrar_pasos else R
 
 def analizar_solucion_gauss(R, pivotes):
@@ -324,7 +324,7 @@ def _variables_libres(n, pivotes):
         c += 1
     return libres
 
-def construir_expresiones_parametricas(R, pivotes):
+def construir_expresiones_parametricas(R, pivotes, text_fn=texto_fraccion):
     """Construye expresiones de variables dependientes (variables con pivote)
     en función de las variables libres, asumiendo que 'R' es una matriz
     aumentada ya en forma escalonada reducida por filas
@@ -349,13 +349,13 @@ def construir_expresiones_parametricas(R, pivotes):
         b = R[r][n]
         partes = []
         if not es_cero(b):
-            partes.append(texto_fraccion(b))
+            partes.append(text_fn(b))
         li = 0
         while li < len(libres):
             fcol = libres[li]
             coef = R[r][fcol]
             if not es_cero(coef):
-                frac_txt = texto_fraccion(coef)
+                frac_txt = text_fn(coef)
                 if frac_txt == '1':
                     term = f"- x{fcol+1}"
                 elif frac_txt == '-1':
@@ -369,7 +369,7 @@ def construir_expresiones_parametricas(R, pivotes):
         r += 1
     return {"expresiones": expresiones, "libres": libres}
 
-def gauss_info(M, registrar_pasos=False):
+def gauss_info(M, registrar_pasos=False, text_fn=texto_fraccion):
     """Devuelve toda la información necesaria para la vista de Gauss:
     {
       'matriz': R (forma escalonada),
@@ -378,7 +378,7 @@ def gauss_info(M, registrar_pasos=False):
       'analisis': { tipo, vector_solucion, libres, ... }
     }
     """
-    R, pivotes, pasos = eliminacion_gauss(M)
+    R, pivotes, pasos = eliminacion_gauss(M, text_fn=text_fn)
     base = analizar_solucion_gauss(R, pivotes)
     analisis = {"solucion": base["solucion"], "tipo_forma": base.get("tipo_forma", "ESCALONADA"), "pivotes": pivotes}
     analisis["pivotes_nombres"] = [f"x{p+1}" for p in pivotes]
@@ -389,7 +389,7 @@ def gauss_info(M, registrar_pasos=False):
         vector_sol = []
         j = 0
         while j < n:
-            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            vector_sol.append(f"x{j+1} = {text_fn(base['solucion_particular'][j])}")
             j += 1
         analisis["vector_solucion"] = vector_sol
     elif base["solucion"] == "INFINITAS":
@@ -400,7 +400,7 @@ def gauss_info(M, registrar_pasos=False):
         vector_sol = []
         j = 0
         while j < n:
-            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            vector_sol.append(f"x{j+1} = {text_fn(base['solucion_particular'][j])}")
             j += 1
         analisis["vector_solucion"] = vector_sol
     else:  # INCONSISTENTE
@@ -422,16 +422,16 @@ def gauss_info(M, registrar_pasos=False):
                 break
             i += 1
         if fila_inc != -1:
-            analisis["detalle"] = f"Fila {fila_inc+1} indica 0 = {texto_fraccion(R[fila_inc][ncols])}"
+            analisis["detalle"] = f"Fila {fila_inc+1} indica 0 = {text_fn(R[fila_inc][ncols])}"
     info = {"matriz": R, "pivotes": pivotes, "analisis": analisis}
     if registrar_pasos:
         info["pasos"] = pasos
     return info
 
-def gauss_jordan_info(M, registrar_pasos=False):
+def gauss_jordan_info(M, registrar_pasos=False, text_fn=texto_fraccion):
     """Devuelve información extendida para la vista Gauss-Jordan, incluyendo
     expresiones paramétricas cuando hay variables libres."""
-    R, pivotes, pasos = _gauss_jordan_detallado(M)
+    R, pivotes, pasos = _gauss_jordan_detallado(M, text_fn=text_fn)
     base = analizar_solucion(R, pivotes)
     analisis = {
         "solucion": base["solucion"],
@@ -445,11 +445,11 @@ def gauss_jordan_info(M, registrar_pasos=False):
         vector_sol = []
         j = 0
         while j < n:
-            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            vector_sol.append(f"x{j+1} = {text_fn(base['solucion_particular'][j])}")
             j += 1
         analisis["vector_solucion"] = vector_sol
     elif base["solucion"] == "INFINITAS":
-        datos_param = construir_expresiones_parametricas(R, pivotes)
+        datos_param = construir_expresiones_parametricas(R, pivotes, text_fn=text_fn)
         libres = datos_param["libres"]
         analisis["libres"] = libres
         analisis["libres_nombres"] = [f"x{c+1}" for c in libres]
@@ -458,7 +458,7 @@ def gauss_jordan_info(M, registrar_pasos=False):
         vector_sol = []
         j = 0
         while j < n:
-            vector_sol.append(f"x{j+1} = {texto_fraccion(base['solucion_particular'][j])}")
+            vector_sol.append(f"x{j+1} = {text_fn(base['solucion_particular'][j])}")
             j += 1
         analisis["vector_solucion"] = vector_sol
     else:  # INCONSISTENTE
@@ -480,13 +480,13 @@ def gauss_jordan_info(M, registrar_pasos=False):
                 break
             i += 1
         if fila_inc != -1:
-            analisis["detalle"] = f"Fila {fila_inc+1} indica 0 = {texto_fraccion(R[fila_inc][ncols])}"
+            analisis["detalle"] = f"Fila {fila_inc+1} indica 0 = {text_fn(R[fila_inc][ncols])}"
     info = {"matriz": R, "pivotes": pivotes, "analisis": analisis}
     if registrar_pasos:
         info["pasos"] = pasos
     return info
 
-def gauss_jordan_homogeneo_info(A, registrar_pasos=False):
+def gauss_jordan_homogeneo_info(A, registrar_pasos=False, text_fn=texto_fraccion):
     """Analiza el sistema homogéneo A x = 0.
     Estrategia general:
         1. Formamos la matriz aumentada (A | 0) añadiendo una sola columna de ceros.
@@ -508,7 +508,7 @@ def gauss_jordan_homogeneo_info(A, registrar_pasos=False):
         fila = list(A[i]) + [[0,1]]  # término independiente cero
         M.append(fila)
         i += 1
-    info = gauss_jordan_info(M, registrar_pasos=registrar_pasos)
+    info = gauss_jordan_info(M, registrar_pasos=registrar_pasos, text_fn=text_fn)
     R = info["matriz"]
     anal_base = info["analisis"]
     pivotes = anal_base.get("pivotes", [])
@@ -519,9 +519,9 @@ def gauss_jordan_homogeneo_info(A, registrar_pasos=False):
         solucion_tipo = "TRIVIAL"
         independencia = True
     else:
-    # Caso 'INFINITAS' del analizador general => hay variables libres => solución no trivial
+        # Caso 'INFINITAS' del analizador general => hay variables libres => solución no trivial
         solucion_tipo = "NO_TRIVIAL"
-        datos_param = construir_expresiones_parametricas(R, pivotes)
+        datos_param = construir_expresiones_parametricas(R, pivotes, text_fn=text_fn)
         libres = datos_param["libres"]
         independencia = False
     analisis = {
@@ -535,7 +535,6 @@ def gauss_jordan_homogeneo_info(A, registrar_pasos=False):
     if libres:
         analisis["libres"] = libres
         analisis["libres_nombres"] = [f"x{c+1}" for c in libres]
-        datos_param = construir_expresiones_parametricas(R, pivotes)
         analisis["expresiones"] = datos_param["expresiones"]
     # Vector solución trivial siempre x = 0; si no trivial también mostramos particular cero
     vector_sol = []
@@ -589,7 +588,7 @@ def _validar_dimensiones_multiplicacion(A, B):
     if pA != pB:
         raise ValueError("Para multiplicar, el número de columnas de A debe ser igual al número de filas de B.")
 
-def multiplicar_matrices(A, B, registrar_pasos=False):
+def multiplicar_matrices(A, B, registrar_pasos=False, text_fn=texto_fraccion):
     """Multiplica A (m×p) por B (p×n) devolviendo C (m×n).
 
     - Siempre calcula pasos del procedimiento (combinación lineal de columnas).
@@ -652,7 +651,7 @@ def multiplicar_matrices(A, B, registrar_pasos=False):
                     C[i][j] = sumar_fracciones(C[i][j], termino)
                     i += 1
                 pasos.append({
-                    "operacion": f"Columna {j+1} (paso {paso_col_idx}): añadimos {texto_fraccion(coef)} × (columna A{ k+1 })",
+                    "operacion": f"Columna {j+1} (paso {paso_col_idx}): añadimos {text_fn(coef)} × (columna A{ k+1 })",
                     "matriz": copiar_matriz(C),
                     "tipo": "simple"
                 })
@@ -664,7 +663,7 @@ def multiplicar_matrices(A, B, registrar_pasos=False):
         while k < p:
             coef = B[k][j]
             if not u.es_cero(coef):
-                partes.append(texto_fraccion(coef) + "·A" + str(k+1))
+                partes.append(text_fn(coef) + "·A" + str(k+1))
             k += 1
         resumen = " + ".join(partes) if partes else "0"
         pasos.append({
@@ -675,3 +674,120 @@ def multiplicar_matrices(A, B, registrar_pasos=False):
         j += 1
 
     return (C, pasos) if registrar_pasos else C
+
+def multiplicar_escalar_matriz(c, A, registrar_pasos=False, text_fn=texto_fraccion):
+    """Devuelve c·A, escalando cada entrada de A por el escalar c (fracción [n,d])."""
+    if A is None or len(A) == 0:
+        raise ValueError("La matriz A no puede ser vacía.")
+    m = len(A); n = len(A[0])
+    # Validar rectangularidad
+    i = 0
+    while i < m:
+        if len(A[i]) != n:
+            raise ValueError("La matriz A no es rectangular.")
+        i += 1
+    C = []
+    i = 0
+    while i < m:
+        fila = []
+        j = 0
+        while j < n:
+            fila.append(multiplicar_fracciones(c, A[i][j]))
+            j += 1
+        C.append(fila)
+        i += 1
+    pasos = []
+    if registrar_pasos:
+        pasos.append({
+            "operacion": f"Escalamos cada entrada por {text_fn(c)}",
+            "matriz": copiar_matriz(C),
+            "tipo": "simple"
+        })
+    return (C, pasos) if registrar_pasos else (C, None)
+
+def multiplicar_matriz_vector_simbolico(A, v_simbolico, registrar_pasos=False, text_fn=texto_fraccion):
+    """Multiplica A (m×n) por un vector simbólico v=[s1,..,sn]^T, devolviendo un vector columna de strings.
+
+    Cada entrada es una combinación lineal: sum_k A[i][k] * v[k]. Se formatea como "a·x + b·y + ..." omitiendo términos con coef=0 y simplificando coef 1/-1.
+    """
+    if A is None or len(A) == 0:
+        raise ValueError("La matriz A no puede ser vacía.")
+    m = len(A); n = len(A[0])
+    if len(v_simbolico) != n:
+        raise ValueError("El vector simbólico debe tener tantas entradas como columnas de A.")
+    # Validar que A sea rectangular
+    i = 0
+    while i < m:
+        if len(A[i]) != n:
+            raise ValueError("La matriz A no es rectangular.")
+        i += 1
+    # Construir expresiones por fila
+    C = []  # m x 1 de strings
+    pasos = []
+    i = 0
+    while i < m:
+        partes = []
+        k = 0
+        while k < n:
+            coef = A[i][k]
+            if not es_cero(coef):
+                coef_txt = text_fn(coef)
+                var = v_simbolico[k]
+                if coef_txt == '1':
+                    term = var
+                elif coef_txt == '-1':
+                    term = f"- {var}"
+                else:
+                    term = f"{coef_txt}·{var}"
+                partes.append(term)
+            k += 1
+        expr = " + ".join(partes) if partes else "0"
+        # Normaliza signos como "+ - x" -> "- x"
+        expr = expr.replace("+ - ", "- ")
+        C.append([expr])
+        if registrar_pasos:
+            pasos.append({
+                "operacion": f"Fila {i+1}: combinación de columnas con variables simbólicas",
+                "matriz": copiar_matriz([[expr]]),
+                "tipo": "simple"
+            })
+        i += 1
+    return (C, pasos) if registrar_pasos else (C, None)
+
+# ----------------------- Transposición -----------------------
+
+def transponer_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
+    """Devuelve la transpuesta A^T intercambiando filas por columnas.
+
+    - A es m×n y A^T será n×m.
+    - Si registrar_pasos es True, incluye un paso informativo con el resultado.
+    """
+    if A is None or len(A) == 0:
+        raise ValueError("La matriz A no puede ser vacía.")
+    m = len(A)
+    n = len(A[0])
+    # Validar rectangularidad
+    i = 0
+    while i < m:
+        if len(A[i]) != n:
+            raise ValueError("Todas las filas de A deben tener la misma cantidad de columnas.")
+        i += 1
+    # Crear A^T (n x m)
+    AT = []
+    j = 0
+    while j < n:
+        fila = []
+        i = 0
+        while i < m:
+            fila.append([A[i][j][0], A[i][j][1]])
+            i += 1
+        AT.append(fila)
+        j += 1
+    if registrar_pasos:
+        pasos = [{
+            "operacion": f"Transpuesta: A^T es de tamaño {n}×{m} (columnas por filas)",
+            "matriz": copiar_matriz(AT),
+            "tipo": "simple"
+        }]
+        return AT, pasos
+    return AT

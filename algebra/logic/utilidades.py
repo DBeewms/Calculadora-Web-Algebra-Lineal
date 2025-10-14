@@ -128,6 +128,36 @@ def texto_decimal(a, decimales=6):
     formato = formato.rstrip('0').rstrip('.') if '.' in formato else formato
     return formato
 
+def _es_decimal_finito(denominador):
+    """Devuelve True si 1/denominador tiene expansión decimal finita (solo factores 2 y 5)."""
+    if denominador == 0:
+        return False
+    d = denominador if denominador >= 0 else -denominador
+    # eliminar factores 2 y 5
+    while d % 2 == 0:
+        d //= 2
+    while d % 5 == 0:
+        d //= 5
+    return d == 1
+
+def texto_numero(a, modo="frac", decimales=6):
+    """Formatea una fracción [n,d] según el modo solicitado.
+
+    - modo = 'frac'  => fracción exacta (usa texto_fraccion)
+    - modo = 'dec'   => decimal con 'decimales' cifras
+    - modo = 'auto'  => si el decimal es finito, mostrar decimal exacto; en otro caso fracción
+    """
+    if modo == "dec":
+        return texto_decimal(a, decimales=decimales)
+    if modo == "auto":
+        # si el denominador produce decimal finito, mostramos decimal con los dígitos justos
+        if _es_decimal_finito(a[1]):
+            # usar muchos decimales y recortar ceros finales
+            return texto_decimal(a, decimales=max(decimales, 12))
+        return texto_fraccion(a)
+    # por defecto: fracción exacta
+    return texto_fraccion(a)
+
 def copiar_matriz(M):
     R = []
     filas = len(M)

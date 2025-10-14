@@ -41,6 +41,30 @@
         <p>Calcula A · B y, si quieres, muestra el procedimiento.</p>
       </div>
     </a>
+    <a class="card media is-mul" href="{% url 'escalar' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M5 7h6M5 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Escalar</h3>
+        <p>Calcula c · A y muestra el procedimiento.</p>
+      </div>
+    </a>
+    <a class="card media is-mul" href="{% url 'transposicion' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2"/>
+          <path d="M9 9h6v6H9z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Transposición</h3>
+        <p>Calcula A^T (intercambia filas y columnas).</p>
+      </div>
+    </a>
     <a class="card media is-gauss" href="{% url 'gauss' %}">
       <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

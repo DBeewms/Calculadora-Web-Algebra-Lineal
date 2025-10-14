@@ -41,19 +41,68 @@ def _parse_matriz_aumentada(texto: str):
         raise ValueError("Todas las filas deben tener la misma cantidad de columnas.")
     return M
 
-def _render_matriz(M):
-    return [[u.texto_fraccion(x) for x in fila] for fila in (M or [])]
+def _make_text_fn(fmt: str, prec: int):
+    fmt = (fmt or 'frac').lower()
+    if fmt not in ("frac", "dec", "auto"):
+        fmt = "frac"
+    # clamp precision
+    try:
+        p = int(prec)
+    except Exception:
+        p = 6
+    p = max(0, min(p, 12))
+    return (lambda a: u.texto_numero(a, modo=fmt, decimales=p))
+
+def _render_matriz(M, text_fn=None):
+    tf = text_fn or u.texto_fraccion
+    out = []
+    for fila in (M or []):
+        row = []
+        for x in fila:
+            if isinstance(x, str):
+                row.append(x)
+            else:
+                row.append(tf(x))
+        out.append(row)
+    return out
+
+def _is_symbol_token(tok: str) -> bool:
+    t = (tok or "").strip()
+    if not t:
+        return False
+    # Permit x1, x2, r, s, t, etc. Starts with letter
+    return t[0].isalpha()
+
+def _parse_vector_simbolico(texto: str):
+    """Lee una 'matriz' de una columna y devuelve lista de símbolos o '0' para vacíos."""
+    v = []
+    for linea in (texto or "").strip().splitlines():
+        tokens = linea.strip().split()
+        if len(tokens) == 0:
+            continue
+        if len(tokens) != 1:
+            raise ValueError("El vector simbólico debe tener una sola columna.")
+        tok = tokens[0].strip()
+        if not _is_symbol_token(tok):
+            raise ValueError("El vector simbólico debe contener variables como x1, r, s, t (no números).")
+        v.append(tok)
+    return v
 
 def suma(request: HttpRequest):
     ctx = {}
     if request.method == "POST":
         try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
             A = _parse_matriz_simple(request.POST.get("matrizA"))
             B = _parse_matriz_simple(request.POST.get("matrizB"))
             C = op.sumar_matrices(A, B)
-            ctx["resultado"] = _render_matriz(C)
+            ctx["resultado"] = _render_matriz(C, text_fn)
             if A:
                 ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}", "B": f"{len(B)}×{len(B[0])}", "C": f"{len(C)}×{len(C[0])}"}
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/suma.html", ctx)
@@ -62,49 +111,126 @@ def multiplicacion(request: HttpRequest):
     ctx = {}
     if request.method == "POST":
         try:
-            A = _parse_matriz_simple(request.POST.get("matrizA"))
-            B = _parse_matriz_simple(request.POST.get("matrizB"))
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            rawA = request.POST.get("matrizA")
+            rawB = request.POST.get("matrizB")
+            A = _parse_matriz_simple(rawA)
+            # Detectar si B es vector simbólico (todas las filas no vacías con un símbolo)
+            alpha_count = 0
+            non_empty = 0
+            es_vector_simbolico = True
+            for linea in (rawB or "").strip().splitlines():
+                tks = linea.strip().split()
+                if not tks:
+                    continue
+                non_empty += 1
+                if len(tks) != 1 or not _is_symbol_token(tks[0]):
+                    es_vector_simbolico = False
+                    break
+                alpha_count += 1
+            if non_empty == 0:
+                es_vector_simbolico = False
             want_steps = bool(request.POST.get("show_steps"))
-            if want_steps:
-                C, pasos = op.multiplicar_matrices(A, B, registrar_pasos=True)
-                ctx["resultado"] = _render_matriz(C)
-                # Renderizar matrices de cada paso a texto fracción
-                ctx["pasos"] = [
-                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
-                    for p in pasos
-                ]
+            if es_vector_simbolico:
+                v = _parse_vector_simbolico(rawB)
+                # Validaciones
+                if len(A) == 0:
+                    raise ValueError("La matriz A no puede ser vacía.")
+                m = len(A); n = len(A[0])
+                if len(v) != n:
+                    raise ValueError("Para A·x, el vector debe tener tantas entradas como columnas tenga A.")
+                C, pasos = op.multiplicar_matriz_vector_simbolico(A, v, registrar_pasos=want_steps, text_fn=text_fn)
+                ctx["resultado"] = _render_matriz(C, text_fn)  # C es m×1 con strings
+                if want_steps and pasos:
+                    # En pasos, cada matriz puede tener strings/números
+                    ctx["pasos"] = [
+                        {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                        for p in pasos
+                    ]
+                if A:
+                    ctx["dims"] = {
+                        "A": f"{len(A)}×{len(A[0])}",
+                        "B": f"{len(v)}×1",
+                        "C": f"{len(A)}×1"
+                    }
             else:
-                C = op.multiplicar_matrices(A, B)
-                ctx["resultado"] = _render_matriz(C)
-            if A and B:
-                ctx["dims"] = {
-                    "A": f"{len(A)}×{len(A[0])}",
-                    "B": f"{len(B)}×{len(B[0])}",
-                    "C": f"{len(C)}×{len(C[0])}"
-                }
+                B = _parse_matriz_simple(rawB)
+                if want_steps:
+                    C, pasos = op.multiplicar_matrices(A, B, registrar_pasos=True, text_fn=text_fn)
+                    ctx["resultado"] = _render_matriz(C, text_fn)
+                    ctx["pasos"] = [
+                        {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                        for p in pasos
+                    ]
+                else:
+                    C = op.multiplicar_matrices(A, B)
+                    ctx["resultado"] = _render_matriz(C, text_fn)
+                if A and B:
+                    ctx["dims"] = {
+                        "A": f"{len(A)}×{len(A[0])}",
+                        "B": f"{len(B)}×{len(B[0])}",
+                        "C": f"{len(C)}×{len(C[0])}"
+                    }
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/multiplicacion.html", ctx)
+
+def escalar(request: HttpRequest):
+    """Multiplicación de escalar por matriz: c · A."""
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            c_txt = (request.POST.get("escalar") or "0").strip()
+            c = u.crear_fraccion_desde_cadena(c_txt)
+            want_steps = bool(request.POST.get("show_steps"))
+            C, pasos = op.multiplicar_escalar_matriz(c, A, registrar_pasos=want_steps, text_fn=text_fn)
+            ctx["resultado"] = _render_matriz(C, text_fn)
+            if want_steps and pasos:
+                ctx["pasos"] = [
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                    for p in pasos
+                ]
+            if A:
+                ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}"}
+            ctx["c"] = c_txt
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/escalar.html", ctx)
 
 def gauss(request: HttpRequest):
     ctx = {}
     if request.method == "POST":
         try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
             M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
             want_steps = bool(request.POST.get("show_steps"))
-            info = op.gauss_info(M, registrar_pasos=want_steps)
+            info = op.gauss_info(M, registrar_pasos=want_steps, text_fn=text_fn)
             R = info["matriz"]
-            ctx["resultado"] = _render_matriz(R)
+            ctx["resultado"] = _render_matriz(R, text_fn)
             ctx["analisis"] = info.get("analisis")
             ctx["pivotes"] = info.get("pivotes")
             if want_steps and "pasos" in info:
                 ctx["pasos"] = [
-                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
                     for p in info["pasos"]
                 ]
             if M:
                 m = len(M); n = len(M[0]) - 1
                 ctx["dims"] = {"A": f"{m}×{n}", "b": f"{m}×1"}
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/gauss.html", ctx)
@@ -113,21 +239,26 @@ def gauss_jordan(request: HttpRequest):
     ctx = {}
     if request.method == "POST":
         try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
             M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
             want_steps = bool(request.POST.get("show_steps"))
-            info = op.gauss_jordan_info(M, registrar_pasos=want_steps)
+            info = op.gauss_jordan_info(M, registrar_pasos=want_steps, text_fn=text_fn)
             R = info["matriz"]
-            ctx["resultado"] = _render_matriz(R)
+            ctx["resultado"] = _render_matriz(R, text_fn)
             ctx["analisis"] = info.get("analisis")
             ctx["pivotes"] = info.get("pivotes")
             if want_steps and "pasos" in info:
                 ctx["pasos"] = [
-                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
                     for p in info["pasos"]
                 ]
             if M:
                 m = len(M); n = len(M[0]) - 1
                 ctx["dims"] = {"A": f"{m}×{n}", "b": f"{m}×1"}
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/gauss_jordan.html", ctx)
@@ -138,18 +269,51 @@ def homogeneo(request: HttpRequest):
     ctx = {}
     if request.method == "POST":
         try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
             A = _parse_matriz_simple(request.POST.get("matrizA"))
             want_steps = bool(request.POST.get("show_steps"))
-            info = op.gauss_jordan_homogeneo_info(A, registrar_pasos=want_steps)
-            ctx["resultado"] = _render_matriz(info["matriz"])
+            info = op.gauss_jordan_homogeneo_info(A, registrar_pasos=want_steps, text_fn=text_fn)
+            ctx["resultado"] = _render_matriz(info["matriz"], text_fn)
             ctx["analisis"] = info["analisis"]
             if want_steps and "pasos" in info:
                 ctx["pasos"] = [
-                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"))}
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
                     for p in info["pasos"]
                 ]
             if A:
                 ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}"}
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/homogeneo.html", ctx)
+
+def transposicion(request: HttpRequest):
+    """Vista para calcular la transpuesta A^T."""
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            want_steps = bool(request.POST.get("show_steps"))
+            if want_steps:
+                AT, pasos = op.transponer_matriz(A, registrar_pasos=True, text_fn=text_fn)
+                ctx["resultado"] = _render_matriz(AT, text_fn)
+                ctx["pasos"] = [
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                    for p in pasos
+                ]
+            else:
+                AT = op.transponer_matriz(A)
+                ctx["resultado"] = _render_matriz(AT, text_fn)
+            if A:
+                ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}", "AT": f"{len(AT)}×{len(AT[0])}"}
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/transposicion.html", ctx)

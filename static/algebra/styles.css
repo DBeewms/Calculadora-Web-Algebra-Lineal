@@ -51,6 +51,7 @@ button:hover{ opacity:.9 }
 .inline{ display:inline-flex; align-items:center; gap:6px; margin-left:10px; color:var(--muted) }
 .controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px }
 .control input{ width:80px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff }
+.control select{ min-width:180px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff }
 .matriz{ border-collapse:collapse; margin-top:12px; background:#fff }
 .matriz td{ border:1px solid var(--border); padding:6px 10px; text-align:center }
 .matriz.mini td{ padding:3px 6px }

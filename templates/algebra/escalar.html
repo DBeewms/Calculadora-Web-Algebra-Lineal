@@ -1,7 +1,7 @@
 {% extends "algebra/base.html" %}
-{% block title %}Suma{% endblock %}
+{% block title %}Escalar{% endblock %}
 {% block content %}
-<h2>Suma de matrices (A + B)</h2>
+<h2>Multiplicación de escalar por matriz (c · A)</h2>
 <form method="post" class="matrix-form" data-mode="sum">{% csrf_token %}
   <div class="controls">
     <div class="control">
@@ -12,6 +12,16 @@
       <label>Columnas</label>
       <input type="number" min="1" value="2" data-target="cols"/>
     </div>
+    <div class="control">
+      <label>Escalar (c)</label>
+      <input type="text" name="escalar" placeholder="1" value="{{ c|default:'' }}" />
+    </div>
+    <label class="toggle" id="toggle-steps-esc">
+      <input type="checkbox" name="show_steps" checked>
+      <span class="toggle-track"></span>
+      <span class="toggle-thumb"></span>
+      <span class="toggle-label">Mostrar pasos</span>
+    </label>
     <div class="control">
       <label>Formato de resultado</label>
       <select name="result_format">
@@ -32,15 +42,9 @@
       <div class="matrix" data-name="matrizA"></div>
       <input type="hidden" name="matrizA"/>
     </div>
-    <div>
-      <label>Matriz B</label>
-      <div class="matrix" data-name="matrizB"></div>
-      <input type="hidden" name="matrizB"/>
-    </div>
   </div>
   <div class="actions">
     <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
-    <button type="button" class="btn ghost" data-action="example" data-example="sum">Ejemplo</button>
     <button type="submit" class="btn primary">Calcular</button>
   </div>
 </form>
@@ -53,9 +57,7 @@
     <h3 class="panel-title">Resultado</h3>
     <div class="panel-actions">
       <span class="badge">A {{ dims.A }}</span>
-      <span class="badge">B {{ dims.B }}</span>
-      <span class="badge">C {{ dims.C }}</span>
-      <span class="badge">A + B</span>
+      <span class="badge">c · A</span>
     </div>
   </div>
   <div class="matrix-result">
@@ -67,11 +69,31 @@
   </div>
 </section>
 {% endif %}
+
+{% if pasos %}
+<details open class="panel">
+  <summary class="panel-title">Pasos del procedimiento</summary>
+  <ol class="steps timeline">
+    {% for p in pasos %}
+      <li>
+        <div class="step-title">{{ p.operacion }}</div>
+        <div class="step-matrix">
+          <table class="matriz mini">
+            {% for fila in p.matriz %}
+              <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+            {% endfor %}
+          </table>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</details>
+{% endif %}
 {% block extra_js %}
 {% if error %}
 <script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
 {% elif resultado %}
-<script>Swal.fire({icon:'success', title:'Operación completada', timer:1800, showConfirmButton:false});</script>
+<script>Swal.fire({icon:'success', title:'Escalado listo', timer:1800, showConfirmButton:false});</script>
 {% endif %}
 {% endblock %}
 {% endblock %}

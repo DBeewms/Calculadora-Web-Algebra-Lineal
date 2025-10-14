@@ -12,6 +12,18 @@
       <span class="toggle-thumb"></span>
       <span class="toggle-label">Mostrar pasos</span>
     </label>
+    <div class="control">
+      <label>Formato de resultado</label>
+      <select name="result_format">
+        <option value="frac" {% if result_format == 'frac' or not result_format %}selected{% endif %}>Fracciones exactas</option>
+        <option value="dec" {% if result_format == 'dec' %}selected{% endif %}>Decimales</option>
+        <option value="auto" {% if result_format == 'auto' %}selected{% endif %}>Automático (exacto si finito)</option>
+      </select>
+    </div>
+    <div class="control" style="display:none">
+      <label>Precisión (decimales)</label>
+      <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
+    </div>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
   </div>
   <div class="matrix-aug panel">

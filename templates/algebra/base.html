@@ -22,7 +22,9 @@
     <nav class="pills">
       <a href="{% url 'index' %}" class="{% if url_name == 'index' %}active{% endif %}">Inicio</a>
       <a href="{% url 'suma' %}" class="{% if url_name == 'suma' %}active{% endif %}">Suma</a>
-      <a href="{% url 'multiplicacion' %}" class="{% if url_name == 'multiplicacion' %}active{% endif %}">Multiplicación</a>
+    <a href="{% url 'multiplicacion' %}" class="{% if url_name == 'multiplicacion' %}active{% endif %}">Multiplicación</a>
+    <a href="{% url 'escalar' %}" class="{% if url_name == 'escalar' %}active{% endif %}">Escalar</a>
+  <a href="{% url 'transposicion' %}" class="{% if url_name == 'transposicion' %}active{% endif %}">Transposición</a>
       <a href="{% url 'gauss' %}" class="{% if url_name == 'gauss' %}active{% endif %}">Gauss</a>
       <a href="{% url 'gauss_jordan' %}" class="{% if url_name == 'gauss_jordan' %}active{% endif %}">Gauss-Jordan</a>
       <a href="{% url 'homogeneo' %}" class="{% if url_name == 'homogeneo' %}active{% endif %}">Ax = 0</a>
@@ -42,7 +44,7 @@
   <main class="container container-narrow">
     {% block content %}{% endblock %}
   </main>
-  <script src="{% static 'algebra/app.js' %}"></script>
+  <script src="{% static 'algebra/app.js' %}?v=20251013"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
