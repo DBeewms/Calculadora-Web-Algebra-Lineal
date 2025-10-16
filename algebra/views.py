@@ -317,3 +317,52 @@ def transposicion(request: HttpRequest):
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/transposicion.html", ctx)
+
+def inversa(request: HttpRequest):
+    """Vista para calcular la inversa de A si existe."""
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            # Validación básica: cuadrada
+            if not A or len(A) == 0:
+                raise ValueError("La matriz A no puede ser vacía.")
+            if any(len(f) != len(A[0]) for f in A):
+                raise ValueError("Todas las filas deben tener la misma cantidad de columnas.")
+            if len(A) != len(A[0]):
+                info = {"invertible": False, "razon": "A no es cuadrada"}
+                ctx["no_invertible"] = "A no es cuadrada (no tiene inversa)."
+            want_steps = bool(request.POST.get("show_steps"))
+            if want_steps:
+                info, pasos = op.inversa_matriz(A, registrar_pasos=True, text_fn=text_fn)
+            else:
+                info = op.inversa_matriz(A, registrar_pasos=False, text_fn=text_fn)
+                pasos = None
+            if info.get("invertible"):
+                inv = info.get("inversa")
+                ctx["resultado"] = _render_matriz(inv, text_fn)
+                estado = "INVERTIBLE"
+                singular = False
+            else:
+                ctx["no_invertible"] = info.get("razon", "No invertible")
+                estado = "NO_INVERTIBLE"
+                singular = True
+            n = len(A); m = len(A[0])
+            ctx["dims"] = {"A": f"{n}×{m}"}
+            if info.get("invertible"):
+                ctx["dims"]["Ainv"] = f"{n}×{m}"
+            ctx["estado"] = estado
+            ctx["singular"] = singular
+            if pasos:
+                ctx["pasos"] = [
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                    for p in pasos
+                ]
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/inversa.html", ctx)

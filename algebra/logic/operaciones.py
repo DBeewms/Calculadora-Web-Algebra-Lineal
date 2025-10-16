@@ -791,3 +791,176 @@ def transponer_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
         }]
         return AT, pasos
     return AT
+
+# ----------------------- Inversa -----------------------
+
+def _identidad(n):
+    I = []
+    i = 0
+    while i < n:
+        fila = []
+        j = 0
+        while j < n:
+            fila.append([1,1] if i == j else [0,1])
+            j += 1
+        I.append(fila)
+        i += 1
+    return I
+
+def inversa_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
+    """Calcula la inversa de A si existe.
+
+    Devuelve:
+      - Si registrar_pasos: (info, pasos)
+      - Si no: info
+
+    info = {
+      'invertible': bool,
+      'inversa': matriz | None,
+      'metodo': '2x2' | 'gauss' | '1x1',
+      'razon': str opcional (cuando no es invertible)
+    }
+    """
+    if A is None or len(A) == 0:
+        raise ValueError("La matriz A no puede ser vacía.")
+    n = len(A)
+    # Validar cuadrada
+    i = 0
+    while i < n:
+        if len(A[i]) != len(A[0]):
+            raise ValueError("A debe ser rectangular.")
+        i += 1
+    m = len(A[0])
+    if n != m:
+        return ({"invertible": False, "inversa": None, "metodo": "gauss", "razon": "A no es cuadrada."}, []) if registrar_pasos else {"invertible": False, "inversa": None, "metodo": "gauss", "razon": "A no es cuadrada."}
+
+    pasos = []
+
+    # Caso 1x1
+    if n == 1:
+        a11 = A[0][0]
+        if es_cero(a11):
+            info = {"invertible": False, "inversa": None, "metodo": "1x1", "razon": "a11 = 0"}
+            return (info, pasos) if registrar_pasos else info
+        inv = [[dividir_fracciones([1,1], a11)]]
+        if registrar_pasos:
+            pasos.append({"operacion": f"Inversa de 1×1: A^{-1} = 1/a11", "matriz": copiar_matriz(inv), "tipo": "simple"})
+        info = {"invertible": True, "inversa": inv, "metodo": "1x1"}
+        return (info, pasos) if registrar_pasos else info
+
+    # Caso 2x2 fórmula
+    if n == 2:
+        a = A[0][0]; b = A[0][1]; c = A[1][0]; d = A[1][1]
+        ad = multiplicar_fracciones(a, d)
+        bc = multiplicar_fracciones(b, c)
+        det = restar_fracciones(ad, bc)
+        if es_cero(det):
+            info = {"invertible": False, "inversa": None, "metodo": "2x2", "razon": "ad − bc = 0"}
+            if registrar_pasos:
+                pasos.append({"operacion": f"Determinante ad−bc = {text_fn(det)} = 0 ⇒ no invertible", "matriz": copiar_matriz(A), "tipo": "simple"})
+            return (info, pasos) if registrar_pasos else info
+        inv_det = [det[1], det[0]]
+        ATmp = [
+            [ d, negativo_fraccion(b) ],
+            [ negativo_fraccion(c), a ]
+        ]
+        inv = []
+        i = 0
+        while i < 2:
+            fila = []
+            j = 0
+            while j < 2:
+                fila.append(multiplicar_fracciones(ATmp[i][j], inv_det))
+                j += 1
+            inv.append(fila)
+            i += 1
+        if registrar_pasos:
+            pasos.append({"operacion": "Fórmula 2×2: A^{-1} = 1/(ad−bc) [ d  −b ; −c  a ]", "matriz": copiar_matriz(inv), "tipo": "simple"})
+        info = {"invertible": True, "inversa": inv, "metodo": "2x2"}
+        return (info, pasos) if registrar_pasos else info
+
+    # Caso n≥3: Gauss-Jordan sobre [A | I]
+    # Construir matriz aumentada con I a la derecha
+    ancho = n * 2
+    M = []
+    i = 0
+    while i < n:
+        fila = []
+        j = 0
+        while j < n:
+            fila.append([A[i][j][0], A[i][j][1]])
+            j += 1
+        # añadir identidad
+        j = 0
+        while j < n:
+            fila.append([1,1] if i == j else [0,1])
+            j += 1
+        M.append(fila)
+        i += 1
+    if registrar_pasos:
+        pasos.append({"operacion": "Formamos [A | I]", "matriz": copiar_matriz(M), "tipo": "simple"})
+
+    # Gauss-Jordan sobre primeras n columnas
+    fila_piv = 0
+    col = 0
+    while col < n and fila_piv < n:
+        # buscar pivote
+        r = fila_piv
+        piv_row = -1
+        while r < n:
+            if not es_cero(M[r][col]):
+                piv_row = r; break
+            r += 1
+        if piv_row == -1:
+            info = {"invertible": False, "inversa": None, "metodo": "gauss", "razon": f"Columna {col+1} sin pivote"}
+            return (info, pasos) if registrar_pasos else info
+        if piv_row != fila_piv:
+            fila_intercambiar(M, fila_piv, piv_row)
+            if registrar_pasos:
+                pasos.append({"operacion": f"Intercambiamos filas {fila_piv+1} y {piv_row+1}", "matriz": copiar_matriz(M), "tipo": "fila"})
+        piv = M[fila_piv][col]
+        if not es_uno(piv):
+            c = [piv[1], piv[0]]  # multiplicar por 1/piv
+            fila_escalar(M, fila_piv, c)
+            if registrar_pasos:
+                pasos.append({"operacion": f"Escalamos fila {fila_piv+1} para hacer pivote = 1", "matriz": copiar_matriz(M), "tipo": "fila"})
+        # eliminar en otras filas
+        r = 0
+        while r < n:
+            if r != fila_piv and not es_cero(M[r][col]):
+                factor = negativo_fraccion(M[r][col])
+                fila_sumar_multiplo(M, r, fila_piv, factor)
+                if registrar_pasos:
+                    pasos.append({"operacion": f"Anulamos entrada ({r+1},{col+1}) con la fila {fila_piv+1}", "matriz": copiar_matriz(M), "tipo": "fila"})
+            r += 1
+        fila_piv += 1
+        col += 1
+
+    # extra: verificar que el bloque izquierdo es I
+    i = 0
+    while i < n:
+        j = 0
+        while j < n:
+            if i == j and not es_uno(M[i][j]):
+                info = {"invertible": False, "inversa": None, "metodo": "gauss", "razon": "El bloque izquierdo no es identidad"}
+                return (info, pasos) if registrar_pasos else info
+            if i != j and not es_cero(M[i][j]):
+                info = {"invertible": False, "inversa": None, "metodo": "gauss", "razon": "No se logró identidad en A"}
+                return (info, pasos) if registrar_pasos else info
+            j += 1
+        i += 1
+    # extraer derecha como inversa
+    inv = []
+    i = 0
+    while i < n:
+        fila = []
+        j = n
+        while j < ancho:
+            fila.append([M[i][j][0], M[i][j][1]])
+            j += 1
+        inv.append(fila)
+        i += 1
+    if registrar_pasos:
+        pasos.append({"operacion": "Extraemos la derecha: A^{-1}", "matriz": copiar_matriz(inv), "tipo": "simple"})
+    info = {"invertible": True, "inversa": inv, "metodo": "gauss"}
+    return (info, pasos) if registrar_pasos else info
