@@ -857,7 +857,16 @@ def inversa_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
         if es_cero(det):
             info = {"invertible": False, "inversa": None, "metodo": "2x2", "razon": "ad − bc = 0"}
             if registrar_pasos:
-                pasos.append({"operacion": f"Determinante ad−bc = {text_fn(det)} = 0 ⇒ no invertible", "matriz": copiar_matriz(A), "tipo": "simple"})
+                pasos.append({
+                    "operacion": f"Paso 1: ad = {text_fn(ad)}, bc = {text_fn(bc)}",
+                    "matriz": copiar_matriz(A),
+                    "tipo": "simple"
+                })
+                pasos.append({
+                    "operacion": f"Paso 2: Determinante det = ad − bc = {text_fn(ad)} − {text_fn(bc)} = 0 ⇒ A no es invertible",
+                    "matriz": copiar_matriz(A),
+                    "tipo": "simple"
+                })
             return (info, pasos) if registrar_pasos else info
         inv_det = [det[1], det[0]]
         ATmp = [
@@ -875,13 +884,32 @@ def inversa_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
             inv.append(fila)
             i += 1
         if registrar_pasos:
-            pasos.append({"operacion": "Fórmula 2×2: A^{-1} = 1/(ad−bc) [ d  −b ; −c  a ]", "matriz": copiar_matriz(inv), "tipo": "simple"})
+            pasos.append({
+                "operacion": f"Paso 1: ad = {text_fn(ad)}, bc = {text_fn(bc)}",
+                "matriz": copiar_matriz(A),
+                "tipo": "simple"
+            })
+            pasos.append({
+                "operacion": f"Paso 2: Determinante det = ad − bc = {text_fn(ad)} − {text_fn(bc)} = {text_fn(det)} ≠ 0",
+                "matriz": copiar_matriz(A),
+                "tipo": "simple"
+            })
+            pasos.append({
+                "operacion": "Paso 3: Matriz adjunta Adj(A) = [ d  −b ; −c  a ]",
+                "matriz": copiar_matriz(ATmp),
+                "tipo": "simple"
+            })
+            pasos.append({
+                "operacion": f"Paso 4: A^{-1} = (1/{text_fn(det)}) · Adj(A)",
+                "matriz": copiar_matriz(inv),
+                "tipo": "simple"
+            })
         info = {"invertible": True, "inversa": inv, "metodo": "2x2"}
         return (info, pasos) if registrar_pasos else info
 
     # Caso n≥3: Gauss-Jordan sobre [A | I]
     # Construir matriz aumentada con I a la derecha
-    ancho = n * 2
+    ancho = n * 2 # duplica el tamaño de la matriz
     M = []
     i = 0
     while i < n:
