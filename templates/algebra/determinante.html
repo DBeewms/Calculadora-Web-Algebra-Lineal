@@ -1,0 +1,85 @@
+{% extends "algebra/base.html" %}
+{% block title %}Determinante{% endblock %}
+{% block content %}
+<h2>Determinante de una matriz (|A|)</h2>
+<form method="post" class="matrix-form" data-mode="simple">{% csrf_token %}
+  <div class="controls">
+    <div class="control"><label>Filas</label><input type="number" min="1" value="3" data-target="rows"/></div>
+    <div class="control"><label>Columnas</label><input type="number" min="1" value="3" data-target="cols"/></div>
+    <label class="toggle">
+      <input type="checkbox" name="show_steps" checked>
+      <span class="toggle-track"></span>
+      <span class="toggle-thumb"></span>
+      <span class="toggle-label">Mostrar pasos</span>
+    </label>
+    <div class="control">
+      <label>Formato de resultado</label>
+      <select name="result_format">
+        <option value="frac" {% if result_format == 'frac' or not result_format %}selected{% endif %}>Fracciones exactas</option>
+        <option value="dec" {% if result_format == 'dec' %}selected{% endif %}>Decimales</option>
+        <option value="auto" {% if result_format == 'auto' %}selected{% endif %}>Automático (exacto si finito)</option>
+      </select>
+    </div>
+    <div class="control" style="display:none">
+      <label>Precisión (decimales)</label>
+      <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
+    </div>
+    <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+  </div>
+  <div class="grid matrices panel">
+    <div>
+      <label>Matriz A</label>
+      <div class="matrix" data-name="matrizA"></div>
+      <input type="hidden" name="matrizA"/>
+    </div>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+    <button type="submit" class="btn primary">Calcular |A|</button>
+  </div>
+</form>
+
+{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+
+{% if det_str %}
+<section class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Resultado</h3>
+    <div class="panel-actions">
+      <span class="badge">A {{ dims.A }}</span>
+      {% if es_cero %}<span class="tag danger">|A| = 0 ⇒ Matriz singular</span>{% else %}<span class="tag success">|A| ≠ 0 ⇒ Matriz no singular</span>{% endif %}
+    </div>
+  </div>
+  <div class="panel-body">
+    <p><strong>|A| =</strong> <span class="math">{{ det_str }}</span></p>
+  </div>
+</section>
+{% endif %}
+
+{% if pasos %}
+<details open class="panel">
+  <summary class="panel-title">Pasos del procedimiento</summary>
+  <ol class="steps timeline">
+    {% for p in pasos %}
+      <li>
+        <div class="step-title">{{ p.operacion }}</div>
+        <div class="step-matrix">
+          <table class="matriz mini">
+            {% for fila in p.matriz %}
+              <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+            {% endfor %}
+          </table>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</details>
+{% endif %}
+{% block extra_js %}
+{% if error %}
+<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
+{% elif det_str %}
+<script>Swal.fire({icon:'success', title:'Determinante calculado', timer:1600, showConfirmButton:false});</script>
+{% endif %}
+{% endblock %}
+{% endblock %}

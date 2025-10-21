@@ -366,3 +366,38 @@ def inversa(request: HttpRequest):
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/inversa.html", ctx)
+
+def determinante(request: HttpRequest):
+    """Vista para calcular el determinante |A| de una matriz cuadrada."""
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            if not A or len(A) == 0:
+                raise ValueError("La matriz A no puede ser vacía.")
+            if len(A) != len(A[0]):
+                raise ValueError("A debe ser cuadrada para calcular |A|.")
+            want_steps = bool(request.POST.get("show_steps"))
+            if want_steps:
+                det, pasos = op.determinante_matriz(A, registrar_pasos=True, text_fn=text_fn)
+            else:
+                det = op.determinante_matriz(A, registrar_pasos=False, text_fn=text_fn)
+                pasos = None
+            det_str = text_fn(det)
+            ctx["det"] = det
+            ctx["det_str"] = det_str
+            ctx["es_cero"] = (det[0] == 0)
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+            ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}"}
+            if pasos:
+                ctx["pasos"] = [
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                    for p in pasos
+                ]
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/determinante.html", ctx)

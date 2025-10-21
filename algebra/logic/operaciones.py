@@ -992,3 +992,132 @@ def inversa_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
         pasos.append({"operacion": "Extraemos la derecha: A^{-1}", "matriz": copiar_matriz(inv), "tipo": "simple"})
     info = {"invertible": True, "inversa": inv, "metodo": "gauss"}
     return (info, pasos) if registrar_pasos else info
+
+# ----------------------- Determinante -----------------------
+
+def _es_triangular_superior(M):
+    n = len(M)
+    i = 1
+    while i < n:
+        j = 0
+        while j < i:
+            if not es_cero(M[i][j]):
+                return False
+            j += 1
+        i += 1
+    return True
+
+def _es_triangular_inferior(M):
+    n = len(M)
+    i = 0
+    while i < n:
+        j = i+1
+        while j < n:
+            if not es_cero(M[i][j]):
+                return False
+            j += 1
+        i += 1
+    return True
+
+def determinante_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
+    """Calcula |A| (determinante) usando aritmética exacta.
+
+    Reglas:
+      - 1x1: |A| = a11
+      - 2x2: |A| = ad − bc
+      - Triangular: producto de la diagonal
+      - General: reducción por filas a triangular superior sin escalar filas.
+        El determinante es el producto de los pivotes, con signo por los intercambios.
+
+    Retorna:
+      - Si registrar_pasos: (det, pasos)
+      - Si no: det
+    """
+    if A is None or len(A) == 0:
+        raise ValueError("La matriz A no puede ser vacía.")
+    n = len(A)
+    # Validar cuadrada
+    i = 0
+    while i < n:
+        if len(A[i]) != n:
+            raise ValueError("La matriz debe ser cuadrada para calcular |A|.")
+        i += 1
+
+    pasos = []
+
+    # 1x1
+    if n == 1:
+        det = [A[0][0][0], A[0][0][1]]
+        if registrar_pasos:
+            pasos.append({"operacion": f"Para 1×1, |A| = a11 = {text_fn(det)}", "matriz": copiar_matriz(A), "tipo": "simple"})
+        return (det, pasos) if registrar_pasos else det
+
+    # 2x2 fórmula
+    if n == 2:
+        a = A[0][0]; b = A[0][1]; c = A[1][0]; d = A[1][1]
+        ad = multiplicar_fracciones(a, d)
+        bc = multiplicar_fracciones(b, c)
+        det = restar_fracciones(ad, bc)
+        if registrar_pasos:
+            pasos.append({"operacion": f"|A| = ad − bc = {text_fn(ad)} − {text_fn(bc)} = {text_fn(det)}", "matriz": copiar_matriz(A), "tipo": "simple"})
+        return (det, pasos) if registrar_pasos else det
+
+    # Atajo: triangular
+    if _es_triangular_superior(A) or _es_triangular_inferior(A):
+        det = [1,1]
+        i = 0
+        while i < n:
+            det = multiplicar_fracciones(det, A[i][i])
+            i += 1
+        if registrar_pasos:
+            pasos.append({"operacion": f"A es triangular ⇒ |A| es el producto de la diagonal = {text_fn(det)}", "matriz": copiar_matriz(A), "tipo": "simple"})
+        return (det, pasos) if registrar_pasos else det
+
+    # General: eliminación a triangular superior sin normalizar filas
+    M = copiar_matriz(A)
+    det = [1,1]
+    signo = 1
+    if registrar_pasos:
+        pasos.append({"operacion": "Reducimos A a forma triangular superior (sin escalar filas)", "matriz": copiar_matriz(M), "tipo": "simple"})
+    k = 0
+    while k < n:
+        # buscar pivote en/abajo de k
+        piv_row = -1
+        r = k
+        while r < n:
+            if not es_cero(M[r][k]):
+                piv_row = r; break
+            r += 1
+        if piv_row == -1:
+            # Columna completamente cero ⇒ determinante 0
+            zero = [0,1]
+            if registrar_pasos:
+                pasos.append({"operacion": f"Columna {k+1} sin pivote no nulo ⇒ |A| = 0", "matriz": copiar_matriz(M), "tipo": "simple"})
+            return (zero, pasos) if registrar_pasos else zero
+        if piv_row != k:
+            fila_intercambiar(M, k, piv_row)
+            signo *= -1
+            if registrar_pasos:
+                pasos.append({"operacion": f"Intercambiamos F{k+1} ↔ F{piv_row+1} ⇒ signo(|A|) cambia", "matriz": copiar_matriz(M), "tipo": "fila"})
+        piv = M[k][k]
+        det = multiplicar_fracciones(det, piv)
+        if registrar_pasos:
+            pasos.append({"operacion": f"Pivote en ({k+1},{k+1}) = {text_fn(piv)} ⇒ acumulamos producto", "matriz": copiar_matriz(M), "tipo": "simple"})
+        # eliminar por debajo sin escalar fila pivote
+        i = k+1
+        while i < n:
+            if not es_cero(M[i][k]):
+                factor = dividir_fracciones(M[i][k], piv)
+                # F_i = F_i − factor * F_k
+                j = k
+                while j < n:
+                    prod = multiplicar_fracciones(factor, M[k][j])
+                    M[i][j] = restar_fracciones(M[i][j], prod)
+                    j += 1
+            i += 1
+        k += 1
+    if signo == -1:
+        det = negativo_fraccion(det)
+    if registrar_pasos:
+        pasos.append({"operacion": f"Producto de pivotes con signo ⇒ |A| = {text_fn(det)}", "matriz": copiar_matriz(M), "tipo": "simple"})
+    return (det, pasos) if registrar_pasos else det
