@@ -24,7 +24,7 @@ body{ font-family:Inter, system-ui, Segoe UI, Arial, sans-serif; margin:0; color
 h2, h3{ font-family:Poppins, Inter, sans-serif }
 h2{ font-size:24px }
 h3{ font-size:18px }
-.topbar{ display:flex; gap:16px; align-items:center; justify-content:space-between; padding:14px 20px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10 }
+.topbar{ display:flex; gap:16px; align-items:center; justify-content:space-between; padding:14px 20px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
 .brand{ display:flex; align-items:center; gap:10px }
 .brand .logo-img{ width:44px; height:44px; object-fit:contain; border-radius:10px }
 .topbar h1{ font-family:Poppins, Inter, sans-serif; letter-spacing:.2px; font-size:18px; margin:0 }
@@ -33,6 +33,24 @@ h3{ font-size:18px }
 .pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:#0f172a; background:#fff }
 .pills a:hover{ border-color:#cbd5e1 }
 .pills a.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
+.menu{ display:flex; gap:10px; align-items:center }
+.menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; text-decoration:none; color:#0f172a; font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
+.menu-home:hover{ background:rgba(57,73,171,.08); border-color:#cbd5e1 }
+.menu-home:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
+.menu-home.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
+.menu .menu-item{ position:relative; padding-bottom:8px }
+.menu .menu-link{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; color:#0f172a; font-weight:600; cursor:pointer; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
+.menu .menu-link::after{ content:"▾"; font-size:12px; opacity:.7; margin-left:4px; transition:transform .2s ease }
+.menu .menu-item.active > .menu-link{ background:var(--primary); color:#fff; border-color:transparent }
+.menu .menu-item:hover > .menu-link{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
+.menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
+.menu .menu-item.open > .menu-link::after, .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
+.menu .dropdown{ position:absolute; top:100%; left:0; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:30 }
+.menu .dropdown a{ display:block; padding:8px 10px; text-decoration:none; color:#0f172a; border-radius:8px; transition:background .2s }
+.menu .dropdown a:hover{ background:rgba(57,73,171,.10) }
+.menu .dropdown a.current{ font-weight:700; color:var(--violet) }
+.menu .menu-item:hover > .dropdown{ display:flex }
+.menu .menu-item.open > .dropdown{ display:flex }
 .container{ padding:24px }
 .container-narrow{ max-width:980px; margin:0 auto }
 .section{ margin-top:32px }
@@ -103,6 +121,9 @@ button:hover{ opacity:.9 }
   .cards.cards-2x2{ grid-template-columns:1fr }
   .howto-grid{ grid-template-columns:1fr }
   .hero .hero-logo{ width:84px }
+  .menu{ flex-wrap:wrap; gap:8px }
+  .menu .dropdown{ position:static; width:100%; box-shadow:none; border-radius:10px; display:none; margin-top:6px }
+  .menu .menu-item.open > .dropdown{ display:flex }
 }
 
 /* Steps */
@@ -116,6 +137,10 @@ button:hover{ opacity:.9 }
 .step-title{ font-weight:600; margin:0 0 6px 0; color:var(--violet); line-height:1.3 }
 .step-matrix{ overflow:auto; border:1px solid var(--border); border-radius:10px; padding:4px 6px; background:var(--card); box-shadow:0 2px 4px rgba(0,0,0,.04) }
 .step-matrix table.matriz.mini{ background:transparent }
+/* Cramer-specific step styling: subtle color accent */
+.steps.timeline.cramer-steps:before{ background:linear-gradient(var(--border), var(--savoy)) }
+.steps.timeline.cramer-steps li:before{ background:var(--savoy) }
+.steps.timeline.cramer-steps .step-title{ color:var(--savoy) }
 
 /* Panels & badges */
 .panel{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin:12px 0; box-shadow:var(--shadow-2) }

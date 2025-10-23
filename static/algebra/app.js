@@ -103,7 +103,7 @@
         const n = +(nCtl?.value) || 2;
         const [boxA, boxb] = matrices;
         if(boxA) buildMatrix(boxA, n, n);
-        if(boxb) buildMatrix(boxb, n, 1);
+        if(boxb){ boxb.setAttribute('data-cols','1'); buildMatrix(boxb, n, 1); }
       } else if(mode === 'aug'){
         const r = +form.querySelector('[data-target="rows"]').value || 2;
         const c = +form.querySelector('[data-target="cols"]').value || 2;
@@ -188,6 +188,24 @@
           let val = 1;
           [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
           [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input')[0].value = String(val++));
+        }
+        if(mode==='cramer'){
+          // Ejemplo simple n=3
+          const n = 3;
+          const nCtl = form.querySelector('[data-target="rowsAcolsArowsB"]');
+          if(nCtl) nCtl.value = String(n);
+          doResize();
+          const [boxA, boxb] = matrices;
+          // A: 3x3 con valores secuenciales
+          let val = 1;
+          if(boxA){
+            [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          }
+          // b: 3x1 con 1,2,3
+          if(boxb){
+            let vb = 1;
+            [...boxb.querySelectorAll('tr')].forEach(tr=>{ const inp = tr.querySelector('input'); if(inp) inp.value = String(vb++); });
+          }
         }
         if(mode==='simple' && ex==='simple'){
           const filas = rnd(1,5);
@@ -302,5 +320,32 @@
         }
       });
     });
+
+    // Dropdown menu: click-to-toggle for touch/mobile, hover works via CSS on desktop
+    (function(){
+      const menu = document.querySelector('.menu');
+      if(!menu) return;
+      const items = menu.querySelectorAll('.menu .has-dropdown');
+      function closeAll(except){
+        items.forEach(it=>{ if(it!==except) { it.classList.remove('open'); const btn = it.querySelector('.menu-link'); if(btn) btn.setAttribute('aria-expanded','false'); } });
+      }
+      items.forEach(it=>{
+        const btn = it.querySelector('.menu-link');
+        btn?.addEventListener('click', (e)=>{
+          e.preventDefault();
+          const isOpen = it.classList.contains('open');
+          closeAll(isOpen ? null : it);
+          it.classList.toggle('open');
+          btn.setAttribute('aria-expanded', it.classList.contains('open') ? 'true' : 'false');
+        });
+      });
+      document.addEventListener('click', (e)=>{
+        const target = e.target;
+        if(!menu.contains(target)){ closeAll(null); }
+      });
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape'){ closeAll(null); }
+      });
+    })();
   });
 })();

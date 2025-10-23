@@ -40,12 +40,13 @@
     </div>
     <div>
       <label>Vector b (n×1)</label>
-      <div class="matrix" data-name="vectorb"></div>
+      <div class="matrix" data-name="vectorb" data-cols="1"></div>
       <input type="hidden" name="vectorb"/>
     </div>
   </div>
   <div class="actions">
     <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+    <button type="button" class="btn ghost" data-action="example" data-example="cramer">Ejemplo</button>
     <button type="submit" class="btn primary">Resolver</button>
   </div>
 </form>
@@ -75,6 +76,12 @@
         {% endfor %}
       </table>
     </div>
+    <div style="margin-top:.5rem">
+      <strong>Vector solución:</strong>
+      <ul class="inline-cards">
+        {% for linea in vector_solucion %}<li>{{ linea }}</li>{% endfor %}
+      </ul>
+    </div>
     {% if componentes %}
       <div class="muted small" style="margin-top:.75rem">
         {% for k,v in componentes.items %}
@@ -90,7 +97,7 @@
 {% if pasos %}
 <details open class="panel">
   <summary class="panel-title">Pasos de Cramer</summary>
-  <ol class="steps timeline">
+  <ol class="steps timeline cramer-steps">
     {% for p in pasos %}
       <li>
         <div class="step-title">{{ p.operacion }}</div>

@@ -433,7 +433,15 @@ def cramer(request: HttpRequest):
             else:
                 # Render vector solución
                 xs = info.get("x", [])
+                # matriz  n×1 (para mostrar también como tabla si se desea)
                 ctx["resultado"] = [[text_fn(xi)] for xi in xs]
+                # listado etiquetado x1=..., x2=... (como en Gauss/Gauss-Jordan)
+                vector_sol = []
+                j = 0
+                while j < len(xs):
+                    vector_sol.append(f"x{j+1} = {text_fn(xs[j])}")
+                    j += 1
+                ctx["vector_solucion"] = vector_sol
             ctx["componentes"] = {k: text_fn(v) for k, v in info.get("componentes", {}).items()}
             ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}", "b": f"{len(b)}×1"}
             if pasos:

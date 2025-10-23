@@ -19,18 +19,45 @@
       <h1>KiwiSolve <small>Calculadora de Álgebra Lineal</small></h1>
     </div>
     {% with request.resolver_match.url_name as url_name %}
-    <nav class="pills">
-      <a href="{% url 'index' %}" class="{% if url_name == 'index' %}active{% endif %}">Inicio</a>
-      <a href="{% url 'suma' %}" class="{% if url_name == 'suma' %}active{% endif %}">Suma</a>
-    <a href="{% url 'multiplicacion' %}" class="{% if url_name == 'multiplicacion' %}active{% endif %}">Multiplicación</a>
-    <a href="{% url 'escalar' %}" class="{% if url_name == 'escalar' %}active{% endif %}">Escalar</a>
-  <a href="{% url 'transposicion' %}" class="{% if url_name == 'transposicion' %}active{% endif %}">Transposición</a>
-  <a href="{% url 'inversa' %}" class="{% if url_name == 'inversa' %}active{% endif %}">Inversa</a>
-  <a href="{% url 'determinante' %}" class="{% if url_name == 'determinante' %}active{% endif %}">Determinante</a>
-  <a href="{% url 'cramer' %}" class="{% if url_name == 'cramer' %}active{% endif %}">Cramer</a>
-      <a href="{% url 'gauss' %}" class="{% if url_name == 'gauss' %}active{% endif %}">Gauss</a>
-      <a href="{% url 'gauss_jordan' %}" class="{% if url_name == 'gauss_jordan' %}active{% endif %}">Gauss-Jordan</a>
-      <a href="{% url 'homogeneo' %}" class="{% if url_name == 'homogeneo' %}active{% endif %}">Ax = 0</a>
+    <nav class="menu" role="navigation" aria-label="Navegación principal">
+      <a href="{% url 'index' %}" class="menu-home {% if url_name == 'index' %}active{% endif %}">Inicio</a>
+
+      <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Matrices</button>
+        <div class="dropdown" role="menu">
+          <a href="{% url 'suma' %}" role="menuitem" class="{% if url_name == 'suma' %}current{% endif %}">Suma de matrices</a>
+          <a href="{% url 'multiplicacion' %}" role="menuitem" class="{% if url_name == 'multiplicacion' %}current{% endif %}">Multiplicación</a>
+          <a href="{% url 'escalar' %}" role="menuitem" class="{% if url_name == 'escalar' %}current{% endif %}">Escalar (c·A)</a>
+          <a href="{% url 'transposicion' %}" role="menuitem" class="{% if url_name == 'transposicion' %}current{% endif %}">Transposición</a>
+        </div>
+      </div>
+
+      <div class="menu-item has-dropdown {% if url_name == 'determinante' or url_name == 'inversa' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Propiedades</button>
+        <div class="dropdown" role="menu">
+          <a href="{% url 'determinante' %}" role="menuitem" class="{% if url_name == 'determinante' %}current{% endif %}">Determinante</a>
+          <a href="{% url 'inversa' %}" role="menuitem" class="{% if url_name == 'inversa' %}current{% endif %}">Inversa</a>
+        </div>
+      </div>
+
+      <div class="menu-item has-dropdown {% if url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Sistemas de ecuaciones</button>
+        <div class="dropdown" role="menu">
+          <a href="{% url 'gauss' %}" role="menuitem" class="{% if url_name == 'gauss' %}current{% endif %}">Eliminación de Gauss</a>
+          <a href="{% url 'gauss_jordan' %}" role="menuitem" class="{% if url_name == 'gauss_jordan' %}current{% endif %}">Gauss-Jordan</a>
+          <a href="{% url 'cramer' %}" role="menuitem" class="{% if url_name == 'cramer' %}current{% endif %}">Regla de Cramer</a>
+          <a href="{% url 'homogeneo' %}" role="menuitem" class="{% if url_name == 'homogeneo' %}current{% endif %}">Sistema homogéneo</a>
+        </div>
+      </div>
+
+      <div class="menu-item has-dropdown">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Contacto</button>
+        <div class="dropdown" role="menu">
+          <a href="{% url 'index' %}#guia" role="menuitem">Guía rápida</a>
+          <a href="{% url 'index' %}#atajos" role="menuitem">Atajos/Procedimiento</a>
+          <a href="{% url 'index' %}#sobre" role="menuitem">Sobre la app</a>
+        </div>
+      </div>
     </nav>
     {% endwith %}
     <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
@@ -47,7 +74,7 @@
   <main class="container container-narrow">
     {% block content %}{% endblock %}
   </main>
-  <script src="{% static 'algebra/app.js' %}?v=20251013"></script>
+  <script src="{% static 'algebra/app.js' %}?v=20251022"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
