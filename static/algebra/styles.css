@@ -42,7 +42,10 @@ h3{ font-size:18px }
 .menu .menu-link:hover{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
 .menu .menu-item:not(.has-dropdown) > .menu-link::after{ content:none }
 .menu .menu-item.active > .menu-link{ background:var(--primary); color:#fff; border-color:transparent }
-.menu .menu-item:hover > .menu-link{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
+/* Evitar que el hover vuelva muy claro los botones activos */
+.menu .menu-item:hover:not(.active) > .menu-link{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
+/* Mantener énfasis al pasar el mouse sobre un item activo */
+.menu .menu-item.active > .menu-link:hover{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,.12) }
 .menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
 .menu .menu-item.open > .menu-link::after, .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
 .menu .dropdown{ position:absolute; top:100%; left:0; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:30 }
