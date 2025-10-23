@@ -18,8 +18,13 @@
       <img class="logo-img" src="{% static 'algebra/KiwiSolveLogo.png' %}" alt="KiwiSolve"/>
       <h1>KiwiSolve <small>Calculadora de Álgebra Lineal</small></h1>
     </div>
+    <button class="burger" id="navToggle" aria-label="Abrir menú" aria-controls="mainMenu" aria-expanded="false">
+      <span class="b-line"></span>
+      <span class="b-line"></span>
+      <span class="b-line"></span>
+    </button>
     {% with request.resolver_match.url_name as url_name %}
-    <nav class="menu" role="navigation" aria-label="Navegación principal">
+    <nav id="mainMenu" class="menu" role="navigation" aria-label="Navegación principal">
       <div class="menu-item has-dropdown {% if url_name == 'index' %}active{% endif %}">
         <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Inicio</button>
         <div class="dropdown" role="menu">

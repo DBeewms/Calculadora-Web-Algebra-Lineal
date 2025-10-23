@@ -415,5 +415,15 @@
         if(e.key === 'Escape'){ closeAll(null); }
       });
     })();
+
+    // Mobile nav toggle (hamburger)
+    const navToggle = document.getElementById('navToggle');
+    const topbar = document.querySelector('.topbar');
+    if(navToggle && topbar){
+      navToggle.addEventListener('click', ()=>{
+        const open = topbar.classList.toggle('nav-open');
+        navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
   });
 })();

@@ -29,6 +29,11 @@ h3{ font-size:18px }
 .brand .logo-img{ width:44px; height:44px; object-fit:contain; border-radius:10px }
 .topbar h1{ font-family:Poppins, Inter, sans-serif; letter-spacing:.2px; font-size:18px; margin:0 }
 .topbar h1 small{ font-weight:600; font-size:12px; color:var(--muted); margin-left:8px }
+.burger{ display:none; position:relative; width:40px; height:34px; border:none; background:transparent; border-radius:8px; cursor:pointer; align-items:center; justify-content:center }
+.burger .b-line{ position:relative; display:block; width:22px; height:2px; background:#0f172a; margin:3px 0; transition:transform .25s ease, opacity .2s }
+.topbar.nav-open .burger .b-line:nth-child(1){ transform:translateY(5px) rotate(45deg) }
+.topbar.nav-open .burger .b-line:nth-child(2){ opacity:0 }
+.topbar.nav-open .burger .b-line:nth-child(3){ transform:translateY(-5px) rotate(-45deg) }
 .pills{ display:flex; gap:8px }
 .pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:#0f172a; background:#fff }
 .pills a:hover{ border-color:#cbd5e1 }
@@ -84,6 +89,7 @@ button:hover{ opacity:.9 }
 .matrix-aug{ display:flex; gap:12px; align-items:center }
 .aug-bar{ font-weight:700; font-size:18px }
 .matrix-result{ overflow:auto; max-width:100% }
+.matrix{ overflow:auto; max-width:100% }
 .alert-error{ margin-top:12px; padding:10px; border:1px solid #e88; border-radius:8px; background:#fee; color:#900 }
 
 /* Cards on index */
@@ -123,6 +129,18 @@ button:hover{ opacity:.9 }
 .media.is-hom .media-icon{ color:var(--savoy); background:rgba(92,107,192,.12) }
 
 @media (max-width: 640px){
+  .container{ padding:16px }
+  .brand .logo-img{ width:36px; height:36px }
+  .topbar h1{ font-size:16px }
+  .topbar h1 small{ display:none }
+  .burger{ display:inline-flex }
+  /* Ocultar menú por defecto y mostrar al abrir */
+  .topbar .menu{ display:none }
+  .topbar.nav-open{ flex-wrap:wrap }
+  .topbar.nav-open .menu{ display:flex; flex-direction:column; width:100%; gap:8px }
+  .topbar.nav-open .menu .menu-item{ width:100% }
+  .topbar.nav-open .menu .menu-link{ width:100%; justify-content:space-between }
+  .hero{ flex-direction:column; align-items:flex-start; gap:12px }
   .cards.cards-2x2{ grid-template-columns:1fr }
   .howto-grid{ grid-template-columns:1fr }
   .hero .hero-logo{ width:84px }
@@ -131,6 +149,18 @@ button:hover{ opacity:.9 }
   .menu .menu-item.open > .dropdown{ display:flex }
   /* Stack generic two-column grids on mobile (e.g., Cramer matrices) */
   .grid{ grid-template-columns:1fr }
+  /* Forms: stack controls and widen inputs */
+  .controls{ flex-direction:column; align-items:stretch; gap:10px }
+  .control input, .control select{ width:100% }
+  /* Augmented matrix layout: stack and hide visual bar */
+  .matrix-aug{ flex-direction:column; align-items:stretch }
+  .matrix-aug .aug-bar{ display:none }
+  /* Matrix table and inputs smaller on mobile */
+  .matriz td{ padding:4px 6px; font-size:14px }
+  .matriz.editable input{ width:56px }
+  /* Actions buttons full width */
+  .actions{ flex-wrap:wrap }
+  .actions .btn{ flex:1 1 100% }
 }
 
 /* Steps */
