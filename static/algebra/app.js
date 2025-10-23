@@ -55,7 +55,6 @@
       if(hiddenAug) hiddenAug.value = out.join('\n');
     }
   }
-
   function initForm(form){
     const mode = form.dataset.mode;
     const matrices = form.querySelectorAll('.matrix');
@@ -98,6 +97,13 @@
             if(inp){ inp.placeholder = 'x' + (idx++); inp.inputMode = 'text'; }
           });
         }
+      } else if(mode === 'cramer'){
+        // Cramer: A es n×n y b es n×1. El control data-target="rowsAcolsArowsB" define n.
+        const nCtl = form.querySelector('[data-target="rowsAcolsArowsB"]');
+        const n = +(nCtl?.value) || 2;
+        const [boxA, boxb] = matrices;
+        if(boxA) buildMatrix(boxA, n, n);
+        if(boxb) buildMatrix(boxb, n, 1);
       } else if(mode === 'aug'){
         const r = +form.querySelector('[data-target="rows"]').value || 2;
         const c = +form.querySelector('[data-target="cols"]').value || 2;

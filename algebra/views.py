@@ -401,3 +401,48 @@ def determinante(request: HttpRequest):
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/determinante.html", ctx)
+
+def cramer(request: HttpRequest):
+    """Vista para resolver Ax=b por la regla de Cramer."""
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            b = _parse_matriz_simple(request.POST.get("vectorb"))
+            if not A or not b:
+                raise ValueError("Debes ingresar A y b.")
+            if len(b[0]) != 1:
+                raise ValueError("b debe ser un vector columna (n×1).")
+            if len(A) != len(A[0]):
+                raise ValueError("A debe ser cuadrada (n×n).")
+            if len(b) != len(A):
+                raise ValueError("El tamaño de b debe coincidir con n (filas de A).")
+            want_steps = bool(request.POST.get("show_steps"))
+            if want_steps:
+                info, pasos = op.cramer_resolver(A, b, registrar_pasos=True, text_fn=text_fn)
+            else:
+                info = op.cramer_resolver(A, b, registrar_pasos=False, text_fn=text_fn)
+                pasos = None
+            ctx["detA"] = text_fn(info["detA"]) if info.get("detA") else None
+            ctx["invertible"] = info.get("invertible", False)
+            if not info.get("invertible", False):
+                ctx["no_invertible"] = info.get("mensaje", "|A| = 0 ⇒ A no es invertible")
+            else:
+                # Render vector solución
+                xs = info.get("x", [])
+                ctx["resultado"] = [[text_fn(xi)] for xi in xs]
+            ctx["componentes"] = {k: text_fn(v) for k, v in info.get("componentes", {}).items()}
+            ctx["dims"] = {"A": f"{len(A)}×{len(A[0])}", "b": f"{len(b)}×1"}
+            if pasos:
+                ctx["pasos"] = [
+                    {"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)}
+                    for p in pasos
+                ]
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/cramer.html", ctx)

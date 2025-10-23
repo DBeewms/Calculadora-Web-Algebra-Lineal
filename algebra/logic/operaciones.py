@@ -1121,3 +1121,71 @@ def determinante_matriz(A, registrar_pasos=False, text_fn=texto_fraccion):
     if registrar_pasos:
         pasos.append({"operacion": f"Producto de pivotes con signo ⇒ |A| = {text_fn(det)}", "matriz": copiar_matriz(M), "tipo": "simple"})
     return (det, pasos) if registrar_pasos else det
+
+# ----------------------- Regla de Cramer -----------------------
+
+def _reemplazar_columna(M, col_idx, columna):
+    R = copiar_matriz(M)
+    i = 0
+    while i < len(R):
+        R[i][col_idx] = [columna[i][0], columna[i][1]]
+        i += 1
+    return R
+
+def cramer_resolver(A, b, registrar_pasos=False, text_fn=texto_fraccion):
+    """Resuelve Ax=b por la regla de Cramer.
+
+    Reutiliza determinante_matriz y reemplazo de columnas Ai(b).
+
+    Retorna un diccionario:
+      {
+        'invertible': bool,
+        'detA': [n,d],
+        'x': [[n,d], ...] | None,
+        'componentes': {'A1b': det, 'A2b': det, ...},
+        'mensaje': str opcional
+      }
+      y si registrar_pasos=True, retorna además pasos.
+    """
+    if A is None or b is None or len(A) == 0:
+        raise ValueError("A y b no pueden ser vacíos.")
+    n = len(A)
+    # Validaciones
+    if len(A[0]) != n:
+        raise ValueError("A debe ser n×n para aplicar Cramer.")
+    if len(b) != n or len(b[0]) != 1:
+        raise ValueError("b debe ser un vector columna de tamaño n×1.")
+
+    pasos = []
+    # |A|
+    if registrar_pasos:
+        detA, pasosA = determinante_matriz(A, registrar_pasos=True, text_fn=text_fn)
+        pasos.append({"operacion": "Calculamos |A|", "matriz": copiar_matriz(A), "tipo": "simple"})
+        pasos.extend(pasosA)
+    else:
+        detA = determinante_matriz(A, registrar_pasos=False, text_fn=text_fn)
+    if es_cero(detA):
+        info = {"invertible": False, "detA": detA, "x": None, "componentes": {}, "mensaje": "|A| = 0 ⇒ A no es invertible."}
+        return (info, pasos) if registrar_pasos else info
+
+    # Para cada i, construir Ai(b), calcular |Ai(b)| y xi
+    componentes = {}
+    x = []
+    i = 0
+    while i < n:
+        Ai = _reemplazar_columna(A, i, [row[0:1][0] for row in b])
+        if registrar_pasos:
+            pasos.append({"operacion": f"Construimos A_{i+1}(b): sustituimos columna {i+1} por b", "matriz": copiar_matriz(Ai), "tipo": "simple"})
+            detAi, pasosAi = determinante_matriz(Ai, registrar_pasos=True, text_fn=text_fn)
+            pasos.append({"operacion": f"Calculamos |A_{i+1}(b)|", "matriz": copiar_matriz(Ai), "tipo": "simple"})
+            pasos.extend(pasosAi)
+        else:
+            detAi = determinante_matriz(Ai, registrar_pasos=False, text_fn=text_fn)
+        componentes[f"A{i+1}b"] = detAi
+        xi = dividir_fracciones(detAi, detA)
+        x.append(xi)
+        if registrar_pasos:
+            pasos.append({"operacion": f"x{i+1} = |A_{i+1}(b)| / |A| = {text_fn(detAi)} / {text_fn(detA)} = {text_fn(xi)}", "matriz": copiar_matriz(Ai), "tipo": "simple"})
+        i += 1
+    info = {"invertible": True, "detA": detA, "x": x, "componentes": componentes}
+    return (info, pasos) if registrar_pasos else info

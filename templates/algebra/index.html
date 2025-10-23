@@ -89,6 +89,18 @@
         <p>Calcula |A| con atajos para matrices triangulares y reducción por filas.</p>
       </div>
     </a>
+    <a class="card media is-mul" href="{% url 'cramer' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2"/>
+          <path d="M4 12h16" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Regla de Cramer</h3>
+        <p>Resuelve Ax = b con |A| y |A_i(b)| para cada i.</p>
+      </div>
+    </a>
     <a class="card media is-gauss" href="{% url 'gauss' %}">
       <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
