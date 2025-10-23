@@ -102,6 +102,8 @@ button:hover{ opacity:.9 }
 
 /* How-to grid */
 .howto-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px }
+.section-divider{ border:0; border-top:1px solid var(--border); margin:32px 0 22px }
+@media (max-width: 640px){ .section-divider{ margin:24px 0 16px } }
 .howto-item{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--card) }
 .howto-item strong{ display:block; margin-bottom:4px }
 .howto-item p{ margin:0; color:var(--muted) }
