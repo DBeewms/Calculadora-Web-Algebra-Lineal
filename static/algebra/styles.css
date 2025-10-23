@@ -35,12 +35,12 @@ h3{ font-size:18px }
 .pills a.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
 .menu{ display:flex; gap:10px; align-items:center }
 .menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; text-decoration:none; color:#0f172a; font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
-.menu-home:hover{ background:rgba(57,73,171,.08); border-color:#cbd5e1 }
 .menu-home:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
-.menu-home.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
 .menu .menu-item{ position:relative; padding-bottom:8px }
 .menu .menu-link{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; color:#0f172a; font-weight:600; cursor:pointer; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
 .menu .menu-link::after{ content:"▾"; font-size:12px; opacity:.7; margin-left:4px; transition:transform .2s ease }
+.menu .menu-link:hover{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
+.menu .menu-item:not(.has-dropdown) > .menu-link::after{ content:none }
 .menu .menu-item.active > .menu-link{ background:var(--primary); color:#fff; border-color:transparent }
 .menu .menu-item:hover > .menu-link{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
 .menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
@@ -124,6 +124,8 @@ button:hover{ opacity:.9 }
   .menu{ flex-wrap:wrap; gap:8px }
   .menu .dropdown{ position:static; width:100%; box-shadow:none; border-radius:10px; display:none; margin-top:6px }
   .menu .menu-item.open > .dropdown{ display:flex }
+  /* Stack generic two-column grids on mobile (e.g., Cramer matrices) */
+  .grid{ grid-template-columns:1fr }
 }
 
 /* Steps */

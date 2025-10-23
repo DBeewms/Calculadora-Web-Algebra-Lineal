@@ -32,6 +32,70 @@
     return rows.join('\n');
   }
 
+  // --- Persistencia del estado del formulario (para no perder inputs) ---
+  function getStateKey(form){
+    return `lin-alg:form:${location.pathname}`;
+  }
+  function saveFormState(form){
+    try{
+      const key = getStateKey(form);
+      const state = { controls:{}, matrices:{} };
+      form.querySelectorAll('[data-target]').forEach(el=>{
+        const k = el.getAttribute('data-target');
+        if(k) state.controls[k] = el.value;
+      });
+      form.querySelectorAll('.matrix').forEach(box=>{
+        const name = box.getAttribute('data-name');
+        const table = box.querySelector('table');
+        if(!name || !table) return;
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const values = rows.map(tr=> Array.from(tr.querySelectorAll('input')).map(inp=> inp.value || ''));
+        const cols = values.length ? values[0].length : 0;
+        state.matrices[name] = { rows: rows.length, cols, values };
+      });
+      localStorage.setItem(key, JSON.stringify(state));
+    }catch(e){ /* no-op */ }
+  }
+  function loadFormState(form){
+    const key = getStateKey(form);
+    let raw = null; try{ raw = localStorage.getItem(key); }catch(e){ raw = null; }
+    if(!raw) return;
+    try{
+      const state = JSON.parse(raw);
+      if(state && state.controls){
+        Object.keys(state.controls).forEach(k=>{
+          const el = form.querySelector(`[data-target="${k}"]`);
+          if(el) el.value = state.controls[k];
+        });
+      }
+      const resizeBtn = form.querySelector('[data-action="resize"]');
+      resizeBtn?.click();
+      setTimeout(()=>{
+        if(state && state.matrices){
+          Object.keys(state.matrices).forEach(name=>{
+            const box = form.querySelector(`.matrix[data-name="${name}"]`);
+            if(!box) return;
+            const mat = state.matrices[name];
+            const table = box.querySelector('table');
+            const currentRows = table ? table.querySelectorAll('tr').length : 0;
+            const currentCols = table ? (table.querySelector('tr')?.querySelectorAll('input').length || 0) : 0;
+            if(currentRows !== mat.rows || currentCols !== mat.cols){
+              buildMatrix(box, mat.rows, mat.cols);
+            }
+            const trs = box.querySelectorAll('tr');
+            for(let i=0;i<mat.rows;i++){
+              const inputs = trs[i]?.querySelectorAll('input') || [];
+              for(let j=0;j<mat.cols;j++){
+                if(inputs[j]) inputs[j].value = mat.values[i]?.[j] ?? '';
+              }
+            }
+          });
+        }
+        updateHidden(form);
+      }, 0);
+    }catch(e){ /* no-op */ }
+  }
+
   function updateHidden(form){
     form.querySelectorAll('.matrix').forEach(box=>{
       const name = box.getAttribute('data-name');
@@ -136,16 +200,17 @@
     }
     doResize();
     if(resizeBtn){
-      resizeBtn.addEventListener('click', ()=>{ doResize(); });
+      resizeBtn.addEventListener('click', ()=>{ doResize(); saveFormState(form); });
     }
-    form.addEventListener('input', ()=> updateHidden(form));
-    form.addEventListener('submit', ()=> updateHidden(form));
+    form.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+    form.addEventListener('submit', ()=>{ updateHidden(form); saveFormState(form); });
 
     // Controls: clear, example, copy-result
     form.querySelectorAll('[data-action="clear"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         form.querySelectorAll('.matrix input').forEach(inp=> inp.value='');
         updateHidden(form);
+        try{ localStorage.removeItem(getStateKey(form)); }catch(e){}
       });
     });
     form.querySelectorAll('[data-action="example"]').forEach(btn=>{
@@ -218,6 +283,7 @@
           [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
         }
         updateHidden(form);
+        saveFormState(form);
       });
     });
 
@@ -225,6 +291,8 @@
 
   document.addEventListener('DOMContentLoaded', ()=>{
     document.querySelectorAll('form.matrix-form').forEach(initForm);
+    // Intentar restaurar el estado guardado (mantiene inputs tras enviar)
+    document.querySelectorAll('form.matrix-form').forEach(loadFormState);
     // Mostrar/Ocultar control de precisión según formato de resultado
     document.querySelectorAll('form.matrix-form').forEach(form=>{
       const fmt = form.querySelector('select[name="result_format"]');

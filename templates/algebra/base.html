@@ -20,8 +20,15 @@
     </div>
     {% with request.resolver_match.url_name as url_name %}
     <nav class="menu" role="navigation" aria-label="Navegación principal">
-      <a href="{% url 'index' %}" class="menu-home {% if url_name == 'index' %}active{% endif %}">Inicio</a>
-
+      <div class="menu-item has-dropdown {% if url_name == 'index' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Inicio</button>
+        <div class="dropdown" role="menu">
+          <a href="{% url 'index' %}" role="menuitem" class="{% if url_name == 'index' %}current{% endif %}">Ir al inicio</a>
+          <a href="{% url 'index' %}#guia" role="menuitem">Guía rápida</a>
+          <a href="{% url 'index' %}#atajos" role="menuitem">Atajos/Procedimiento</a>
+          <a href="{% url 'index' %}#sobre" role="menuitem">Sobre la app</a>
+        </div>
+      </div>
       <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' %}active{% endif %}">
         <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Matrices</button>
         <div class="dropdown" role="menu">
