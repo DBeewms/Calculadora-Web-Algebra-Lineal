@@ -521,6 +521,39 @@ def compuestas(request: HttpRequest):
                         raise ValueError("No hay matriz B para sumar (M+B).")
                     # Suma directa; sin pasos detallados para no generar ruido redundante
                     M = op.sumar_matrices(M, B)
+                elif stype == "sumbesc":
+                    if not B:
+                        raise ValueError("No hay matriz B para sumar (M + b·B).")
+                    b_txt = (params.get("b") or "0").strip()
+                    b = u.crear_fraccion_desde_cadena(b_txt)
+                    MB = op.multiplicar_escalar_matriz(b, B)
+                    M = op.sumar_matrices(M, MB)
+                elif stype == "lincomb" or stype == "combinacion" or stype == "abcomb":
+                    if not A or not B:
+                        raise ValueError("Se requieren A y B para a·A + b·B.")
+                    a_txt = (params.get("a") or "0").strip()
+                    b_txt = (params.get("b") or "0").strip()
+                    a = u.crear_fraccion_desde_cadena(a_txt)
+                    b = u.crear_fraccion_desde_cadena(b_txt)
+                    if show_steps:
+                        MA, pA = op.multiplicar_escalar_matriz(a, A, registrar_pasos=True, text_fn=text_fn)
+                        pasos_viz.extend([
+                            {"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in (pA or [])
+                        ])
+                        MB, pB = op.multiplicar_escalar_matriz(b, B, registrar_pasos=True, text_fn=text_fn)
+                        pasos_viz.extend([
+                            {"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in (pB or [])
+                        ])
+                        Mtmp = op.sumar_matrices(MA, MB)
+                        pasos_viz.append({
+                            "operacion": f"Sumamos {text_fn(a)}·A + {text_fn(b)}·B",
+                            "matriz": _render_matriz(Mtmp, text_fn)
+                        })
+                        M = Mtmp
+                    else:
+                        MA = op.multiplicar_escalar_matriz(a, A)
+                        MB = op.multiplicar_escalar_matriz(b, B)
+                        M = op.sumar_matrices(MA, MB)
                 elif stype == "inverse":
                     info = op.inversa_matriz(M, registrar_pasos=show_steps, text_fn=text_fn)
                     if isinstance(info, tuple):

@@ -457,18 +457,23 @@
       // Helpers para etiquetar según la fuente (A o B)
       function currentSrc(){ return (srcSel?.value === 'B') ? 'B' : 'A'; }
       function typeToLabel(type, src){
-        if(type === 'transpose') return `Transpuesta (${src}^T)`;
-        if(type === 'scale') return `Escalar (c·${src})`;
-        if(type === 'sumB') return `Sumar con B (${src}+B)`;
-        if(type === 'mulB') return `Multiplicar por B (${src}·B)`;
-        if(type === 'inverse') return `Inversa (${src}^{-1})`;
+        const t = (type||'').toLowerCase();
+        if(t === 'transpose') return `Transpuesta (${src}^T)`;
+        if(t === 'scale') return `Escalar (c·${src})`;
+        if(t === 'lincomb' || t === 'combinacion') return `Combinación lineal (a·A + b·B)`;
+        if(t === 'abcomb') return `a·A + b·B`;
+    if(t === 'sumb') return `Sumar con B (${src}+B)`;
+    if(t === 'sumbesc') return `Sumar b·B (${src} + b·B)`;
+        if(t === 'mulb') return `Multiplicar por B (${src}·B)`;
+        if(t === 'inverse') return `Inversa (${src}^{-1})`;
         return type;
       }
       function refreshBlockLabels(){
         const src = currentSrc();
         // Actualiza etiquetas de la paleta
-        const pT = palette?.querySelector('[data-type="transpose"]'); if(pT) pT.textContent = typeToLabel('transpose', src);
-        const pS = palette?.querySelector('[data-type="scale"]'); if(pS) pS.textContent = typeToLabel('scale', src);
+  const pT = palette?.querySelector('[data-type="transpose"]'); if(pT) pT.textContent = typeToLabel('transpose', src);
+  const pS = palette?.querySelector('[data-type="scale"]'); if(pS) pS.textContent = typeToLabel('scale', src);
+  const pAB = palette?.querySelector('[data-type="abcomb"]'); if(pAB) pAB.textContent = typeToLabel('abcomb', src);
   const pSum = palette?.querySelector('[data-type="sumB"]'); if(pSum) pSum.textContent = typeToLabel('sumB', src);
   const pM = palette?.querySelector('[data-type="mulB"]'); if(pM) pM.textContent = typeToLabel('mulB', src);
         const pI = palette?.querySelector('[data-type="inverse"]'); if(pI) pI.textContent = typeToLabel('inverse', src);
@@ -518,8 +523,18 @@
           label.textContent = typeToLabel('scale', currentSrc());
           const p = document.createElement('input'); p.type='text'; p.placeholder='c (ej. 3/5)'; p.setAttribute('data-param','c'); paramInput=p;
           ctrlWrap.appendChild(p);
+        } else if(type === 'lincomb' || type === 'combinacion' || type === 'abcomb'){
+          label.textContent = typeToLabel('abcomb', currentSrc());
+          const a = document.createElement('input'); a.type='text'; a.placeholder='a (ej. 4)'; a.setAttribute('data-param','a');
+          const b = document.createElement('input'); b.type='text'; b.placeholder='b (ej. -3/2)'; b.setAttribute('data-param','b');
+          ctrlWrap.appendChild(a); ctrlWrap.appendChild(b);
+          a.addEventListener('input', sync); b.addEventListener('input', sync);
         } else if(type === 'sumB'){
           label.textContent = typeToLabel('sumB', currentSrc());
+        } else if(type === 'sumBesc'){
+          label.textContent = typeToLabel('sumBesc', currentSrc());
+          const p = document.createElement('input'); p.type='text'; p.placeholder='b (ej. 2/3)'; p.setAttribute('data-param','b'); paramInput=p;
+          ctrlWrap.appendChild(p);
         } else if(type === 'mulB'){
           label.textContent = typeToLabel('mulB', currentSrc());
         } else if(type === 'inverse'){

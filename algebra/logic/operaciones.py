@@ -703,7 +703,7 @@ def multiplicar_escalar_matriz(c, A, registrar_pasos=False, text_fn=texto_fracci
             "matriz": copiar_matriz(C),
             "tipo": "simple"
         })
-    return (C, pasos) if registrar_pasos else (C, None)
+    return (C, pasos) if registrar_pasos else C
 
 def multiplicar_matriz_vector_simbolico(A, v_simbolico, registrar_pasos=False, text_fn=texto_fraccion):
     """Multiplica A (m×n) por un vector simbólico v=[s1,..,sn]^T, devolviendo un vector columna de strings.
