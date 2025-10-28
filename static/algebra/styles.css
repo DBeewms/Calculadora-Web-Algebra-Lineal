@@ -233,3 +233,16 @@ button:hover{ opacity:.9 }
 .toggle.active .toggle-thumb{ transform:translateX(22px) }
 .toggle .toggle-label{ font-weight:500; color:var(--muted) }
 .toggle.active .toggle-label{ color:var(--primary) }
+
+/* Composer (bloques arrastrables) */
+.blocks-palette{ display:flex; flex-wrap:wrap; gap:10px }
+.block{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:12px; background:linear-gradient(135deg, rgba(126,87,194,.12), rgba(106,27,154,.08)); color:#111; cursor:grab; user-select:none; box-shadow:var(--shadow-1); font-weight:600 }
+.block:active{ cursor:grabbing }
+.sequence-canvas{ border:2px dashed var(--border); border-radius:12px; padding:10px; background:var(--card) }
+.sequence-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px }
+.seq-item{ display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:8px 10px; box-shadow:var(--shadow-1) }
+.seq-item .seq-label{ font-weight:700; color:var(--violet) }
+.seq-item .seq-controls{ margin-left:auto; display:flex; gap:6px }
+.seq-item .seq-controls button{ padding:6px 10px; border-radius:8px }
+.seq-item input[type="text"], .seq-item input[type="number"], .seq-item select{ padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#fff; width:110px }
+.sequence-canvas.drag-over{ background:rgba(57,73,171,.06); border-color:var(--violet) }

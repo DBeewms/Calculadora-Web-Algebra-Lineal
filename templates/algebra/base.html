@@ -40,7 +40,7 @@
           <a href="{% url 'suma' %}" role="menuitem" class="{% if url_name == 'suma' %}current{% endif %}">Suma de matrices</a>
           <a href="{% url 'multiplicacion' %}" role="menuitem" class="{% if url_name == 'multiplicacion' %}current{% endif %}">Multiplicación</a>
           <a href="{% url 'escalar' %}" role="menuitem" class="{% if url_name == 'escalar' %}current{% endif %}">Escalar (c·A)</a>
-          <a href="{% url 'transposicion' %}" role="menuitem" class="{% if url_name == 'transposicion' %}current{% endif %}">Transposición</a>
+          <a href="{% url 'transposicion' %}" role="menuitem" class="{% if url_name == 'transposicion' %}current{% endif %}">Transpuesta</a>
         </div>
       </div>
 
@@ -59,6 +59,13 @@
           <a href="{% url 'gauss_jordan' %}" role="menuitem" class="{% if url_name == 'gauss_jordan' %}current{% endif %}">Gauss-Jordan</a>
           <a href="{% url 'cramer' %}" role="menuitem" class="{% if url_name == 'cramer' %}current{% endif %}">Regla de Cramer</a>
           <a href="{% url 'homogeneo' %}" role="menuitem" class="{% if url_name == 'homogeneo' %}current{% endif %}">Sistema homogéneo</a>
+        </div>
+      </div>
+
+      <div class="menu-item has-dropdown {% if url_name == 'compuestas' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Operaciones compuestas</button>
+        <div class="dropdown" role="menu">
+          <a href="{% url 'compuestas' %}" role="menuitem" class="{% if url_name == 'compuestas' %}current{% endif %}">Operaciones compuestas</a>
         </div>
       </div>
 

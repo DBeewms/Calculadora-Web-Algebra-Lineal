@@ -425,5 +425,120 @@
         navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
     }
+
+    // Composer: bloques arrastrables para Operaciones compuestas
+    (function(){
+      const page = document.querySelector('[data-page="compuestas"]');
+      if(!page) return;
+      const palette = page.querySelector('#blocksPalette');
+      const canvas = page.querySelector('#sequenceCanvas');
+      const list = page.querySelector('#seqList');
+      const form = page.querySelector('form.matrix-form');
+      const hidden = page.querySelector('#sequenceJson');
+
+      function createSeqItem(type){
+        const li = document.createElement('li');
+        li.className = 'seq-item';
+        li.setAttribute('data-type', type);
+        const label = document.createElement('div');
+        label.className = 'seq-label';
+        const ctrlWrap = document.createElement('div');
+        ctrlWrap.className = 'seq-params';
+        const controls = document.createElement('div');
+        controls.className = 'seq-controls';
+
+        const btnUp = document.createElement('button'); btnUp.type='button'; btnUp.className='btn ghost'; btnUp.textContent='↑';
+        const btnDown = document.createElement('button'); btnDown.type='button'; btnDown.className='btn ghost'; btnDown.textContent='↓';
+        const btnDel = document.createElement('button'); btnDel.type='button'; btnDel.className='btn secondary'; btnDel.textContent='Quitar';
+
+        btnUp.addEventListener('click', ()=>{ const prev = li.previousElementSibling; if(prev){ list.insertBefore(li, prev); sync(); }});
+        btnDown.addEventListener('click', ()=>{ const next = li.nextElementSibling?.nextElementSibling; list.insertBefore(li, next || null); sync(); });
+        btnDel.addEventListener('click', ()=>{ li.remove(); sync(); });
+
+        let paramInput = null;
+        if(type === 'transpose'){
+          label.textContent = 'Transpuesta (M^T)';
+        } else if(type === 'scale'){
+          label.textContent = 'Escalar (c·M)';
+          const p = document.createElement('input'); p.type='text'; p.placeholder='c (ej. 3/5)'; p.setAttribute('data-param','c'); paramInput=p;
+          ctrlWrap.appendChild(p);
+        } else if(type === 'mulB'){
+          label.textContent = 'Multiplicar por B (M·B)';
+        } else if(type === 'inverse'){
+          label.textContent = 'Inversa (M^{-1})';
+        } else {
+          label.textContent = type;
+        }
+        li.appendChild(label);
+        li.appendChild(ctrlWrap);
+        controls.appendChild(btnUp); controls.appendChild(btnDown); controls.appendChild(btnDel);
+        li.appendChild(controls);
+        if(paramInput){ paramInput.addEventListener('input', sync); }
+        return li;
+      }
+
+      function serialize(){
+        const steps = [];
+        list.querySelectorAll('.seq-item').forEach(item=>{
+          const type = item.getAttribute('data-type');
+          const step = { type, params:{} };
+          item.querySelectorAll('[data-param]').forEach(inp=>{ step.params[inp.getAttribute('data-param')] = inp.value; });
+          steps.push(step);
+        });
+        return steps;
+      }
+      function sync(){
+        const seq = serialize();
+        if(hidden){ hidden.value = JSON.stringify(seq); }
+        // Persistir en localStorage
+        try{ localStorage.setItem('lin-alg:compuestas:sequence', hidden.value || '[]'); }catch(e){}
+      }
+      function restore(){
+        let raw = null; try{ raw = localStorage.getItem('lin-alg:compuestas:sequence'); }catch(e){ raw = null; }
+        if(!raw) return;
+        try{
+          const arr = JSON.parse(raw);
+          if(Array.isArray(arr)){
+            list.innerHTML = '';
+            arr.forEach(s=>{
+              const li = createSeqItem(s.type);
+              // Rellenar parámetros
+              li.querySelectorAll('[data-param]').forEach(inp=>{
+                const k = inp.getAttribute('data-param');
+                if(s.params && s.params[k] != null) inp.value = s.params[k];
+              });
+              list.appendChild(li);
+            });
+            sync();
+          }
+        }catch(e){}
+      }
+
+      // Drag desde la paleta
+      palette?.querySelectorAll('.block').forEach(el=>{
+        el.addEventListener('dragstart', (e)=>{
+          e.dataTransfer?.setData('text/plain', el.getAttribute('data-type'));
+          e.dataTransfer?.setDragImage?.(el, 10, 10);
+        });
+      });
+      // Drop en el canvas
+      canvas?.addEventListener('dragover', (e)=>{ e.preventDefault(); canvas.classList.add('drag-over'); });
+      canvas?.addEventListener('dragleave', ()=>{ canvas.classList.remove('drag-over'); });
+      canvas?.addEventListener('drop', (e)=>{
+        e.preventDefault(); canvas.classList.remove('drag-over');
+        const type = e.dataTransfer?.getData('text/plain');
+        if(!type) return;
+        const li = createSeqItem(type);
+        list.appendChild(li);
+        sync();
+      });
+
+      // Inicializar estado
+      restore();
+      sync();
+
+      // Asegurar que al enviar se sincronice
+      form?.addEventListener('submit', ()=> sync());
+    })();
   });
 })();

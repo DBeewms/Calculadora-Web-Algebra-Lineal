@@ -7,6 +7,7 @@ urlpatterns = [
     path("multiplicacion/", views.multiplicacion, name="multiplicacion"),
     path("escalar/", views.escalar, name="escalar"),
     path("transposicion/", views.transposicion, name="transposicion"),
+    path("compuestas/", views.compuestas, name="compuestas"),
     path("inversa/", views.inversa, name="inversa"),
     path("determinante/", views.determinante, name="determinante"),
     path("cramer/", views.cramer, name="cramer"),

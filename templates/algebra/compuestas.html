@@ -1,0 +1,140 @@
+{% extends "algebra/base.html" %}
+{% block title %}Operaciones compuestas{% endblock %}
+{% block content %}
+<section data-page="compuestas">
+  <h2>Operaciones compuestas</h2>
+  <p class="lead">Arma tu propia secuencia de operaciones con bloques arrastrables, estilo Scratch. Empezamos simple y lo iremos extendiendo.</p>
+
+  <form method="post" class="matrix-form" data-mode="simple">{% csrf_token %}
+    <div class="controls">
+      <div class="control"><label>Filas (A)</label><input type="number" min="1" value="2" data-target="rows" data-matrix="A"/></div>
+      <div class="control"><label>Columnas (A)</label><input type="number" min="1" value="2" data-target="cols" data-matrix="A"/></div>
+
+      <div class="control"><label>Filas (B)</label><input type="number" min="1" value="2" data-target="rows" data-matrix="B"/></div>
+      <div class="control"><label>Columnas (B)</label><input type="number" min="1" value="2" data-target="cols" data-matrix="B"/></div>
+
+      <div class="control">
+        <label>Fuente inicial</label>
+        <select name="source">
+          <option value="A" selected>A</option>
+          <option value="B">B</option>
+        </select>
+      </div>
+
+      <label class="toggle" id="toggle-steps-comp">
+        <input type="checkbox" name="show_steps" checked>
+        <span class="toggle-track"></span>
+        <span class="toggle-thumb"></span>
+        <span class="toggle-label">Mostrar pasos</span>
+      </label>
+
+      <div class="control">
+        <label>Formato de resultado</label>
+        <select name="result_format">
+          <option value="frac" {% if result_format == 'frac' or not result_format %}selected{% endif %}>Fracciones exactas</option>
+          <option value="dec" {% if result_format == 'dec' %}selected{% endif %}>Decimales</option>
+          <option value="auto" {% if result_format == 'auto' %}selected{% endif %}>Automático (exacto si finito)</option>
+        </select>
+      </div>
+      <div class="control" style="display:none">
+        <label>Precisión (decimales)</label>
+        <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
+      </div>
+
+      <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+    </div>
+
+    <div class="grid matrices panel">
+      <div>
+        <label>Matriz A</label>
+        <div class="matrix" data-name="matrizA"></div>
+        <input type="hidden" name="matrizA"/>
+      </div>
+      <div>
+        <label>Matriz B (opcional)</label>
+        <div class="matrix" data-name="matrizB"></div>
+        <input type="hidden" name="matrizB"/>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Bloques</h3>
+        <div class="panel-actions"><span class="badge">Arrastra al canvas</span></div>
+      </div>
+      <div class="blocks-palette" id="blocksPalette">
+        <div class="block" draggable="true" data-type="transpose">Transpuesta (M^T)</div>
+        <div class="block" draggable="true" data-type="scale">Escalar (c·M)</div>
+        <div class="block" draggable="true" data-type="mulB">Multiplicar por B (M·B)</div>
+        <div class="block" draggable="true" data-type="inverse">Inversa (M^{-1})</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Secuencia de operaciones</h3>
+        <div class="panel-actions"><span class="badge">Arrastra y suelta aquí</span></div>
+      </div>
+      <div class="sequence-canvas" id="sequenceCanvas">
+        <ul class="sequence-list" id="seqList" aria-live="polite"></ul>
+      </div>
+      <input type="hidden" name="sequence_json" id="sequenceJson" />
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+      <button type="submit" class="btn primary">Procesar</button>
+    </div>
+  </form>
+
+  {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+
+  {% if resultado %}
+  <section class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">Resultado</h3>
+      {% if dims %}<div class="panel-actions">
+        {% if dims.A %}<span class="badge">A {{ dims.A }}</span>{% endif %}
+        {% if dims.B %}<span class="badge">B {{ dims.B }}</span>{% endif %}
+        {% if dims.M %}<span class="badge">Final {{ dims.M }}</span>{% endif %}
+      </div>{% endif %}
+    </div>
+    <div class="matrix-result">
+      <table class="matriz">
+        {% for fila in resultado %}
+          <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if pasos %}
+  <details open class="panel">
+    <summary class="panel-title">Pasos del procedimiento</summary>
+    <ol class="steps timeline">
+      {% for p in pasos %}
+        <li>
+          <div class="step-title">{{ p.operacion }}</div>
+          <div class="step-matrix">
+            <table class="matriz mini">
+              {% for fila in p.matriz %}
+                <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+              {% endfor %}
+            </table>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+</section>
+
+{% block extra_js %}
+{% if error %}
+<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
+{% elif resultado %}
+<script>Swal.fire({icon:'success', title:'Operación compuesta lista', timer:1800, showConfirmButton:false});</script>
+{% endif %}
+{% endblock %}
+{% endblock %}

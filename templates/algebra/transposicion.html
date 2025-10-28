@@ -1,7 +1,7 @@
 {% extends "algebra/base.html" %}
-{% block title %}Transposición{% endblock %}
+{% block title %}Transpuesta{% endblock %}
 {% block content %}
-<h2>Transposición (A^T)</h2>
+<h2>Transpuesta (A^T)</h2>
 <form method="post" class="matrix-form" data-mode="simple">{% csrf_token %}
   <div class="controls">
     <div class="control"><label>Filas</label><input type="number" min="1" value="2" data-target="rows"/></div>
@@ -83,7 +83,7 @@
 {% if error %}
 <script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
 {% elif resultado %}
-<script>Swal.fire({icon:'success', title:'Transposición lista', timer:1800, showConfirmButton:false});</script>
+<script>Swal.fire({icon:'success', title:'Transpuesta lista', timer:1800, showConfirmButton:false});</script>
 {% endif %}
 {% endblock %}
 {% endblock %}

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
+import json
 
 def index(request: HttpRequest):
     return render(request, "algebra/index.html")
@@ -454,3 +455,86 @@ def cramer(request: HttpRequest):
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/cramer.html", ctx)
+
+def compuestas(request: HttpRequest):
+    """Vista base para operaciones compuestas.
+    De momento solo muestra el formulario de entrada; la lógica de composición se añadirá gradualmente.
+    """
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+
+            src = (request.POST.get("source") or "A").strip().upper()
+            show_steps = bool(request.POST.get("show_steps"))
+            raw_seq = request.POST.get("sequence_json") or "[]"
+            try:
+                seq = json.loads(raw_seq)
+            except Exception:
+                raise ValueError("Secuencia inválida (JSON)")
+
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            B = _parse_matriz_simple(request.POST.get("matrizB"))
+            ctx["dims"] = {}
+            if A: ctx["dims"]["A"] = f"{len(A)}×{len(A[0])}"
+            if B: ctx["dims"]["B"] = f"{len(B)}×{len(B[0])}"
+
+            # Selección de fuente inicial
+            if src == "B":
+                M = B
+            else:
+                M = A
+            if not M:
+                raise ValueError("La matriz fuente seleccionada está vacía.")
+
+            pasos_viz = []
+            # Aplicar secuencia básica
+            for step in (seq or []):
+                stype = (step.get("type") or "").lower()
+                params = step.get("params") or {}
+                if stype == "transpose":
+                    if show_steps:
+                        M, p = op.transponer_matriz(M, registrar_pasos=True, text_fn=text_fn)
+                        pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in p])
+                    else:
+                        M = op.transponer_matriz(M)
+                elif stype == "scale":
+                    c_txt = (params.get("c") or "0").strip()
+                    c = u.crear_fraccion_desde_cadena(c_txt)
+                    if show_steps:
+                        M, p = op.multiplicar_escalar_matriz(c, M, registrar_pasos=True, text_fn=text_fn)
+                        pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in p])
+                    else:
+                        M = op.multiplicar_escalar_matriz(c, M)
+                elif stype == "mulb":
+                    if not B:
+                        raise ValueError("No hay matriz B para multiplicar (M·B).")
+                    if show_steps:
+                        M, p = op.multiplicar_matrices(M, B, registrar_pasos=True, text_fn=text_fn)
+                        pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in p])
+                    else:
+                        M = op.multiplicar_matrices(M, B)
+                elif stype == "inverse":
+                    info = op.inversa_matriz(M, registrar_pasos=show_steps, text_fn=text_fn)
+                    if isinstance(info, tuple):
+                        info, p = info
+                        pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in p])
+                    if not info.get("invertible"):
+                        raise ValueError(info.get("razon", "La matriz no es invertible."))
+                    M = info.get("inversa")
+                else:
+                    # Ignorar tipos desconocidos (por ahora)
+                    continue
+
+            # Render final
+            ctx["resultado"] = _render_matriz(M, text_fn)
+            ctx["dims"]["M"] = f"{len(M)}×{len(M[0])}" if (M and len(M)>0) else None
+            if show_steps and pasos_viz:
+                ctx["pasos"] = pasos_viz
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+        except Exception as e:
+            ctx["error"] = str(e)
+    return render(request, "algebra/compuestas.html", ctx)
