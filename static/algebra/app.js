@@ -196,6 +196,16 @@
           zeroBox.appendChild(table);
         }
       }
+      else if(mode === 'compuestas'){
+        // Construir A y B con controles separados
+        const rA = +form.querySelector('[data-target="rows"][data-matrix="A"]').value || 2;
+        const cA = +form.querySelector('[data-target="cols"][data-matrix="A"]').value || 2;
+        const rB = +form.querySelector('[data-target="rows"][data-matrix="B"]').value || 2;
+        const cB = +form.querySelector('[data-target="cols"][data-matrix="B"]').value || 2;
+        const [boxA, boxB] = matrices;
+        if(boxA) buildMatrix(boxA, rA, cA);
+        if(boxB) buildMatrix(boxB, rB, cB);
+      }
       updateHidden(form);
     }
     doResize();
@@ -203,6 +213,13 @@
       resizeBtn.addEventListener('click', ()=>{ doResize(); saveFormState(form); });
     }
     form.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+    // En modo compuestas, redimensionar al cambiar cualquier control A/B
+    if(mode === 'compuestas'){
+      form.querySelectorAll('[data-matrix]').forEach(el=>{
+        el.addEventListener('input', ()=>{ doResize(); saveFormState(form); });
+        el.addEventListener('change', ()=>{ doResize(); saveFormState(form); });
+      });
+    }
     form.addEventListener('submit', ()=>{ updateHidden(form); saveFormState(form); });
 
     // Controls: clear, example, copy-result
@@ -435,18 +452,57 @@
       const list = page.querySelector('#seqList');
       const form = page.querySelector('form.matrix-form');
       const hidden = page.querySelector('#sequenceJson');
+      const srcSel = form?.querySelector('select[name="source"]');
+
+      // Helpers para etiquetar según la fuente (A o B)
+      function currentSrc(){ return (srcSel?.value === 'B') ? 'B' : 'A'; }
+      function typeToLabel(type, src){
+        if(type === 'transpose') return `Transpuesta (${src}^T)`;
+        if(type === 'scale') return `Escalar (c·${src})`;
+        if(type === 'sumB') return `Sumar con B (${src}+B)`;
+        if(type === 'mulB') return `Multiplicar por B (${src}·B)`;
+        if(type === 'inverse') return `Inversa (${src}^{-1})`;
+        return type;
+      }
+      function refreshBlockLabels(){
+        const src = currentSrc();
+        // Actualiza etiquetas de la paleta
+        const pT = palette?.querySelector('[data-type="transpose"]'); if(pT) pT.textContent = typeToLabel('transpose', src);
+        const pS = palette?.querySelector('[data-type="scale"]'); if(pS) pS.textContent = typeToLabel('scale', src);
+  const pSum = palette?.querySelector('[data-type="sumB"]'); if(pSum) pSum.textContent = typeToLabel('sumB', src);
+  const pM = palette?.querySelector('[data-type="mulB"]'); if(pM) pM.textContent = typeToLabel('mulB', src);
+        const pI = palette?.querySelector('[data-type="inverse"]'); if(pI) pI.textContent = typeToLabel('inverse', src);
+        // Actualiza etiquetas de ítems ya añadidos
+        list?.querySelectorAll('.seq-item').forEach(item=>{
+          const type = item.getAttribute('data-type');
+          const labelEl = item.querySelector('.seq-label');
+          if(type && labelEl){ labelEl.textContent = typeToLabel(type, src); }
+        });
+      }
 
       function createSeqItem(type){
         const li = document.createElement('li');
         li.className = 'seq-item';
         li.setAttribute('data-type', type);
+
+        // Sección izquierda: asa de arrastre + etiqueta + parámetros
+        const left = document.createElement('div');
+        left.className = 'seq-left';
+        const drag = document.createElement('span');
+        drag.className = 'seq-drag';
+        drag.textContent = '↕';
+        drag.setAttribute('title','Arrastrar para reordenar');
+        drag.setAttribute('aria-label','Arrastrar para reordenar');
+        drag.setAttribute('draggable','true');
+
         const label = document.createElement('div');
         label.className = 'seq-label';
         const ctrlWrap = document.createElement('div');
         ctrlWrap.className = 'seq-params';
+
+        // Controles a la derecha
         const controls = document.createElement('div');
         controls.className = 'seq-controls';
-
         const btnUp = document.createElement('button'); btnUp.type='button'; btnUp.className='btn ghost'; btnUp.textContent='↑';
         const btnDown = document.createElement('button'); btnDown.type='button'; btnDown.className='btn ghost'; btnDown.textContent='↓';
         const btnDel = document.createElement('button'); btnDel.type='button'; btnDel.className='btn secondary'; btnDel.textContent='Quitar';
@@ -457,23 +513,37 @@
 
         let paramInput = null;
         if(type === 'transpose'){
-          label.textContent = 'Transpuesta (M^T)';
+          label.textContent = typeToLabel('transpose', currentSrc());
         } else if(type === 'scale'){
-          label.textContent = 'Escalar (c·M)';
+          label.textContent = typeToLabel('scale', currentSrc());
           const p = document.createElement('input'); p.type='text'; p.placeholder='c (ej. 3/5)'; p.setAttribute('data-param','c'); paramInput=p;
           ctrlWrap.appendChild(p);
+        } else if(type === 'sumB'){
+          label.textContent = typeToLabel('sumB', currentSrc());
         } else if(type === 'mulB'){
-          label.textContent = 'Multiplicar por B (M·B)';
+          label.textContent = typeToLabel('mulB', currentSrc());
         } else if(type === 'inverse'){
-          label.textContent = 'Inversa (M^{-1})';
+          label.textContent = typeToLabel('inverse', currentSrc());
         } else {
           label.textContent = type;
         }
-        li.appendChild(label);
-        li.appendChild(ctrlWrap);
+
+        left.appendChild(drag);
+        left.appendChild(label);
+        left.appendChild(ctrlWrap);
+        li.appendChild(left);
         controls.appendChild(btnUp); controls.appendChild(btnDown); controls.appendChild(btnDel);
         li.appendChild(controls);
+
         if(paramInput){ paramInput.addEventListener('input', sync); }
+
+        // Drag&drop de reordenamiento usando el asa
+        drag.addEventListener('dragstart', (e)=>{
+          li.classList.add('dragging');
+          e.dataTransfer?.setData('text/plain', 'reorder');
+          try{ e.dataTransfer.effectAllowed = 'move'; }catch(_e){}
+        });
+        drag.addEventListener('dragend', ()=>{ li.classList.remove('dragging'); });
         return li;
       }
 
@@ -520,7 +590,36 @@
           e.dataTransfer?.setData('text/plain', el.getAttribute('data-type'));
           e.dataTransfer?.setDragImage?.(el, 10, 10);
         });
+        // Fallback: click/tocar para añadir
+        el.addEventListener('click', ()=>{
+          const type = el.getAttribute('data-type');
+          if(!type) return; const li = createSeqItem(type); list.appendChild(li); sync();
+        });
+        el.addEventListener('keydown', (e)=>{
+          if(e.key==='Enter' || e.key===' '){ e.preventDefault(); el.click(); }
+        });
       });
+      // Cambiar etiquetas cuando varía la fuente inicial (A/B)
+      srcSel?.addEventListener('change', refreshBlockLabels);
+      // Reordenar elementos existentes de la secuencia con drag&drop
+      function getAfterElement(y){
+        const items = [...list.querySelectorAll('.seq-item:not(.dragging)')];
+        let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+        items.forEach(child=>{
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if(offset < 0 && offset > closest.offset){ closest = { offset, element: child }; }
+        });
+        return closest.element;
+      }
+      list.addEventListener('dragover', (e)=>{
+        const dragging = list.querySelector('.seq-item.dragging');
+        if(!dragging) return; e.preventDefault();
+        const after = getAfterElement(e.clientY);
+        if(after == null){ list.appendChild(dragging); }
+        else { list.insertBefore(dragging, after); }
+      });
+      list.addEventListener('drop', (e)=>{ e.preventDefault(); sync(); });
       // Drop en el canvas
       canvas?.addEventListener('dragover', (e)=>{ e.preventDefault(); canvas.classList.add('drag-over'); });
       canvas?.addEventListener('dragleave', ()=>{ canvas.classList.remove('drag-over'); });
@@ -533,8 +632,9 @@
         sync();
       });
 
-      // Inicializar estado
+  // Inicializar estado
       restore();
+  refreshBlockLabels();
       sync();
 
       // Asegurar que al enviar se sincronice

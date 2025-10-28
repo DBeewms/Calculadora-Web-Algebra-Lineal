@@ -516,6 +516,11 @@ def compuestas(request: HttpRequest):
                         pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in p])
                     else:
                         M = op.multiplicar_matrices(M, B)
+                elif stype == "sumb":
+                    if not B:
+                        raise ValueError("No hay matriz B para sumar (M+B).")
+                    # Suma directa; sin pasos detallados para no generar ruido redundante
+                    M = op.sumar_matrices(M, B)
                 elif stype == "inverse":
                     info = op.inversa_matriz(M, registrar_pasos=show_steps, text_fn=text_fn)
                     if isinstance(info, tuple):

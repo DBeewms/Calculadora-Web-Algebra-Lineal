@@ -5,7 +5,7 @@
   <h2>Operaciones compuestas</h2>
   <p class="lead">Arma tu propia secuencia de operaciones con bloques arrastrables, estilo Scratch. Empezamos simple y lo iremos extendiendo.</p>
 
-  <form method="post" class="matrix-form" data-mode="simple">{% csrf_token %}
+  <form method="post" class="matrix-form" data-mode="compuestas">{% csrf_token %}
     <div class="controls">
       <div class="control"><label>Filas (A)</label><input type="number" min="1" value="2" data-target="rows" data-matrix="A"/></div>
       <div class="control"><label>Columnas (A)</label><input type="number" min="1" value="2" data-target="cols" data-matrix="A"/></div>
@@ -63,10 +63,11 @@
         <div class="panel-actions"><span class="badge">Arrastra al canvas</span></div>
       </div>
       <div class="blocks-palette" id="blocksPalette">
-        <div class="block" draggable="true" data-type="transpose">Transpuesta (M^T)</div>
-        <div class="block" draggable="true" data-type="scale">Escalar (c·M)</div>
-        <div class="block" draggable="true" data-type="mulB">Multiplicar por B (M·B)</div>
-        <div class="block" draggable="true" data-type="inverse">Inversa (M^{-1})</div>
+        <div class="block" tabindex="0" role="button" draggable="true" data-type="transpose">Transpuesta (M^T)</div>
+        <div class="block" tabindex="0" role="button" draggable="true" data-type="scale">Escalar (c·M)</div>
+        <div class="block" tabindex="0" role="button" draggable="true" data-type="sumB">Sumar con B (M+B)</div>
+        <div class="block" tabindex="0" role="button" draggable="true" data-type="mulB">Multiplicar por B (M·B)</div>
+        <div class="block" tabindex="0" role="button" draggable="true" data-type="inverse">Inversa (M^{-1})</div>
       </div>
     </div>
 
