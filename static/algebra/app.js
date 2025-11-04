@@ -443,6 +443,130 @@
       });
     }
 
+    // Widget opcional: Ingreso de sistema de ecuaciones (para poblar A y b)
+    (function(){
+      function createSystemWidget(form){
+        // Panel contenedor
+        const panel = document.createElement('section');
+        panel.className = 'panel';
+        panel.setAttribute('data-system-widget','true');
+        panel.setAttribute('aria-labelledby','sys-title');
+
+        // Header con título y toggle
+        const header = document.createElement('div'); header.className = 'panel-header';
+        const h3 = document.createElement('h3'); h3.className = 'panel-title'; h3.id='sys-title'; h3.textContent = 'Ingresar sistema de ecuaciones (opcional)';
+        const actions = document.createElement('div'); actions.className = 'panel-actions';
+        const toggle = document.createElement('label'); toggle.className = 'toggle';
+        const chk = document.createElement('input'); chk.type='checkbox'; chk.name='system_enabled';
+        const track = document.createElement('span'); track.className='toggle-track';
+        const thumb = document.createElement('span'); thumb.className='toggle-thumb';
+        const lbl = document.createElement('span'); lbl.className='toggle-label'; lbl.textContent='Usar sistema';
+        toggle.appendChild(chk); toggle.appendChild(track); toggle.appendChild(thumb); toggle.appendChild(lbl);
+        actions.appendChild(toggle);
+        header.appendChild(h3); header.appendChild(actions);
+
+        // Cuerpo: instrucciones + controles + grilla
+        const body = document.createElement('div'); body.className = 'panel-body';
+        const help = document.createElement('p'); help.className='help';
+        help.textContent = 'Ingresa un sistema Ax = b. Los números que escribas en la tabla se convertirán en los coeficientes de la matriz A y del vector b.';
+        const ctrls = document.createElement('div'); ctrls.className='controls';
+        const ctlM = document.createElement('div'); ctlM.className='control';
+        const lblM = document.createElement('label'); lblM.textContent='Ecuaciones (m)';
+        const inpM = document.createElement('input'); inpM.type='number'; inpM.min='1'; inpM.value='2'; inpM.setAttribute('aria-label','Número de ecuaciones');
+        ctlM.appendChild(lblM); ctlM.appendChild(inpM);
+        const ctlN = document.createElement('div'); ctlN.className='control';
+        const lblN = document.createElement('label'); lblN.textContent='Variables (n)';
+        const inpN = document.createElement('input'); inpN.type='number'; inpN.min='1'; inpN.value='2'; inpN.setAttribute('aria-label','Número de variables');
+        ctlN.appendChild(lblN); ctlN.appendChild(inpN);
+        const btnResize = document.createElement('button'); btnResize.type='button'; btnResize.className='btn'; btnResize.textContent='Actualizar sistema';
+        ctrls.appendChild(ctlM); ctrls.appendChild(ctlN); ctrls.appendChild(btnResize);
+
+        const grid = document.createElement('div'); grid.className='sys-grid';
+
+        body.appendChild(help); body.appendChild(ctrls); body.appendChild(grid);
+
+        panel.appendChild(header); panel.appendChild(body);
+
+        // Insertar panel de forma robusta: preferente antes del bloque de matrices; si no, al inicio del form
+        const matricesPanel = form.querySelector('.grid.matrices');
+        if(matricesPanel && matricesPanel.parentNode){
+          matricesPanel.parentNode.insertBefore(panel, matricesPanel);
+        } else {
+          form.insertBefore(panel, form.firstElementChild || null);
+        }
+
+        // Construir la tabla de coeficientes A|b
+        function buildSysTable(m, n){
+          grid.innerHTML = '';
+          const table = document.createElement('table'); table.className = 'matriz editable mini';
+          const thead = document.createElement('thead');
+          const hrow = document.createElement('tr');
+          for(let j=0;j<n;j++){ const th = document.createElement('th'); th.textContent = `x${j+1}`; hrow.appendChild(th); }
+          const thEq = document.createElement('th'); thEq.textContent = '= b'; hrow.appendChild(thEq);
+          thead.appendChild(hrow); table.appendChild(thead);
+          const tbody = document.createElement('tbody');
+          for(let i=0;i<m;i++){
+            const tr = document.createElement('tr');
+            for(let j=0;j<n;j++){
+              const td = document.createElement('td'); const inp = document.createElement('input'); inp.type='text'; inp.placeholder='0';
+              inp.setAttribute('aria-label',`Coeficiente de x${j+1} en ecuación ${i+1}`);
+              td.appendChild(inp); tr.appendChild(td);
+            }
+            const tdB = document.createElement('td'); const inpb = document.createElement('input'); inpb.type='text'; inpb.placeholder='0';
+            inpb.setAttribute('aria-label',`Término independiente b de la ecuación ${i+1}`);
+            tdB.appendChild(inpb); tr.appendChild(tdB);
+            tbody.appendChild(tr);
+          }
+          table.appendChild(tbody);
+          grid.appendChild(table);
+        }
+
+        // Serializar a strings para matrizA y vectorB
+        function serializeToHidden(){
+          if(!chk.checked) return;
+          const table = grid.querySelector('table'); if(!table) return;
+          const rows = Array.from(table.querySelectorAll('tbody tr'));
+          const A_rows = [];
+          const b_rows = [];
+          rows.forEach(tr=>{
+            const cells = Array.from(tr.querySelectorAll('td input'));
+            const coeffs = cells.slice(0, cells.length-1).map(inp=> (inp.value||'0').trim()||'0');
+            const bval = (cells[cells.length-1].value||'0').trim()||'0';
+            A_rows.push(coeffs.join(' '));
+            b_rows.push(bval);
+          });
+          const A_str = A_rows.join('\n');
+          const b_str = b_rows.join('\n');
+          const hiddenA = form.querySelector('input[name="matrizA"]'); if(hiddenA) hiddenA.value = A_str;
+          const hiddenb = form.querySelector('input[name="vectorB"], input[name="vectorb"]'); if(hiddenb) hiddenb.value = b_str;
+          // Si el formulario usa modo aumentado, la función updateHidden creará matrizAug a partir de A y b
+          try{ updateHidden(form); }catch(e){}
+        }
+
+        // Eventos
+        function syncVisibility(){ body.style.display = chk.checked ? '' : 'none'; panel.setAttribute('data-enabled', chk.checked ? 'true':'false'); }
+        chk.addEventListener('change', ()=>{ syncVisibility(); if(chk.checked) serializeToHidden(); });
+        btnResize.addEventListener('click', ()=>{ const m = Math.max(1, +inpM.value||2); const n = Math.max(1, +inpN.value||2); buildSysTable(m,n); serializeToHidden(); });
+        // Cambios en la grilla
+        grid.addEventListener('input', ()=> serializeToHidden());
+
+        // Inicialización
+        syncVisibility();
+        buildSysTable(+inpM.value||2, +inpN.value||2);
+        // Al enviar, aseguramos override de hidden si está activo
+        form.addEventListener('submit', ()=> serializeToHidden());
+
+        return panel;
+      }
+
+      // Inyectar en todos los formularios con matrices
+      document.querySelectorAll('form.matrix-form').forEach(form=>{
+        // Evitar duplicados buscando el atributo del propio widget
+        if(form.querySelector('[data-system-widget="true"]')) return;
+        createSystemWidget(form);
+      });
+    })();
+
     // Composer: bloques arrastrables para Operaciones compuestas
     (function(){
       const page = document.querySelector('[data-page="compuestas"]');
