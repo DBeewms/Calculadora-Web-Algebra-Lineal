@@ -9,6 +9,8 @@
   --active: rgba(0,0,0,.06);
   --shadow-1: 0 1px 2px rgba(0,0,0,.06);
   --shadow-2: 0 4px 12px rgba(0,0,0,.08);
+  --kb-key-min: 52px;
+  --kb-gap: 8px;
 }
 /* Dark theme */
 :root[data-theme="dark"]{
@@ -210,7 +212,49 @@ button:hover{ opacity:.9 }
 /* secondary/ghost redefinidos arriba */
 
 /* Floating action button */
-/* (Removed FAB toggle) */
+.kb-fab{ position:fixed; right:18px; bottom:18px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg, var(--violet), var(--savoy)); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 20px rgba(0,0,0,.18); cursor:pointer; z-index:1200 }
+.kb-fab:hover{ transform:translateY(-1px); box-shadow:0 12px 24px rgba(0,0,0,.22) }
+
+/* Popup keyboard */
+.kb-popup{ position:fixed; left:50%; transform:translateX(-50%); bottom:80px; width:min(980px, 96vw); background:var(--card); border:1px solid var(--border); border-radius:18px; overflow:hidden; box-shadow:var(--shadow-2); z-index:1190; display:none }
+.kb-popup.show{ display:block }
+.kb-header{ position:relative; display:flex; align-items:center; justify-content:center; padding:8px; border-bottom:1px solid var(--border); background:var(--card); border-top-left-radius:18px; border-top-right-radius:18px }
+.kb-tabs{ display:flex; gap:6px; margin:0 auto; justify-content:center }
+.kb-tab{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:#fff; cursor:pointer; font-weight:700; color:var(--violet); margin:0 }
+.kb-tab.active{ background:var(--primary); color:#fff; border-color:transparent }
+.kb-close{ position:absolute; top:6px; right:6px; margin:0; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid transparent; background:transparent; cursor:pointer; color:var(--muted); transition:background .2s, color .2s, box-shadow .2s }
+.kb-close:hover{ background:var(--hover); color:var(--violet) }
+.kb-close:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
+.kb-body{ padding:10px }
+.kb-pane{ display:none }
+.kb-pane.active{ display:block }
+.kb-grid{ display:grid; grid-template-columns:repeat(8, minmax(0,1fr)); gap:var(--kb-gap) }
+.kb-grid.num{ grid-template-columns:repeat(10, minmax(var(--kb-key-min), max-content)); width:max-content; margin:0 auto }
+.kb-grid.alpha{ grid-template-columns:repeat(10, minmax(var(--kb-key-min), max-content)); width:max-content; margin:0 auto }
+.kb-grid button, .kb-key{ padding:10px; min-width:var(--kb-key-min); border-radius:10px; border:1px solid var(--border); background:#fff; font-weight:600; cursor:pointer; margin:0; color:#111 }
+.kb-key.op{ color:var(--violet); background:rgba(57,73,171,.06) }
+.kb-key.ctrl{ color:#111; background:#f1f5f9 }
+.kb-key.eq{ background:var(--primary); color:#fff; border-color:transparent }
+.kb-key.ghost{ background:#eef2ff; color:var(--violet) }
+.kb-key.template{ background:#fff; border-style:dashed }
+.kb-grid button.wide{ grid-column:span 2 }
+/* Wider spans for layout control (used by ABC space bar) */
+.kb-grid .kb-key.wide4{ grid-column:span 4 }
+.kb-grid .kb-key.wide5{ grid-column:span 5 }
+.kb-grid .kb-key.wide6{ grid-column:span 6 }
+.kb-grid .kb-key.space{ text-transform:lowercase }
+.kb-grid button:hover{ background:rgba(57,73,171,.08) }
+.kb-grid button:active{ transform:translateY(1px) }
+.kb-popup .hint{ color:var(--muted); font-size:12px }
+
+@media (max-width: 640px){
+  :root{ --kb-key-min: 44px; --kb-gap: 6px }
+  .kb-grid{ grid-template-columns:repeat(6, minmax(0,1fr)) }
+  .kb-grid.num{ grid-template-columns:repeat(6, minmax(var(--kb-key-min), max-content)); }
+  .kb-grid.alpha{ grid-template-columns:repeat(6, minmax(var(--kb-key-min), max-content)); }
+  .kb-grid button, .kb-key{ padding:8px }
+  .kb-popup{ bottom:74px }
+}
 
 /* Theme toggle */
 .theme-toggle{ position:relative; width:70px; height:32px; border:none; background:var(--border); border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; padding:0 8px; gap:6px; font:inherit; color:var(--muted); transition:background .25s }

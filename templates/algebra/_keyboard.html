@@ -1,0 +1,108 @@
+{# Popup Keyboard Component #}
+<div id="kbPopup" class="kb-popup" role="dialog" aria-modal="false" aria-hidden="true">
+  <div class="kb-header">
+    <div class="kb-tabs" role="tablist" aria-label="Teclado">
+  <button type="button" class="kb-tab active" data-tab="num" role="tab" aria-selected="true">123</button>
+  <button type="button" class="kb-tab" data-tab="abc" role="tab" aria-selected="false">ABC</button>
+  <button type="button" class="kb-close" data-action="close" aria-label="Cerrar">✕</button>
+    </div>
+  </div>
+  <div class="kb-body">
+    <div class="kb-pane active" data-pane="num">
+      <div class="kb-grid num">
+        <!-- Fila 1: vars + 7 8 9 × ÷ -->
+        <button type="button" class="kb-key var" data-k="x">x</button>
+        <button type="button" class="kb-key var" data-k="y">y</button>
+        <button type="button" class="kb-key var" data-k="π">π</button>
+        <button type="button" class="kb-key var" data-k="e">e</button>
+        <button type="button" class="kb-key" data-k="7">7</button>
+        <button type="button" class="kb-key" data-k="8">8</button>
+        <button type="button" class="kb-key" data-k="9">9</button>
+        <button type="button" class="kb-key op" data-k="×">×</button>
+        <button type="button" class="kb-key op" data-k="÷">÷</button>
+        <!-- Separador (vacío para cuadrícula uniforme) -->
+        <span aria-hidden="true"></span>
+
+        <!-- Fila 2: plantillas + 4 5 6 + − -->
+        <button type="button" class="kb-key template" data-ins="^2">x²</button>
+        <button type="button" class="kb-key template" data-ins="√()" data-cursor="-1">√x</button>
+        <button type="button" class="kb-key template" data-ins="| |" data-cursor="-1">|x|</button>
+        <button type="button" class="kb-key template" data-ins="[]" data-cursor="-1">[x]</button>
+        <button type="button" class="kb-key" data-k="4">4</button>
+        <button type="button" class="kb-key" data-k="5">5</button>
+        <button type="button" class="kb-key" data-k="6">6</button>
+        <button type="button" class="kb-key op" data-k="+">+</button>
+        <button type="button" class="kb-key op" data-k="-">−</button>
+        <span aria-hidden="true"></span>
+
+        <!-- Fila 3: comparadores + 1 2 3 = ⌫ -->
+        <button type="button" class="kb-key" data-k="<"><</button>
+        <button type="button" class="kb-key" data-k=">">></button>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+    <button type="button" class="kb-key" data-k="1">1</button>
+    <button type="button" class="kb-key" data-k="2">2</button>
+    <button type="button" class="kb-key" data-k="3">3</button>
+    <button type="button" class="kb-key op" data-k="=">=</button>
+        <button type="button" class="kb-key ctrl" data-action="backspace">⌫</button>
+        <span aria-hidden="true"></span>
+
+        <!-- Fila 4: utilidades + 0 . ◀ ▶ ↵ -->
+        <button type="button" class="kb-key ghost" data-k="ans">ans</button>
+        <button type="button" class="kb-key" data-k=",">,</button>
+        <button type="button" class="kb-key template" data-ins="()" data-cursor="-1">( )</button>
+        <span aria-hidden="true"></span>
+        <button type="button" class="kb-key" data-k="0">0</button>
+        <button type="button" class="kb-key" data-k=".">.</button>
+        <button type="button" class="kb-key ctrl" data-action="left">◀</button>
+        <button type="button" class="kb-key ctrl" data-action="right">▶</button>
+        <button type="button" class="kb-key ctrl" data-action="enter">↵</button>
+        <span aria-hidden="true"></span>
+      </div>
+    </div>
+    
+    <div class="kb-pane" data-pane="abc">
+  <div class="kb-grid alpha">
+        <!-- Fila 1 -->
+        <button type="button" class="kb-key" data-k="q">q</button>
+        <button type="button" class="kb-key" data-k="w">w</button>
+        <button type="button" class="kb-key" data-k="e">e</button>
+        <button type="button" class="kb-key" data-k="r">r</button>
+        <button type="button" class="kb-key" data-k="t">t</button>
+        <button type="button" class="kb-key" data-k="y">y</button>
+        <button type="button" class="kb-key" data-k="u">u</button>
+        <button type="button" class="kb-key" data-k="i">i</button>
+        <button type="button" class="kb-key" data-k="o">o</button>
+        <button type="button" class="kb-key" data-k="p">p</button>
+        <!-- Fila 2 -->
+        <button type="button" class="kb-key" data-k="a">a</button>
+        <button type="button" class="kb-key" data-k="s">s</button>
+        <button type="button" class="kb-key" data-k="d">d</button>
+        <button type="button" class="kb-key" data-k="f">f</button>
+        <button type="button" class="kb-key" data-k="g">g</button>
+        <button type="button" class="kb-key" data-k="h">h</button>
+        <button type="button" class="kb-key" data-k="j">j</button>
+        <button type="button" class="kb-key" data-k="k">k</button>
+        <button type="button" class="kb-key" data-k="l">l</button>
+        <button type="button" class="kb-key" data-k="ñ">ñ</button>
+        <!-- Fila 3 -->
+        <button type="button" class="kb-key" data-k="z">z</button>
+        <button type="button" class="kb-key" data-k="x">x</button>
+        <button type="button" class="kb-key" data-k="c">c</button>
+        <button type="button" class="kb-key" data-k="v">v</button>
+        <button type="button" class="kb-key" data-k="b">b</button>
+        <button type="button" class="kb-key" data-k="n">n</button>
+        <button type="button" class="kb-key" data-k="m">m</button>
+        <button type="button" class="kb-key" data-k=",">,</button>
+        <button type="button" class="kb-key template" data-ins="()" data-cursor="-1">( )</button>
+        <button type="button" class="kb-key" data-k=".">.</button>
+        <!-- Fila 4: acciones -->
+        <button type="button" class="kb-key space wide6" data-k=" ">espacio</button>
+        <button type="button" class="kb-key ctrl" data-action="left">◀</button>
+        <button type="button" class="kb-key ctrl" data-action="right">▶</button>
+        <button type="button" class="kb-key ctrl" data-action="backspace">⌫</button>
+        <button type="button" class="kb-key ctrl" data-action="enter">↵</button>
+      </div>
+    </div>
+  </div>
+</div>
