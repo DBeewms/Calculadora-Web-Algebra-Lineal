@@ -215,7 +215,33 @@ def gauss(request: HttpRequest):
             fmt = request.POST.get("result_format")
             prec = request.POST.get("precision") or 6
             text_fn = _make_text_fn(fmt, prec)
-            M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
+            eqs_txt = (request.POST.get("equations") or "").strip()
+            if eqs_txt:
+                vars_ord, A, b = u.parsear_sistema_ecuaciones(eqs_txt)
+                # Enforce counts from UI when provided
+                try:
+                    exp_rows = int(request.POST.get("rows") or 0)
+                except Exception:
+                    exp_rows = 0
+                try:
+                    exp_cols = int(request.POST.get("cols") or 0)
+                except Exception:
+                    exp_cols = 0
+                if exp_rows and len(A) != exp_rows:
+                    raise ValueError(f"Se esperaban {exp_rows} ecuaciones, pero ingresaste {len(A)}.")
+                if exp_cols and len(vars_ord) != exp_cols:
+                    raise ValueError(f"Se esperaban {exp_cols} variables distintas, pero se detectaron {len(vars_ord)}: {', '.join(vars_ord)}.")
+                M = [row + [b[i]] for i, row in enumerate(A)]
+                ctx["vars"] = vars_ord
+                # Prefill matrices inputs on response so A|b refleje las ecuaciones ingresadas
+                try:
+                    preA = [[u.texto_fraccion(x) for x in fila] for fila in A]
+                    preb = [u.texto_fraccion(x) for x in b]
+                    ctx["prefill"] = json.dumps({"A": preA, "b": preb})
+                except Exception:
+                    pass
+            else:
+                M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
             want_steps = bool(request.POST.get("show_steps"))
             info = op.gauss_info(M, registrar_pasos=want_steps, text_fn=text_fn)
             R = info["matriz"]
@@ -243,7 +269,33 @@ def gauss_jordan(request: HttpRequest):
             fmt = request.POST.get("result_format")
             prec = request.POST.get("precision") or 6
             text_fn = _make_text_fn(fmt, prec)
-            M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
+            eqs_txt = (request.POST.get("equations") or "").strip()
+            if eqs_txt:
+                vars_ord, A, b = u.parsear_sistema_ecuaciones(eqs_txt)
+                # Enforce counts from UI when provided
+                try:
+                    exp_rows = int(request.POST.get("rows") or 0)
+                except Exception:
+                    exp_rows = 0
+                try:
+                    exp_cols = int(request.POST.get("cols") or 0)
+                except Exception:
+                    exp_cols = 0
+                if exp_rows and len(A) != exp_rows:
+                    raise ValueError(f"Se esperaban {exp_rows} ecuaciones, pero ingresaste {len(A)}.")
+                if exp_cols and len(vars_ord) != exp_cols:
+                    raise ValueError(f"Se esperaban {exp_cols} variables distintas, pero se detectaron {len(vars_ord)}: {', '.join(vars_ord)}.")
+                M = [row + [b[i]] for i, row in enumerate(A)]
+                ctx["vars"] = vars_ord
+                # Prefill matrices inputs on response so A|b refleje las ecuaciones ingresadas
+                try:
+                    preA = [[u.texto_fraccion(x) for x in fila] for fila in A]
+                    preb = [u.texto_fraccion(x) for x in b]
+                    ctx["prefill"] = json.dumps({"A": preA, "b": preb})
+                except Exception:
+                    pass
+            else:
+                M = _parse_matriz_aumentada(request.POST.get("matrizAug"))
             want_steps = bool(request.POST.get("show_steps"))
             info = op.gauss_jordan_info(M, registrar_pasos=want_steps, text_fn=text_fn)
             R = info["matriz"]

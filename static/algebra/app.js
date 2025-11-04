@@ -91,6 +91,13 @@
             }
           });
         }
+        // Re-apply controls so dynamically created equation inputs receive saved values
+        if(state && state.controls){
+          Object.keys(state.controls).forEach(k=>{
+            const el = form.querySelector(`[data-target="${k}"]`);
+            if(el) el.value = state.controls[k];
+          });
+        }
         updateHidden(form);
       }, 0);
     }catch(e){ /* no-op */ }
@@ -117,6 +124,33 @@
       }
       const hiddenAug = form.querySelector('input[name="matrizAug"]');
       if(hiddenAug) hiddenAug.value = out.join('\n');
+      // Sync dimension selectors to hidden fields so backend can enforce counts for equations input
+      const rCtl = form.querySelector('[data-target="rows"]');
+      const cCtl = form.querySelector('[data-target="cols"]');
+      const rHidden = form.querySelector('input[name="rows"]');
+      const cHidden = form.querySelector('input[name="cols"]');
+      if(rCtl && rHidden){ rHidden.value = String(+rCtl.value || 0); }
+      if(cCtl && cHidden){ cHidden.value = String(+cCtl.value || 0); }
+      // Update equations meta badges and hint if present
+      const eqCountEl = form.querySelector('#eqCountBadge strong');
+      const varCountEl = form.querySelector('#varCountBadge strong');
+      const hintEl = form.querySelector('#eqHint');
+      const rVal = +rCtl?.value || 0;
+      const cVal = +cCtl?.value || 0;
+      if(eqCountEl) eqCountEl.textContent = String(rVal || 0);
+      if(varCountEl) varCountEl.textContent = String(cVal || 0);
+      if(hintEl){
+        const varsPreview = cVal <= 3 ? ['x','y','z'].slice(0, Math.max(1,cVal)).join(', ') : `x1…x${cVal}`;
+        hintEl.textContent = `Ingresa ${rVal||0} ecuaciones con ${cVal||0} variables (p. ej., ${varsPreview}). Formato: a1·x1 + a2·x2 + … = b. Acepta fracciones (3/4), potencias (^), y raíces (√() o sqrt()).`;
+      }
+      // Compose equations hidden from per-line inputs if present
+      const eqList = form.querySelector('#equationsList');
+      const eqHidden = form.querySelector('input[name="equations"]');
+      if(eqList && eqHidden){
+        const lines = Array.from(eqList.querySelectorAll('input.eq-line')).map(inp=> (inp.value||'').trim());
+        while(lines.length && lines[lines.length-1] === ''){ lines.pop(); }
+        eqHidden.value = lines.join('\n');
+      }
     }
   }
   function initForm(form){
@@ -175,6 +209,39 @@
         buildMatrix(boxA, r, c);
         boxB.setAttribute('data-cols', '1');
         buildMatrix(boxB, r, 1);
+        // Build equation input lines to match r
+        const eqList = form.querySelector('#equationsList');
+        if(eqList){
+          const prevVals = Array.from(eqList.querySelectorAll('input.eq-line')).map(inp=> inp.value);
+          eqList.innerHTML = '';
+          for(let i=0;i<r;i++){
+            const wrap = document.createElement('div');
+            wrap.className = 'eq-item';
+            const badge = document.createElement('span');
+            badge.className = 'eq-index';
+            badge.setAttribute('aria-hidden','true');
+            badge.textContent = String(i+1);
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'eq-line';
+            // Example placeholder according to variable count
+            let example = 'x + 2y = 5';
+            if(c <= 1){ example = '3x = 6'; }
+            else if(c === 2){ example = 'x + 2y = 5'; }
+            else if(c === 3){ example = 'x + 2y - z = 7'; }
+            else { example = 'x1 + 2x2 + … = 7'; }
+            inp.placeholder = `Ecuación ${i+1} (ej: ${example})`;
+            inp.setAttribute('data-target', `eq${i}`);
+            inp.setAttribute('aria-label', `Ecuación ${i+1} de ${r}`);
+            if(prevVals[i] != null) inp.value = prevVals[i];
+            inp.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+            wrap.appendChild(badge);
+            wrap.appendChild(inp);
+            eqList.appendChild(wrap);
+          }
+        }
+        // Sync meta after building list
+        updateHidden(form);
       } else if(mode === 'simple') {
         const r = +form.querySelector('[data-target="rows"]').value || 2;
         const c = +form.querySelector('[data-target="cols"]').value || 2;
@@ -226,6 +293,7 @@
     form.querySelectorAll('[data-action="clear"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         form.querySelectorAll('.matrix input').forEach(inp=> inp.value='');
+        form.querySelectorAll('#equationsList input.eq-line').forEach(inp=> inp.value='');
         updateHidden(form);
         try{ localStorage.removeItem(getStateKey(form)); }catch(e){}
       });
@@ -310,6 +378,62 @@
     document.querySelectorAll('form.matrix-form').forEach(initForm);
     // Intentar restaurar el estado guardado (mantiene inputs tras enviar)
     document.querySelectorAll('form.matrix-form').forEach(loadFormState);
+    // Aplicar prefill derivado de ecuaciones (servidor) para A|b en vistas aug
+    document.querySelectorAll('form.matrix-form[data-mode="aug"]').forEach(form=>{
+      const script = form.querySelector('#prefillData');
+      if(!script) return;
+      let data = null;
+      try{ data = JSON.parse(script.textContent||''); }catch(e){ data = null; }
+      if(!data || !Array.isArray(data.A) || !Array.isArray(data.b)) return;
+      const rows = data.A.length;
+      const cols = rows ? (data.A[0]?.length||0) : 0;
+      const rCtl = form.querySelector('[data-target="rows"]');
+      const cCtl = form.querySelector('[data-target="cols"]');
+      if(rCtl) rCtl.value = String(rows||0);
+      if(cCtl) cCtl.value = String(cols||0);
+      // Redimensionar matrices acorde a A y b
+      form.querySelector('[data-action="resize"]')?.click();
+      // Rellenar A
+      const boxA = form.querySelector('.matrix[data-name="matrizA"]');
+      const tableA = boxA?.querySelector('table');
+      if(tableA && rows && cols){
+        const trs = tableA.querySelectorAll('tr');
+        for(let i=0;i<rows;i++){
+          const inputs = trs[i]?.querySelectorAll('input')||[];
+          for(let j=0;j<cols;j++){
+            if(inputs[j]) inputs[j].value = String(data.A[i]?.[j] ?? '0');
+          }
+        }
+      }
+      // Rellenar b
+      const boxB = form.querySelector('.matrix[data-name="vectorB"]');
+      const tableB = boxB?.querySelector('table');
+      if(tableB && rows){
+        const trsB = tableB.querySelectorAll('tr');
+        for(let i=0;i<rows;i++){
+          const inp = trsB[i]?.querySelector('input');
+          if(inp) inp.value = String(data.b?.[i] ?? '0');
+        }
+      }
+      updateHidden(form);
+      saveFormState(form);
+    });
+
+    // Ecuaciones: abrir/cerrar popup lateral izquierdo
+    document.querySelectorAll('form.matrix-form[data-mode="aug"]').forEach(form=>{
+      const popup = form.querySelector('.eq-popup');
+      const openBtn = form.querySelector('[data-action="open-eq"]');
+      if(!popup || !openBtn) return;
+      const overlay = popup.querySelector('.eq-overlay');
+      function open(){ popup.classList.add('show'); popup.setAttribute('aria-hidden','false'); }
+      function close(){ popup.classList.remove('show'); popup.setAttribute('aria-hidden','true'); }
+      openBtn.addEventListener('click', open);
+      popup.addEventListener('click', (e)=>{
+        const btn = e.target.closest('[data-action="close-eq"]');
+        if(btn || e.target === overlay){ close(); }
+      });
+      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') close(); });
+    });
     // Mostrar/Ocultar control de precisión según formato de resultado
     document.querySelectorAll('form.matrix-form').forEach(form=>{
       const fmt = form.querySelector('select[name="result_format"]');

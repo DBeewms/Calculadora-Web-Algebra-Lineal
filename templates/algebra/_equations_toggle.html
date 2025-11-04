@@ -1,0 +1,25 @@
+{# Popup lateral izquierdo para ingresar ecuaciones. Debe incluirse dentro del <form>. #}
+<div class="eq-popup" aria-hidden="true">
+	<div class="eq-overlay" data-action="close-eq" aria-hidden="true"></div>
+	<div class="eq-panel" role="dialog" aria-labelledby="eqTitle" aria-modal="true">
+		<div class="eq-header">
+			<h3 id="eqTitle" class="panel-title">Ecuaciones</h3>
+			<button type="button" class="eq-close" data-action="close-eq" aria-label="Cerrar">×</button>
+		</div>
+		<div class="eq-body">
+			<p class="muted small">Ingresa el sistema en forma lineal. Al calcular, se llenarán A y b automáticamente.</p>
+			<div id="equationsBox">
+				<div class="eq-meta">
+					<span class="badge" id="eqCountBadge">Ecuaciones: <strong>—</strong></span>
+					<span class="badge" id="varCountBadge">Variables: <strong>—</strong></span>
+				</div>
+				<p class="muted small" id="eqHint" style="margin:6px 0 10px">Ingresa N ecuaciones con M variables. Formato: a1·x1 + a2·x2 + … = b. Acepta fracciones (3/4), potencias (^), y raíces (√() o sqrt()).</p>
+				<div id="equationsList" class="eq-list"></div>
+				<input type="hidden" name="equations" />
+			</div>
+		</div>
+		<div class="eq-footer">
+			<button type="button" class="btn ghost" data-action="close-eq">Cerrar</button>
+		</div>
+	</div>
+</div>

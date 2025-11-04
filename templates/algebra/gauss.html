@@ -25,6 +25,7 @@
       <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
     </div>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+    <button type="button" class="btn ghost" data-action="open-eq">Ecuaciones…</button>
   </div>
   <div class="matrix-aug panel">
     <div class="matrix" data-name="matrizA"></div>
@@ -33,12 +34,16 @@
     <input type="hidden" name="matrizA"/>
     <input type="hidden" name="vectorB"/>
     <input type="hidden" name="matrizAug"/>
+    <input type="hidden" name="rows"/>
+    <input type="hidden" name="cols"/>
   </div>
+  {% include "algebra/_equations_toggle.html" %}
   <div class="actions">
     <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
     <button type="button" class="btn ghost" data-action="example" data-example="aug">Ejemplo</button>
     <button type="submit" class="btn primary">Calcular</button>
   </div>
+  {% if prefill %}<script id="prefillData" type="application/json">{{ prefill|safe }}</script>{% endif %}
 </form>
 
 {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
@@ -51,6 +56,7 @@
       <span class="badge">Matriz de coeficientes A {{ dims.A }}</span>
       <span class="badge">Vector columna b {{ dims.b }}</span>
       <span class="badge">Forma escalonada</span>
+      {% if vars %}<span class="badge">Vars: {{ vars|join:', ' }}</span>{% endif %}
     </div>
   </div>
   <div class="panel-body">
