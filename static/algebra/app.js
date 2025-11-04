@@ -446,6 +446,7 @@
     // Widget opcional: Ingreso de sistema de ecuaciones (para poblar A y b)
     (function(){
       function createSystemWidget(form){
+        console.log('[sys-widget] createSystemWidget called for form', form && form.getAttribute ? form.getAttribute('action') || form.getAttribute('class') : form);
         // Panel contenedor
         const panel = document.createElement('section');
         panel.className = 'panel';
@@ -456,8 +457,8 @@
         const header = document.createElement('div'); header.className = 'panel-header';
         const h3 = document.createElement('h3'); h3.className = 'panel-title'; h3.id='sys-title'; h3.textContent = 'Ingresar sistema de ecuaciones (opcional)';
         const actions = document.createElement('div'); actions.className = 'panel-actions';
-        const toggle = document.createElement('label'); toggle.className = 'toggle';
-        const chk = document.createElement('input'); chk.type='checkbox'; chk.name='system_enabled';
+  const toggle = document.createElement('label'); toggle.className = 'toggle';
+  const chk = document.createElement('input'); chk.type='checkbox'; chk.name='system_enabled';
         const track = document.createElement('span'); track.className='toggle-track';
         const thumb = document.createElement('span'); thumb.className='toggle-thumb';
         const lbl = document.createElement('span'); lbl.className='toggle-label'; lbl.textContent='Usar sistema';
@@ -481,9 +482,9 @@
         const btnResize = document.createElement('button'); btnResize.type='button'; btnResize.className='btn'; btnResize.textContent='Actualizar sistema';
         ctrls.appendChild(ctlM); ctrls.appendChild(ctlN); ctrls.appendChild(btnResize);
 
-        const grid = document.createElement('div'); grid.className='sys-grid';
+  const grid = document.createElement('div'); grid.className='sys-grid';
 
-        body.appendChild(help); body.appendChild(ctrls); body.appendChild(grid);
+  body.appendChild(help); body.appendChild(ctrls); body.appendChild(grid);
 
         panel.appendChild(header); panel.appendChild(body);
 
@@ -495,46 +496,82 @@
           form.insertBefore(panel, form.firstElementChild || null);
         }
 
-        // Construir la tabla de coeficientes A|b
+        // Construir N bloques de texto (uno por ecuación). Cada bloque es un textarea
+        // donde el usuario puede pegar/editar la ecuación completa.
+        // Si hay más de una ecuación, se generan múltiples textareas.
         function buildSysTable(m, n){
+          console.log('[sys-widget] buildSysTable m=',m,' n=',n);
           grid.innerHTML = '';
-          const table = document.createElement('table'); table.className = 'matriz editable mini';
-          const thead = document.createElement('thead');
-          const hrow = document.createElement('tr');
-          for(let j=0;j<n;j++){ const th = document.createElement('th'); th.textContent = `x${j+1}`; hrow.appendChild(th); }
-          const thEq = document.createElement('th'); thEq.textContent = '= b'; hrow.appendChild(thEq);
-          thead.appendChild(hrow); table.appendChild(thead);
-          const tbody = document.createElement('tbody');
           for(let i=0;i<m;i++){
-            const tr = document.createElement('tr');
-            for(let j=0;j<n;j++){
-              const td = document.createElement('td'); const inp = document.createElement('input'); inp.type='text'; inp.placeholder='0';
-              inp.setAttribute('aria-label',`Coeficiente de x${j+1} en ecuación ${i+1}`);
-              td.appendChild(inp); tr.appendChild(td);
-            }
-            const tdB = document.createElement('td'); const inpb = document.createElement('input'); inpb.type='text'; inpb.placeholder='0';
-            inpb.setAttribute('aria-label',`Término independiente b de la ecuación ${i+1}`);
-            tdB.appendChild(inpb); tr.appendChild(tdB);
-            tbody.appendChild(tr);
+            const block = document.createElement('div'); block.className = 'sys-block';
+            const lbl = document.createElement('label'); lbl.textContent = `Ecuación ${i+1}`;
+            const ta = document.createElement('textarea');
+            ta.rows = 2;
+            ta.className = 'sys-text';
+            ta.placeholder = 'Ejemplo: 3 2 -1 | 5   ó   3 x1 + 2 x2 - x3 = 5';
+            ta.setAttribute('data-idx', String(i));
+            ta.setAttribute('aria-label', `Ecuación ${i+1}: coeficientes y término independiente`);
+            block.appendChild(lbl);
+            block.appendChild(ta);
+            grid.appendChild(block);
           }
-          table.appendChild(tbody);
-          grid.appendChild(table);
         }
 
-        // Serializar a strings para matrizA y vectorB
+        // Serializar textareas a strings para matrizA y vectorB.
+        // Se aceptan varios formatos: "a b c | d", "a b c = d", o expresiones con x (se extraen números).
+        function parseNumericTokens(s){
+          // Encuentra fracciones como -3/2 o números decimales y enteros con signo opcional
+          const re = /[-+]?\d+\/\d+|[-+]?\d*\.?\d+/g;
+          const matches = s.match(re);
+          return matches || [];
+        }
+
         function serializeToHidden(){
+          console.log('[sys-widget] serializeToHidden called; enabled=', chk.checked);
           if(!chk.checked) return;
-          const table = grid.querySelector('table'); if(!table) return;
-          const rows = Array.from(table.querySelectorAll('tbody tr'));
+          const textareas = Array.from(grid.querySelectorAll('.sys-text'));
+          if(textareas.length === 0) return;
+          const m = textareas.length;
+          const n = Math.max(1, +inpN.value || 1);
           const A_rows = [];
           const b_rows = [];
-          rows.forEach(tr=>{
-            const cells = Array.from(tr.querySelectorAll('td input'));
-            const coeffs = cells.slice(0, cells.length-1).map(inp=> (inp.value||'0').trim()||'0');
-            const bval = (cells[cells.length-1].value||'0').trim()||'0';
+          textareas.forEach((ta, idx)=>{
+            const raw = (ta.value || '').trim();
+            if(raw === ''){
+              // fila vacía -> ceros
+              A_rows.push(Array(n).fill('0').join(' '));
+              b_rows.push('0');
+              return;
+            }
+            // separar por '|' o '=' preferentemente
+            let left = raw;
+            let right = null;
+            if(raw.indexOf('|') >= 0){ const parts = raw.split('|'); left = parts[0]; right = parts.slice(1).join('|'); }
+            else if(raw.indexOf('=') >= 0){ const parts = raw.split('='); left = parts[0]; right = parts.slice(1).join('='); }
+
+            // extraer tokens numéricos
+            let leftTokens = parseNumericTokens(left);
+            let rightTokens = right ? parseNumericTokens(right) : [];
+
+            // Si no hay tokens en left pero hay tokens en todo el string, intentar extraer todos
+            if(leftTokens.length === 0){ leftTokens = parseNumericTokens(raw); }
+
+            // Decidir cuáles son coeficientes y cuál el término independiente
+            let coeffs = [];
+            let bval = '0';
+            if(rightTokens.length > 0){ coeffs = leftTokens; bval = rightTokens.join(' '); }
+            else if(leftTokens.length >= n + 1){ coeffs = leftTokens.slice(0, n); bval = leftTokens.slice(n).join(' '); }
+            else if(leftTokens.length === n){ coeffs = leftTokens; bval = '0'; }
+            else {
+              // Si hay menos tokens, rellenar con ceros
+              coeffs = leftTokens.slice(0, n);
+            }
+            // Normalizar length of coeffs
+            for(let k = coeffs.length; k < n; k++) coeffs.push('0');
             A_rows.push(coeffs.join(' '));
-            b_rows.push(bval);
+            b_rows.push((bval || '0').toString());
           });
+
           const A_str = A_rows.join('\n');
           const b_str = b_rows.join('\n');
           const hiddenA = form.querySelector('input[name="matrizA"]'); if(hiddenA) hiddenA.value = A_str;
@@ -544,11 +581,33 @@
         }
 
         // Eventos
-        function syncVisibility(){ body.style.display = chk.checked ? '' : 'none'; panel.setAttribute('data-enabled', chk.checked ? 'true':'false'); }
-        chk.addEventListener('change', ()=>{ syncVisibility(); if(chk.checked) serializeToHidden(); });
+        function toggleMatrixInputs(disable){
+          // Desactivar/activar todos los inputs dentro de .matrix
+          const mats = form.querySelectorAll('.matrix');
+          mats.forEach(box=>{
+            box.querySelectorAll('input, textarea, select').forEach(el=>{ el.disabled = !!disable; });
+          });
+        }
+
+        // Mantener la apariencia visual del toggle consistente con otros toggles
+        function syncToggleVisual(){
+          if(chk.checked) toggle.classList.add('active'); else toggle.classList.remove('active');
+        }
+
+        function syncVisibility(){
+          console.log('[sys-widget] syncVisibility checked=', chk.checked);
+          body.style.display = chk.checked ? '' : 'none';
+          panel.setAttribute('data-enabled', chk.checked ? 'true':'false');
+          // Visual del toggle
+          syncToggleVisual();
+          // Cuando está activo, desactivar entradas en las matrices para evitar conflicto
+          toggleMatrixInputs(chk.checked);
+        }
+
+  chk.addEventListener('change', ()=>{ syncVisibility(); if(chk.checked) serializeToHidden(); else updateHidden(form); });
         btnResize.addEventListener('click', ()=>{ const m = Math.max(1, +inpM.value||2); const n = Math.max(1, +inpN.value||2); buildSysTable(m,n); serializeToHidden(); });
-        // Cambios en la grilla
-        grid.addEventListener('input', ()=> serializeToHidden());
+        // Cambios en las textareas
+        grid.addEventListener('input', (e)=>{ if(e.target && e.target.classList && e.target.classList.contains('sys-text')) serializeToHidden(); });
 
         // Inicialización
         syncVisibility();
