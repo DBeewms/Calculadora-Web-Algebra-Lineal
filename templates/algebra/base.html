@@ -65,8 +65,14 @@
         </div>
       </div>
 
-      <div class="menu-item">
-        <a class="menu-link" href="{% url 'index' %}">Métodos numéricos</a>
+  <div class="menu-item has-dropdown {% if url_name == 'metodos_index' or url_name == 'metodos_cerrados' or url_name == 'biseccion' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Métodos numéricos</button>
+        <div class="dropdown" role="menu">
+          <div class="menu-subgroup">
+            <strong class="dropdown-title">Métodos cerrados</strong>
+            <a href="{% url 'biseccion' %}" role="menuitem" class="{% if url_name == 'biseccion' %}current{% endif %}">Método de bisección</a>
+          </div>
+        </div>
       </div>
 
       <div class="menu-item has-dropdown">

@@ -628,3 +628,25 @@ def compuestas(request: HttpRequest):
         except Exception as e:
             ctx["error"] = str(e)
     return render(request, "algebra/compuestas.html", ctx)
+
+
+def metodos_index(request: HttpRequest):
+    """Página índice del módulo Métodos numéricos (entrada al submódulos)."""
+    return render(request, "algebra/metodos_index.html")
+
+
+def metodos_cerrados(request: HttpRequest):
+    """Página para la subclase 'Métodos cerrados' (lista de métodos)."""
+    ctx = {
+        "subclass": "Métodos cerrados",
+        "methods": [
+            {"name": "Método de bisección", "url_name": "biseccion", "slug": "biseccion"}
+        ]
+    }
+    return render(request, "algebra/metodos_cerrados.html", ctx)
+
+
+def biseccion(request: HttpRequest):
+    """Página placeholder para el Método de bisección — espacio reservado sin lógica aún."""
+    ctx = {"title": "Método de bisección", "note": "Espacio reservado: la lógica se implementará más adelante."}
+    return render(request, "algebra/biseccion.html", ctx)

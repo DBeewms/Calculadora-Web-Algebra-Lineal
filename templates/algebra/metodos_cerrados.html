@@ -1,0 +1,21 @@
+{% extends "algebra/base.html" %}
+{% block title %}Métodos cerrados — KiwiSolve{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="section-header">
+    <h2>{{ subclass }}</h2>
+    <span class="badge">{{ methods|length }} método(s)</span>
+  </div>
+  <div class="cards cards-2x2">
+    {% for m in methods %}
+    <a class="card media is-mul" href="{% url m.url_name %}">
+      <div class="media-icon" aria-hidden="true">🔎</div>
+      <div class="media-body">
+        <h3>{{ m.name }}</h3>
+        <p>Vista preliminar para {{ m.name }}. Lógica pendiente.</p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

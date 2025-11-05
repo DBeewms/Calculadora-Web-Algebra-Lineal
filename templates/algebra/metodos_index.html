@@ -1,0 +1,17 @@
+{% extends "algebra/base.html" %}
+{% block title %}Métodos numéricos — KiwiSolve{% endblock %}
+{% block content %}
+<section class="section">
+  <h2>Métodos numéricos</h2>
+  <p class="lead">Módulo nuevo: métodos numéricos para resolución aproximada de problemas. Aquí se agruparán los submódulos (métodos cerrados, abiertos, etc.).</p>
+  <div class="cards cards-2x2">
+    <a class="card media is-mul" href="{% url 'metodos_cerrados' %}">
+      <div class="media-icon" aria-hidden="true">📐</div>
+      <div class="media-body">
+        <h3>Métodos cerrados</h3>
+        <p>Métodos que requieren un intervalo y condiciones de cambio de signo (p. ej., bisección).</p>
+      </div>
+    </a>
+  </div>
+</section>
+{% endblock %}

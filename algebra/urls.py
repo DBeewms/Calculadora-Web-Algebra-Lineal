@@ -14,4 +14,8 @@ urlpatterns = [
     path("gauss/", views.gauss, name="gauss"),
     path("gauss-jordan/", views.gauss_jordan, name="gauss_jordan"),
     path("homogeneo/", views.homogeneo, name="homogeneo"),
+    # Métodos numéricos (incorporación inicial)
+    path("metodos/", views.metodos_index, name="metodos_index"),
+    path("metodos/cerrados/", views.metodos_cerrados, name="metodos_cerrados"),
+    path("metodos/cerrados/biseccion/", views.biseccion, name="biseccion"),
 ]
