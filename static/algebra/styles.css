@@ -57,13 +57,55 @@ h3{ font-size:18px }
 .menu .menu-item.active > .menu-link:hover{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,.12) }
 .menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
 .menu .menu-item.open > .menu-link::after, .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
-.menu .dropdown{ position:absolute; top:100%; left:0; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:30 }
+.menu .dropdown{ position:absolute; top:100%; left:0; right:auto; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:9999 }
+
+/* Mega-menu for Álgebra lineal: when dropdown contains multiple .menu-subgroup blocks
+   show as a multi-column panel on larger screens */
+.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ display:block }
+.menu .menu-item.has-dropdown > .dropdown{ padding:14px; min-width:460px; max-width:920px; overflow:auto; box-sizing:border-box; max-height:calc(100vh - 96px); background:var(--card); isolation:isolate; z-index:9999 }
+.menu .menu-item.has-dropdown > .dropdown{ display:none; }
+.menu .menu-item.has-dropdown.open > .dropdown,
+.menu .menu-item.has-dropdown:hover > .dropdown,
+.menu .menu-item.has-dropdown.active > .dropdown { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; align-items:start; justify-items:start; transform-origin:top left }
+.menu .menu-item.has-dropdown > .dropdown .dropdown-title{ display:block; font-size:13px; color:var(--primary); margin-bottom:8px; font-weight:700 }
+.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ min-width:160px; position:relative }
+.menu .menu-item.has-dropdown > .dropdown a{ color:#0f172a; display:block; padding:6px 0; border-radius:4px }
+.menu .menu-item.has-dropdown > .dropdown hr{ display:none }
+
+@media (max-width: 640px){
+  /* On mobile keep dropdowns stacked full-width */
+  .menu .menu-item.has-dropdown > .dropdown{ display:none; position:static; border:none; box-shadow:none; padding:8px }
+  .menu .menu-item.open > .dropdown{ display:flex; flex-direction:column }
+  .menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ margin-bottom:8px }
+}
 .menu .dropdown a{ display:block; padding:8px 10px; text-decoration:none; color:#0f172a; border-radius:8px; transition:background .2s }
 .menu .dropdown a:hover{ background:rgba(57,73,171,.10) }
 .menu .dropdown a.current{ font-weight:700; color:var(--violet) }
-.menu .menu-item:hover > .dropdown{ display:flex }
-.menu .menu-item.open > .dropdown{ display:flex }
+.menu .menu-item:not(.has-dropdown):hover > .dropdown{ display:flex }
+.menu .menu-item:not(.has-dropdown).open > .dropdown{ display:flex }
 .container{ padding:24px }
+
+/* --- Strong overrides for mega-menu to ensure visual parity with reference --- */
+nav#mainMenu.menu > .menu-item > .menu-link{ padding:8px 12px !important }
+/* Dropdown panel */
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ padding:14px !important; max-width:920px !important; box-sizing:border-box !important; background:var(--card) !important; z-index:10000 !important }
+/* Force grid and gap */
+nav#mainMenu.menu .menu-item.has-dropdown.open > .dropdown,
+nav#mainMenu.menu .menu-item.has-dropdown:hover > .dropdown,
+nav#mainMenu.menu .menu-item.has-dropdown.active > .dropdown{ display:grid !important; grid-template-columns:repeat(2, minmax(200px,1fr)) !important; gap:24px !important; align-items:start !important }
+/* Titles use primary and original spacing */
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .dropdown-title{ font-size:13px !important; font-weight:700 !important; color:var(--primary) !important; margin-bottom:8px !important }
+/* Menu subgroups: revert to original minimal rules */
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ min-width:160px !important; position:relative !important }
+/* Links inside dropdown */
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown a{ padding:6px 6px !important; color:inherit !important; display:block !important }
+/* Hide HR inside mega-menu */
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown hr{ display:none !important }
+
+/* Small screens: keep stacked behaviour (no change) */
+@media (max-width: 640px){
+  nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ position:static !important; width:100% !important }
+}
 .container-narrow{ max-width:980px; margin:0 auto }
 .section{ margin-top:32px }
 .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px }

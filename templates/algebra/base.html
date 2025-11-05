@@ -16,7 +16,7 @@
   <header class="topbar">
     <div class="brand">
       <img class="logo-img" src="{% static 'algebra/KiwiSolveLogo.png' %}" alt="KiwiSolve"/>
-      <h1>KiwiSolve <small>Calculadora de Álgebra Lineal</small></h1>
+      <h1>KiwiSolve <small>Calculadora web</small></h1>
     </div>
     <button class="burger" id="navToggle" aria-label="Abrir menú" aria-controls="mainMenu" aria-expanded="false">
       <span class="b-line"></span>
@@ -30,50 +30,49 @@
         <div class="dropdown" role="menu">
           <a href="{% url 'index' %}" role="menuitem" class="{% if url_name == 'index' %}current{% endif %}">Ir al inicio</a>
           <a href="{% url 'index' %}#guia" role="menuitem">Guía rápida</a>
-          <a href="{% url 'index' %}#atajos" role="menuitem">Atajos/Procedimiento</a>
-          <a href="{% url 'index' %}#sobre" role="menuitem">Sobre la app</a>
-        </div>
-      </div>
-      <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' %}active{% endif %}">
-        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Matrices</button>
-        <div class="dropdown" role="menu">
-          <a href="{% url 'suma' %}" role="menuitem" class="{% if url_name == 'suma' %}current{% endif %}">Suma de matrices</a>
-          <a href="{% url 'multiplicacion' %}" role="menuitem" class="{% if url_name == 'multiplicacion' %}current{% endif %}">Multiplicación</a>
-          <a href="{% url 'escalar' %}" role="menuitem" class="{% if url_name == 'escalar' %}current{% endif %}">Escalar (c·A)</a>
-          <a href="{% url 'transposicion' %}" role="menuitem" class="{% if url_name == 'transposicion' %}current{% endif %}">Transpuesta</a>
         </div>
       </div>
 
-      <div class="menu-item has-dropdown {% if url_name == 'determinante' or url_name == 'inversa' %}active{% endif %}">
-        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Propiedades</button>
+  <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' or url_name == 'determinante' or url_name == 'inversa' or url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' or url_name == 'compuestas' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Álgebra lineal</button>
         <div class="dropdown" role="menu">
-          <a href="{% url 'determinante' %}" role="menuitem" class="{% if url_name == 'determinante' %}current{% endif %}">Determinante</a>
-          <a href="{% url 'inversa' %}" role="menuitem" class="{% if url_name == 'inversa' %}current{% endif %}">Inversa</a>
+          <div class="menu-subgroup">
+            <strong class="dropdown-title">Matrices</strong>
+            <a href="{% url 'suma' %}" role="menuitem" class="{% if url_name == 'suma' %}current{% endif %}">Suma de matrices</a>
+            <a href="{% url 'multiplicacion' %}" role="menuitem" class="{% if url_name == 'multiplicacion' %}current{% endif %}">Multiplicación</a>
+            <a href="{% url 'escalar' %}" role="menuitem" class="{% if url_name == 'escalar' %}current{% endif %}">Escalar (c·A)</a>
+            <a href="{% url 'transposicion' %}" role="menuitem" class="{% if url_name == 'transposicion' %}current{% endif %}">Transpuesta</a>
+          </div>
+          <hr />
+          <div class="menu-subgroup">
+            <strong class="dropdown-title">Propiedades</strong>
+            <a href="{% url 'determinante' %}" role="menuitem" class="{% if url_name == 'determinante' %}current{% endif %}">Determinante</a>
+            <a href="{% url 'inversa' %}" role="menuitem" class="{% if url_name == 'inversa' %}current{% endif %}">Inversa</a>
+          </div>
+          <hr />
+          <div class="menu-subgroup">
+            <strong class="dropdown-title">Sistemas de ecuaciones</strong>
+            <a href="{% url 'gauss' %}" role="menuitem" class="{% if url_name == 'gauss' %}current{% endif %}">Eliminación de Gauss</a>
+            <a href="{% url 'gauss_jordan' %}" role="menuitem" class="{% if url_name == 'gauss_jordan' %}current{% endif %}">Gauss-Jordan</a>
+            <a href="{% url 'cramer' %}" role="menuitem" class="{% if url_name == 'cramer' %}current{% endif %}">Regla de Cramer</a>
+            <a href="{% url 'homogeneo' %}" role="menuitem" class="{% if url_name == 'homogeneo' %}current{% endif %}">Sistema homogéneo</a>
+          </div>
+          <hr />
+          <div class="menu-subgroup">
+            <strong class="dropdown-title">Operaciones compuestas</strong>
+            <a href="{% url 'compuestas' %}" role="menuitem" class="{% if url_name == 'compuestas' %}current{% endif %}">Operaciones compuestas</a>
+          </div>
         </div>
       </div>
 
-      <div class="menu-item has-dropdown {% if url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' %}active{% endif %}">
-        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Sistemas de ecuaciones</button>
-        <div class="dropdown" role="menu">
-          <a href="{% url 'gauss' %}" role="menuitem" class="{% if url_name == 'gauss' %}current{% endif %}">Eliminación de Gauss</a>
-          <a href="{% url 'gauss_jordan' %}" role="menuitem" class="{% if url_name == 'gauss_jordan' %}current{% endif %}">Gauss-Jordan</a>
-          <a href="{% url 'cramer' %}" role="menuitem" class="{% if url_name == 'cramer' %}current{% endif %}">Regla de Cramer</a>
-          <a href="{% url 'homogeneo' %}" role="menuitem" class="{% if url_name == 'homogeneo' %}current{% endif %}">Sistema homogéneo</a>
-        </div>
-      </div>
-
-      <div class="menu-item has-dropdown {% if url_name == 'compuestas' %}active{% endif %}">
-        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Operaciones compuestas</button>
-        <div class="dropdown" role="menu">
-          <a href="{% url 'compuestas' %}" role="menuitem" class="{% if url_name == 'compuestas' %}current{% endif %}">Operaciones compuestas</a>
-        </div>
+      <div class="menu-item">
+        <a class="menu-link" href="{% url 'index' %}">Métodos numéricos</a>
       </div>
 
       <div class="menu-item has-dropdown">
-        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Contacto</button>
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Acerca de</button>
         <div class="dropdown" role="menu">
-          <a href="{% url 'index' %}#guia" role="menuitem">Guía rápida</a>
-          <a href="{% url 'index' %}#atajos" role="menuitem">Atajos/Procedimiento</a>
+          <a href="{% url 'index' %}#atajos" role="menuitem">Procedimiento</a>
           <a href="{% url 'index' %}#sobre" role="menuitem">Sobre la app</a>
         </div>
       </div>
@@ -97,6 +96,9 @@
   <button class="kb-fab" id="kbToggle" aria-label="Mostrar teclado" title="Teclado">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M6 10h2M10 10h2M14 10h2M18 10h0M6 13h2M10 13h2M14 13h2M18 13h0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
   </button>
+  <footer class="container" style="margin-top:18px; padding:18px 24px; border-top:1px solid var(--border); text-align:center; color:var(--muted);">
+    KiwiSolve - Calculadora web para todos, versión 1.1.
+  </footer>
   <script src="{% static 'algebra/app.js' %}?v=20251103"></script>
   {% block extra_js %}{% endblock %}
 </body>
