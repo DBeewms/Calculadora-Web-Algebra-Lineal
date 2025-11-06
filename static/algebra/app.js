@@ -544,7 +544,8 @@
     (function(){
       const menu = document.querySelector('.menu');
       if(!menu) return;
-      const items = menu.querySelectorAll('.menu .has-dropdown');
+  // Buscar los items con dropdown dentro del menú (clase .has-dropdown)
+  const items = menu.querySelectorAll('.has-dropdown');
       function closeAll(except){
         items.forEach(it=>{ if(it!==except) { it.classList.remove('open'); const btn = it.querySelector('.menu-link'); if(btn) btn.setAttribute('aria-expanded','false'); } });
       }
@@ -557,6 +558,17 @@
           it.classList.toggle('open');
           btn.setAttribute('aria-expanded', it.classList.contains('open') ? 'true' : 'false');
         });
+      });
+      // Cerrar dropdowns cuando el puntero sale del menú (comportamiento esperado en escritorio)
+      menu.addEventListener('mouseleave', ()=>{ closeAll(null); });
+      // Cerrar dropdowns cuando el foco sale del menú (soporte para teclado/AT)
+      menu.addEventListener('focusout', (e)=>{
+        // Esperar un tick por si el foco se mueve a otro elemento dentro del menú
+        setTimeout(()=>{
+          if(!menu.contains(document.activeElement)){
+            closeAll(null);
+          }
+        }, 10);
       });
       document.addEventListener('click', (e)=>{
         const target = e.target;
