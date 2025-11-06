@@ -41,6 +41,10 @@ def _crear_evaluador(texto_funcion):
         texto_normalizado = texto_normalizado.replace('\\', '')
         # Normalizar signos unicode comunes
         texto_normalizado = texto_normalizado.replace('\u2212', '-')
+        # MathLive/other frontends sometimes render Euler's constant as
+        # 'exponentialE' or similar; normalizarlo a 'E' para que sympy lo
+        # reconozca como la constante de Euler.
+        texto_normalizado = texto_normalizado.replace('exponentialE', 'E')
     except Exception:
         # En caso de cualquier problema con replace, continuar sin bloquear.
         pass

@@ -4,7 +4,9 @@
     if(!latex) return '';
     let s = String(latex);
     s = s.replace(/\\left|\\right/g, '');
-    s = s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '($1)/($2)');
+  // Prefer a simple 'a/b' form for fractions so server-side parsing (Fraction)
+  // accepts it directly (MathLive often produces \frac{1}{2}).
+  s = s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '$1/$2');
     s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)');
     s = s.replace(/\\cdot|\\times/g, '*');
     s = s.replace(/\\div/g, '/');
@@ -18,6 +20,10 @@
   s = s.replace(/\\=/g, '=');
   s = s.replace(/\uFF1D/g, '=');
   s = s.replace(/\u2261/g, '=');
+  // MathLive may represent Euler's constant as 'exponentialE' in some
+  // rendering modes; normalize it to 'e' so server parsers and sympy
+  // recognize it.
+  s = s.replace(/exponentialE/g, 'e');
     s = s.replace(/[{}]/g, '');
     s = s.replace(/−/g, '-');
     return s.trim();
@@ -28,6 +34,8 @@
     // Trig/log function names
     s = s.replace(/\\(sin|cos|tan|exp|log|ln)/g, (_,fn)=> fn);
     s = s.replace(/\bln\b/g, 'log');
+    // Normalize MathLive's exponential token if present
+    s = s.replace(/exponentialE/g, 'e');
     // Power: occurrences like x^(2) or x^2 (after latexToPlain may be '^(())')
     // Normalize any ^(...) to **(...)
     s = s.replace(/\^\s*\(/g, '**(');
