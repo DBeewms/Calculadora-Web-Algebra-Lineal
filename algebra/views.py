@@ -775,6 +775,32 @@ def biseccion(request: HttpRequest):
             })
 
         ctx['iteraciones'] = iteraciones_formateadas
+        # Si no hay iteraciones detalladas pero el método indica convergencia
+        # (por ejemplo raíz exacta en extremo), construir una fila mínima para
+        # que la UI muestre la tabla en lugar de solo el resumen/gráfica.
+        if not iteraciones_formateadas and resultado.get('convergio'):
+            try:
+                a_val = float(a)
+                b_val = float(b)
+                raiz_val = resultado.get('raiz')
+                c_val = float(raiz_val) if raiz_val is not None else (a_val + b_val) / 2.0
+                f = _crear_evaluador(func_txt)
+                fa_val = float(f(a_val)) if a_val is not None else 0.0
+                fb_val = float(f(b_val)) if b_val is not None else 0.0
+                fc_val = float(f(c_val)) if c_val is not None else 0.0
+                ctx['iteraciones'] = [{
+                    'i': 0,
+                    'a': format(a_val, '.6f'),
+                    'b': format(b_val, '.6f'),
+                    'c': format(c_val, '.6f'),
+                    'fa': format(fa_val, '.6f'),
+                    'fb': format(fb_val, '.6f'),
+                    'fc': format(fc_val, '.6f'),
+                    'actualizacion': 'resultado directo'
+                }]
+            except Exception:
+                # no bloquear la vista por un fallo al intentar construir la fila
+                pass
         ctx['convergio'] = resultado.get('convergio', False)
         ctx['conteo_iter'] = resultado.get('conteo_iter', 0)
         # Resumen también formateado con punto decimal

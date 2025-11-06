@@ -1218,32 +1218,32 @@
         if(!mf || !previewText) return true;
         const raw = String(mf.value || '');
         const plain = latexToPlain(raw);
-        if(!plain.includes('=')){
-          showError("La ecuación debe contener exactamente un '=' que separa ambos lados.");
-          return false;
-        }
-        const parts = plain.split('=');
-        if(parts.length !== 2){
-          showError("Use exactamente un '=' para separar ambos lados de la ecuación.");
-          return false;
-        }
-        const left = parts[0].trim();
-        const right = parts[1].trim();
-        if(!left || !right){
-          showError("Asegúrate de que ambos lados de la ecuación no estén vacíos.");
-          return false;
-        }
-        // Try to normalize each side to a function-like expression
+        // Accept two forms:
+        // 1) equation with '=': left = right --> treat as left - (right)
+        // 2) single expression (no '='): treat as f(x) directly
         try{
-          const lnorm = latexToFunction(left);
-          const rnorm = latexToFunction(right);
-          const expr = `${lnorm} - (${rnorm})`;
-          // Update hidden field with normalized function text so server receives it
-          if(hid) hid.value = expr;
-          showPreview(expr);
-          return true;
+          if(plain.includes('=')){
+            const parts = plain.split('=');
+            // allow some benign extra '=' (join rest) but prefer first two parts
+            const left = parts.slice(0,1).join('=').trim();
+            const right = parts.slice(1).join('=').trim();
+            if(!left || !right){ throw new Error('Ambos lados de la ecuación deben existir.'); }
+            const lnorm = latexToFunction(left);
+            const rnorm = latexToFunction(right);
+            const expr = `${lnorm} - (${rnorm})`;
+            if(hid) hid.value = expr;
+            showPreview(expr);
+            return true;
+          } else {
+            // No '=' provided: accept the expression as-is (user wrote f(x) directly)
+            const exprNorm = latexToFunction(plain);
+            if(!exprNorm || String(exprNorm).trim()==='') throw new Error('Expresión vacía.');
+            if(hid) hid.value = exprNorm;
+            showPreview(exprNorm);
+            return true;
+          }
         }catch(e){
-          showError('No se pudo normalizar la ecuación: ' + (e && e.message ? e.message : String(e)));
+          showError('No se pudo normalizar la ecuación/expresión: ' + (e && e.message ? e.message : String(e)));
           return false;
         }
       }
