@@ -98,10 +98,14 @@
       </table>
 
       <h4 style="margin-top:12px;">Resumen</h4>
-      <p>El método {{ convergio|yesno:"converge,no converge" }} en {{ conteo_iter }} iteraciones.</p>
-      <p>La raíz aproximada es: <strong>{{ raiz }}</strong></p>
-      <p>Estimación del error (intervalo/2): <strong>{{ estimacion_error }}</strong></p>
-      <p>f(raíz) = {{ f_en_raiz }}</p>
+      {% if convergio %}
+        <p>El método converge en la iteración {{ conteo_iter }}</p>
+      {% else %}
+        <p>El método no converge en {{ conteo_iter }} iteraciones</p>
+      {% endif %}
+
+      <p>La raíz aproximada es {{ raiz }}</p>
+      <p>El error estándar es {{ f_en_raiz }}</p>
     </div>
   {% endif %}
 
