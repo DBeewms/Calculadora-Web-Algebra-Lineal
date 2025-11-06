@@ -718,10 +718,34 @@ def biseccion(request: HttpRequest):
 
         # Helper to ensure numeric parsing accepts simple fractions like '1/2'
         from fractions import Fraction
+        def _replace_vulgar_fraction_chars(s: str) -> str:
+            # Map common single-character unicode vulgar fractions to 'a/b'
+            vf_map = {
+                '\u00BC': '1/4', '\u00BD': '1/2', '\u00BE': '3/4',
+                '\u2150': '1/7', '\u2151': '1/9', '\u2152': '1/10',
+                '\u2153': '1/3', '\u2154': '2/3', '\u2155': '1/5', '\u2156': '2/5', '\u2157': '3/5', '\u2158': '4/5',
+                '\u2159': '1/6', '\u215A': '5/6', '\u215B': '1/8', '\u215C': '3/8', '\u215D': '5/8', '\u215E': '7/8'
+            }
+            out = []
+            for ch in s:
+                if ch in vf_map:
+                    out.append(vf_map[ch])
+                else:
+                    out.append(ch)
+            return ''.join(out)
+
         def parse_number(txt, default=None):
             if txt is None or str(txt).strip() == '':
                 return default
             s = str(txt).strip()
+            # Normalize common unicode characters that break parsing
+            s = s.replace('\u2212', '-')  # minus sign
+            s = s.replace('\u2060', '')   # word joiner
+            s = s.replace('\u2009', '')   # thin space
+            s = s.replace('\u00A0', '')   # non-breaking space
+            # Replace single-char vulgar fractions like '½' -> '1/2'
+            s = _replace_vulgar_fraction_chars(s)
+            # Try straightforward float conversion first (handles '0.5', '1e-4')
             try:
                 return float(s)
             except Exception:
@@ -731,7 +755,7 @@ def biseccion(request: HttpRequest):
                 except Exception:
                     # As last resort, try evaluating simple numeric expression safely
                     try:
-                        # allow scientific notation and basic arithmetic
+                        # allow scientific notation and basic arithmetic; convert ^ to **
                         s2 = s.replace('^', '**')
                         return float(eval(s2, {'__builtins__': None}, {}))
                     except Exception:

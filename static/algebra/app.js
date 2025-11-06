@@ -3,45 +3,120 @@
   function latexToPlain(latex){
     if(!latex) return '';
     let s = String(latex);
+    // Remove sizing directives but keep braces for fraction handling
     s = s.replace(/\\left|\\right/g, '');
-  // Prefer a simple 'a/b' form for fractions so server-side parsing (Fraction)
-  // accepts it directly (MathLive often produces \frac{1}{2}).
-  s = s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '$1/$2');
-    s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)');
-    s = s.replace(/\\cdot|\\times/g, '*');
-    s = s.replace(/\\div/g, '/');
-    s = s.replace(/_\{([^{}]+)\}/g, '$1');
-    s = s.replace(/\^\{([^{}]+)\}/g, '^(($1))');
-    s = s.replace(/\\pi/g, 'pi');
-  s = s.replace(/\\[ ,!;:]/g, '');
-  // Normalizar variantes de '=' que pueden venir del teclado virtual o de
-  // copiados/pegados con diferentes puntos de código unicode.
-  // Ejemplos: '＝' (fullwidth equals, U+FF1D), '≡' (U+2261) o el escape '\='.
-  s = s.replace(/\\=/g, '=');
-  s = s.replace(/\uFF1D/g, '=');
-  s = s.replace(/\u2261/g, '=');
-  // MathLive may represent Euler's constant as 'exponentialE' in some
-  // rendering modes; normalize it to 'e' so server parsers and sympy
-  // recognize it.
-  s = s.replace(/exponentialE/g, 'e');
-    s = s.replace(/[{}]/g, '');
+
+    // Replace common vulgar fraction characters (½, ¼, ¾) with ascii form
+    s = s.replace(/\u00BD/g, '1/2') // ½
+         .replace(/\u00BC/g, '1/4') // ¼
+         .replace(/\u00BE/g, '3/4'); // ¾
+
+    // Normalize some LaTeX fraction variants to \frac
+    s = s.replace(/\\d?frac/g, '\\frac').replace(/\\tfrac/g, '\\frac');
+
+    // Iteratively replace innermost \frac{A}{B} with (A)/(B) until none left.
+    // This handles nested fractions like \frac{\frac{1}{2}}{3} safely.
+    const simpleFracRe = /\\frac\{([^{}]*)\}\{([^{}]*)\}/;
+    let loopGuard = 0;
+    while (simpleFracRe.test(s) && loopGuard < 200) {
+      s = s.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '($1)/($2)');
+      loopGuard++;
+    }
+
+    // Convert unicode division slash to ASCII '/'
+    s = s.replace(/\u2215/g, '/');
+
+    // Common LaTeX -> ascii conversions
+    s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)')
+         .replace(/\\cdot|\\times/g, '*')
+         .replace(/\\div/g, '/')
+         .replace(/\\pi/g, 'pi');
+
+    // Superscript/braced exponents: turn ^{...} into **(...)
+    // Handle ^{...}, ^(...) and simple ^n
+    s = s.replace(/\^\{([^{}]+)\}/g, '**($1)');
+    s = s.replace(/\^\(([^()]+)\)/g, '**($1)');
+    s = s.replace(/\^(\-?\d+(?:\.\d+)?)/g, '**$1');
+
+    // Remove stray backslash escapes for symbols we already handled
+    s = s.replace(/\\=/g, '=')
+         .replace(/\\[a-zA-Z]+/g, function(m){ return m.slice(1); });
+
+    // Normalize variants of equals and minus sign
+    s = s.replace(/\uFF1D/g, '=').replace(/\u2261/g, '=');
     s = s.replace(/−/g, '-');
+
+    // Remove remaining curly braces (they should be unnecessary now)
+    s = s.replace(/[{}]/g, '');
+
+    // Trim extra spaces
     return s.trim();
   }
   // Convert LaTeX-like input for function parsing (bisection): map ^ -> **, functions names, etc.
   function latexToFunction(latex){
     let s = latexToPlain(latex);
-    // Trig/log function names
-    s = s.replace(/\\(sin|cos|tan|exp|log|ln)/g, (_,fn)=> fn);
-    s = s.replace(/\bln\b/g, 'log');
-    // Normalize MathLive's exponential token if present
-    s = s.replace(/exponentialE/g, 'e');
-    // Power: occurrences like x^(2) or x^2 (after latexToPlain may be '^(())')
-    // Normalize any ^(...) to **(...)
+    if(!s) return '';
+    // Map common function names (keep plain names)
+    s = s.replace(/\b(lg|ln)\b/g, 'log');
+    s = s.replace(/\bsin\b|\\sin/g, 'sin');
+    s = s.replace(/\bcos\b|\\cos/g, 'cos');
+    s = s.replace(/\btan\b|\\tan/g, 'tan');
+    s = s.replace(/\\exp/g, 'exp');
+
+    // Normalize caret-like powers that may remain: ^( -> **( ; ^number -> **number
     s = s.replace(/\^\s*\(/g, '**(');
-    // If any stray ^ number remains: x^2 -> x**2
-    s = s.replace(/\^(\d+)/g, '**$1');
+    s = s.replace(/\^(\-?\d+(?:\.\d+)?)/g, '**$1');
+
+    // If someone used the MathLive token exponentialE, map to e
+    s = s.replace(/exponentialE/g, 'e');
+
+    // Collapse repeated parentheses like ((1)) -> (1)
+  s = s.replace(/\(\s*\(/g, '(').replace(/\)\s*\)/g, ')');
+
+  // Insert explicit multiplication where users write implicit forms like '6x' or ')(' or '2(' -> '2*(' or 'x(' -> 'x*('
+  // number followed by letter or '(' -> 6x -> 6*x, 2( -> 2*(
+  s = s.replace(/(\d)\s*([a-zA-Z\(])/g, '$1*$2');
+  // letter or ')' followed by '(' or digit -> x( -> x*(, )( -> )*(, x2 -> x*2
+  s = s.replace(/([a-zA-Z\)])\s*\(/g, '$1*(');
+  s = s.replace(/([a-zA-Z])\s*(\d)/g, '$1*$2');
+
+  // Collapse repeated operator sequences like '* *' or '** *(' -> '**(' or '* *(' -> '*('
+  // Be permissive with whitespace between stars and before parentheses.
+  s = s.replace(/\*\s*\*\s*\(/g, '**(');
+  s = s.replace(/\*\s*\*/g, '**');
+  s = s.replace(/\*\s*\(/g, '*(');
+  s = s.replace(/\*{3,}/g, '**');
     return s.trim();
+  }
+  
+  // Try to evaluate a numeric expression safely on the client for numeric fields.
+  // We only allow digits, operators, parentheses, decimal points, slash and 'e' for exponents.
+  function tryEvalNumeric(expr){
+    if(!expr || typeof expr !== 'string') return null;
+    // First, convert LaTeX-like content to function/plain form
+    let s = latexToFunction(expr);
+    // Replace Unicode vulgar fractions again, just in case
+    s = s.replace(/\u00BD/g, '1/2').replace(/\u00BC/g, '1/4').replace(/\u00BE/g, '3/4');
+    // Convert caret to JS power operator if present
+    s = s.replace(/\^/g, '**');
+    // Allow only safe characters: digits, operators, parentheses, dot, slash, whitespace and e/E
+    if(!/^[0-9eE\.\+\-\*\/\(\)\s]+$/.test(s)) return null;
+    try{
+      // Use Function to evaluate arithmetic; this is run-only on client and guarded by the regex above.
+      // Replace '**' with Math.pow fallback if engine doesn't support '**' (older browsers), but most modern do.
+      let evalExpr = s;
+      if(evalExpr.indexOf('**') !== -1){
+        // Convert a**b into Math.pow(a,b) for safer cross-browser handling
+        evalExpr = evalExpr.replace(/([0-9\)\.\s]+)\*\*([0-9\(\.\-\s]+)/g, 'Math.pow($1,$2)');
+      }
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('return (' + evalExpr + ')');
+      const v = fn();
+      if(typeof v === 'number' && isFinite(v)) return v;
+    }catch(e){
+      return null;
+    }
+    return null;
   }
   function isMathField(el){ return el && el.tagName === 'MATH-FIELD'; }
   function getFieldPlain(el){
@@ -1206,7 +1281,27 @@
         map.forEach(({mf,hid,conv})=>{
           const m = form.querySelector(mf);
           const h = form.querySelector(hid);
-          if(m && h){ h.value = conv(m.value||''); }
+          if(!m || !h) return;
+          const rawConv = conv(m.value||'');
+          // For numeric hidden fields (a, b, tol, maxit) try to evaluate
+          // the expression client-side to a decimal number so nested
+          // fractions and parenthesized divisions become valid numeric
+          // strings that the server will parse reliably.
+          const numericHids = ['#hid-a','#hid-b','#hid-tol','#hid-maxit'];
+          if(numericHids.includes(hid)){
+            try{
+              // Try to evaluate with JS. Replace '^' with '**' for JS power.
+              const evalExpr = String(rawConv).replace(/\^/g,'**');
+              const val = Function('return (' + evalExpr + ')')();
+              if(typeof val === 'number' && isFinite(val)){
+                h.value = String(val);
+                return;
+              }
+            }catch(e){
+              // if evaluation fails, fall back to the converted text
+            }
+          }
+          h.value = rawConv;
         });
       }
 
@@ -1287,3 +1382,38 @@
     });
   });
 })();
+
+// Pre-submit normalization for the bisection form: normalize function and numeric fields
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('form.matrix-form[data-page="biseccion"]').forEach(form=>{
+    form.addEventListener('submit', (ev)=>{
+      try{
+        // Normalize function text for server
+        const mfFn = document.getElementById('mf-function');
+        const hidFn = document.getElementById('hid-function');
+        if(mfFn && hidFn){
+          const fnText = (mfFn.value || mfFn.getAttribute('data-value') || '').toString().trim();
+          hidFn.value = latexToFunction(fnText) || latexToPlain(fnText) || hidFn.value || '';
+        }
+
+        // Numeric fields: a, b, tol, maxit
+        ['a','b','tol','maxit'].forEach(name=>{
+          const mf = document.getElementById('mf-' + name);
+          const hid = document.getElementById('hid-' + name);
+          if(!mf || !hid) return;
+          const raw = (mf.value || mf.getAttribute('data-value') || '').toString().trim();
+          if(!raw) return;
+          const v = tryEvalNumeric(raw);
+          if(v !== null){
+            if(name === 'maxit') hid.value = String(Math.round(v)); else hid.value = String(v);
+          }else{
+            // Preserve plain textual input so the server receives exactly what user typed
+            hid.value = latexToPlain(raw) || hid.value || raw;
+          }
+        });
+      }catch(e){
+        console.warn('Pre-submit normalization failed:', e);
+      }
+    });
+  });
+});
