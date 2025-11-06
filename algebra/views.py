@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
-from .logic.metodos import biseccion as biseccion_algo, ErrorBiseccion
+from .logic.metodos import biseccion as biseccion_algo, ErrorBiseccion, _crear_evaluador
 import json
 
 def index(request: HttpRequest):
@@ -326,7 +326,33 @@ def homogeneo(request: HttpRequest):
             fmt = request.POST.get("result_format")
             prec = request.POST.get("precision") or 6
             text_fn = _make_text_fn(fmt, prec)
-            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            eqs_txt = (request.POST.get("equations") or "").strip()
+            if eqs_txt:
+                vars_ord, A, b = u.parsear_sistema_ecuaciones(eqs_txt)
+                # Enforce counts from UI when provided
+                try:
+                    exp_rows = int(request.POST.get("rows") or 0)
+                except Exception:
+                    exp_rows = 0
+                try:
+                    exp_cols = int(request.POST.get("cols") or 0)
+                except Exception:
+                    exp_cols = 0
+                if exp_rows and len(A) != exp_rows:
+                    raise ValueError(f"Se esperaban {exp_rows} ecuaciones, pero ingresaste {len(A)}.")
+                if exp_cols and len(vars_ord) != exp_cols:
+                    raise ValueError(f"Se esperaban {exp_cols} variables distintas, pero se detectaron {len(vars_ord)}: {', '.join(vars_ord)}.")
+                # Validar que b es todo cero para sistema homogéneo
+                if any(not u.es_cero(x) for x in b):
+                    raise ValueError("Para el sistema homogéneo Ax = 0, los términos independientes deben ser 0. Si tu sistema es Ax = b con b ≠ 0, usa Gauss o Gauss-Jordan.")
+                # Prefill matrices inputs on response so A refleje las ecuaciones ingresadas
+                try:
+                    preA = [[u.texto_fraccion(x) for x in fila] for fila in A]
+                    ctx["prefill"] = json.dumps({"A": preA})
+                except Exception:
+                    pass
+            else:
+                A = _parse_matriz_simple(request.POST.get("matrizA"))
             want_steps = bool(request.POST.get("show_steps"))
             info = op.gauss_jordan_homogeneo_info(A, registrar_pasos=want_steps, text_fn=text_fn)
             ctx["resultado"] = _render_matriz(info["matriz"], text_fn)
@@ -464,8 +490,38 @@ def cramer(request: HttpRequest):
             fmt = request.POST.get("result_format")
             prec = request.POST.get("precision") or 6
             text_fn = _make_text_fn(fmt, prec)
-            A = _parse_matriz_simple(request.POST.get("matrizA"))
-            b = _parse_matriz_simple(request.POST.get("vectorb"))
+            eqs_txt = (request.POST.get("equations") or "").strip()
+            if eqs_txt:
+                vars_ord, A, b_vec = u.parsear_sistema_ecuaciones(eqs_txt)
+                # Validaciones: cuadrada y consistente con UI
+                n_rows = len(A)
+                n_cols = len(vars_ord)
+                if n_rows != n_cols:
+                    raise ValueError("Para Cramer, A debe ser cuadrada (n×n). Ajusta las ecuaciones y variables para que n ecuaciones involucren n variables.")
+                try:
+                    exp_rows = int(request.POST.get("rows") or 0)
+                except Exception:
+                    exp_rows = 0
+                try:
+                    exp_cols = int(request.POST.get("cols") or 0)
+                except Exception:
+                    exp_cols = 0
+                if exp_rows and n_rows != exp_rows:
+                    raise ValueError(f"Se esperaban {exp_rows} ecuaciones, pero ingresaste {n_rows}.")
+                if exp_cols and n_cols != exp_cols:
+                    raise ValueError(f"Se esperaban {exp_cols} variables distintas, pero se detectaron {n_cols}: {', '.join(vars_ord)}.")
+                # b como matriz n×1
+                b = [[b_vec[i]] for i in range(len(b_vec))]
+                # Prefill A y b para que el cliente refleje lo ingresado
+                try:
+                  preA = [[u.texto_fraccion(x) for x in fila] for fila in A]
+                  preb = [u.texto_fraccion(x[0]) for x in b]
+                  ctx["prefill"] = json.dumps({"A": preA, "b": preb})
+                except Exception:
+                  pass
+            else:
+                A = _parse_matriz_simple(request.POST.get("matrizA"))
+                b = _parse_matriz_simple(request.POST.get("vectorb"))
             if not A or not b:
                 raise ValueError("Debes ingresar A y b.")
             if len(b[0]) != 1:
@@ -733,6 +789,55 @@ def biseccion(request: HttpRequest):
         ctx['b_input'] = b_txt
         ctx['tol_input'] = tol_txt
         ctx['maxit_input'] = maxit_txt
+
+        # Generar datos para la gráfica con Plotly: muestreamos f(x) en una ventana amplia
+        try:
+            f = _crear_evaluador(func_txt)
+            N = 401
+            xs = []
+            ys = []
+            # Definir una ventana de muestreo más amplia que [a,b] e incluyendo x=0
+            aa = float(min(a, b))
+            bb = float(max(a, b))
+            span = bb - aa
+            if span <= 0:
+                span = 2.0
+                aa -= 1.0
+                bb += 1.0
+            center = (aa + bb) / 2.0
+            scale = 2.5  # factor para ampliar la ventana respecto al intervalo
+            x1 = center - span * scale
+            x2 = center + span * scale
+            # Asegurar que 0 esté dentro de la ventana para ver el eje Y
+            x1 = min(x1, 0.0)
+            x2 = max(x2, 0.0)
+            for i in range(N):
+                t = i / (N - 1)
+                x = x1 + (x2 - x1) * t
+                try:
+                    y = float(f(x))
+                except Exception:
+                    y = None  # Plotly corta la línea si hay None
+                xs.append(x)
+                ys.append(y)
+            fa = None
+            fb = None
+            try: fa = float(f(float(a)))
+            except Exception: fa = None
+            try: fb = float(f(float(b)))
+            except Exception: fb = None
+            import json as _json
+            ctx['plot'] = _json.dumps({
+                'xs': xs,
+                'ys': ys,
+                'a': float(a),
+                'b': float(b),
+                'fa': fa,
+                'fb': fb
+            })
+        except Exception:
+            # Si algo falla en la generación de la gráfica, ignoramos silenciosamente para no romper la vista
+            pass
 
         return render(request, 'algebra/biseccion.html', ctx)
 

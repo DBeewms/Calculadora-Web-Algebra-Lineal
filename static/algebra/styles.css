@@ -56,7 +56,7 @@ h3{ font-size:18px }
 /* Mantener énfasis al pasar el mouse sobre un item activo */
 .menu .menu-item.active > .menu-link:hover{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,.12) }
 .menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
-.menu .menu-item.open > .menu-link::after, .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
+.menu .menu-item.open > .menu-link::after, .has-hover .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
 .menu .dropdown{ position:absolute; top:100%; left:0; right:auto; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:9999 }
 
 /* Mega-menu for Álgebra lineal: when dropdown contains multiple .menu-subgroup blocks
@@ -65,8 +65,7 @@ h3{ font-size:18px }
 .menu .menu-item.has-dropdown > .dropdown{ padding:14px; min-width:460px; max-width:920px; overflow:auto; box-sizing:border-box; max-height:calc(100vh - 96px); background:var(--card); isolation:isolate; z-index:9999 }
 .menu .menu-item.has-dropdown > .dropdown{ display:none; }
 .menu .menu-item.has-dropdown.open > .dropdown,
-.menu .menu-item.has-dropdown:hover > .dropdown,
-.menu .menu-item.has-dropdown.active > .dropdown { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; align-items:start; justify-items:start; transform-origin:top left }
+.has-hover .menu .menu-item.has-dropdown:hover > .dropdown { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; align-items:start; justify-items:start; transform-origin:top left }
 .menu .menu-item.has-dropdown > .dropdown .dropdown-title{ display:block; font-size:13px; color:var(--primary); margin-bottom:8px; font-weight:700 }
 .menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ min-width:160px; position:relative }
 .menu .menu-item.has-dropdown > .dropdown a{ color:#0f172a; display:block; padding:6px 0; border-radius:4px }
@@ -91,8 +90,7 @@ nav#mainMenu.menu > .menu-item > .menu-link{ padding:8px 12px !important }
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ padding:14px !important; max-width:920px !important; box-sizing:border-box !important; background:var(--card) !important; z-index:10000 !important }
 /* Force grid and gap */
 nav#mainMenu.menu .menu-item.has-dropdown.open > .dropdown,
-nav#mainMenu.menu .menu-item.has-dropdown:hover > .dropdown,
-nav#mainMenu.menu .menu-item.has-dropdown.active > .dropdown{ display:grid !important; grid-template-columns:repeat(2, minmax(200px,1fr)) !important; gap:24px !important; align-items:start !important }
+.has-hover nav#mainMenu.menu .menu-item.has-dropdown:hover > .dropdown{ display:grid !important; grid-template-columns:repeat(2, minmax(200px,1fr)) !important; gap:24px !important; align-items:start !important }
 /* Titles use primary and original spacing */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .dropdown-title{ font-size:13px !important; font-weight:700 !important; color:var(--primary) !important; margin-bottom:8px !important }
 /* Menu subgroups: revert to original minimal rules */
@@ -143,6 +141,14 @@ button:hover{ opacity:.9 }
 
 .panel .control input{ width:100% }
 .matriz.editable input{ width:70px; padding:8px 10px; border:1px solid var(--border); border-radius:6px }
+/* Generic math-field styling to match inputs inside controls */
+.control math-field{ display:block; width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:var(--shadow-1) }
+.control math-field:focus-within{ outline:2px solid rgba(57,73,171,.25); outline-offset:2px; border-color:transparent; background:#fff }
+[data-theme="dark"] .control math-field:focus-within{ background:#0f1220 }
+/* MathLive fields inside matrices */
+.matriz.editable math-field{ --keyboard-zindex: 1201; width:70px; min-width:70px; display:inline-block; padding:6px 8px; border:1px solid var(--border); border-radius:6px; background:var(--card) }
+.matriz.editable math-field:focus-within{ outline:2px solid rgba(57,73,171,.25); outline-offset:2px; border-color:transparent; background:#fff }
+[data-theme="dark"] .matriz.editable math-field:focus-within{ background:#0f1220 }
 .matrix-aug{ display:flex; gap:12px; align-items:center }
 .aug-bar{ font-weight:700; font-size:18px }
 .matrix-result{ overflow:auto; max-width:100% }
@@ -258,10 +264,14 @@ button:hover{ opacity:.9 }
 .eq-item{ display:flex; align-items:center; gap:10px }
 .eq-index{ flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:var(--border); color:#111; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px }
 [data-theme="dark"] .eq-index{ background:#222; color:#e5e7eb }
+/* Equations list: support math-field */
 .eq-item input.eq-line{ flex:1 1 auto; width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:var(--shadow-1) }
 .eq-item input.eq-line::placeholder{ color:var(--muted) }
 .eq-item input.eq-line:focus{ outline:2px solid rgba(57,73,171,.25); outline-offset:2px; border-color:transparent; background:#fff }
 [data-theme="dark"] .eq-item input.eq-line:focus{ background:#0f1220 }
+.eq-item math-field.eq-line{ flex:1 1 auto; width:100%; display:block; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:var(--shadow-1) }
+.eq-item math-field.eq-line:focus-within{ outline:2px solid rgba(57,73,171,.25); outline-offset:2px; border-color:transparent; background:#fff }
+[data-theme="dark"] .eq-item math-field.eq-line:focus-within{ background:#0f1220 }
 
 /* Equations left drawer popup */
 .eq-popup{ position:relative }
@@ -385,3 +395,7 @@ button:hover{ opacity:.9 }
 .seq-left{ display:flex; align-items:center; gap:.5rem }
 .seq-drag{ cursor:grab; user-select:none; font-weight:700; color:var(--muted) }
 .seq-item.dragging{ opacity:.7; border-style:dashed }
+
+/* Hide MathLive menu/keyboard toggle inside math-field */
+math-field::part(menu-toggle){ display:none !important }
+math-field::part(virtual-keyboard-toggle){ display:none !important }

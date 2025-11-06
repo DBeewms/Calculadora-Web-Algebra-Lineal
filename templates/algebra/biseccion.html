@@ -4,28 +4,34 @@
 <section class="section">
   <h2>{{ title }}</h2>
 
-  <form method="post" class="panel" style="padding:16px;">
+  <form method="post" class="panel" style="padding:16px;" data-page="biseccion">
     {% csrf_token %}
     <div class="grid">
       <div class="control">
-        <label>Función f(x) (usar funciones de math: sin, cos, exp, log, sqrt, etc.)</label>
-        <input name="function" type="text" value="{{ function|default:'x**3 - x - 1' }}" placeholder="Ej: x**3 - x - 1" />
+        <label>Función f(x) (usar sin, cos, exp, log, sqrt, etc.)</label>
+        <math-field class="mf" id="mf-function" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false"
+          placeholder="Ej: x^3 - x - 1">{{ function|default:'x**3 - x - 1' }}</math-field>
+        <input type="hidden" name="function" id="hid-function" value="{{ function|default:'x**3 - x - 1' }}" />
       </div>
       <div class="control">
         <label>a (extremo izquierdo)</label>
-        <input name="a" type="text" value="{{ a_input|default:'1' }}" />
+        <math-field class="mf" id="mf-a" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1">{{ a_input|default:'1' }}</math-field>
+        <input type="hidden" name="a" id="hid-a" value="{{ a_input|default:'1' }}" />
       </div>
       <div class="control">
         <label>b (extremo derecho)</label>
-        <input name="b" type="text" value="{{ b_input|default:'2' }}" />
+        <math-field class="mf" id="mf-b" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 2">{{ b_input|default:'2' }}</math-field>
+        <input type="hidden" name="b" id="hid-b" value="{{ b_input|default:'2' }}" />
       </div>
       <div class="control">
         <label>Tolerancia ε</label>
-        <input name="tol" type="text" value="{{ tol_input|default:'1e-6' }}" />
+        <math-field class="mf" id="mf-tol" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1e-6">{{ tol_input|default:'1e-6' }}</math-field>
+        <input type="hidden" name="tol" id="hid-tol" value="{{ tol_input|default:'1e-6' }}" />
       </div>
       <div class="control">
         <label>Max iteraciones</label>
-        <input name="maxit" type="text" value="{{ maxit_input|default:'100' }}" />
+        <math-field class="mf" id="mf-maxit" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 100">{{ maxit_input|default:'100' }}</math-field>
+        <input type="hidden" name="maxit" id="hid-maxit" value="{{ maxit_input|default:'100' }}" />
       </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
@@ -40,6 +46,19 @@
 
   {% if message %}
     <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #cde; background:#f0f8ff;">{{ message }}</div>
+  {% endif %}
+
+  {% if plot %}
+  <section class="panel" style="margin-top:12px;">
+    <div class="panel-header">
+      <h3 class="panel-title">Gráfica de f(x) en [a, b]</h3>
+      <div class="panel-actions">
+        <span class="badge">Intervalo: [{{ a_input }}, {{ b_input }}]</span>
+      </div>
+    </div>
+    <div id="plotBiseccion" style="width:100%; height:360px;"></div>
+    <script id="plotData" type="application/json">{{ plot|safe }}</script>
+  </section>
   {% endif %}
 
   {% if iteraciones %}
@@ -83,4 +102,75 @@
   {% endif %}
 
 </section>
+{% endblock %}
+{% block extra_js %}
+{% if plot %}
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script>
+  (function(){
+    const el = document.getElementById('plotBiseccion');
+    const payloadEl = document.getElementById('plotData');
+    if(!el || !payloadEl) return;
+    let data = null; try{ data = JSON.parse(payloadEl.textContent||''); }catch(e){ data = null; }
+    if(!data) return;
+    const styles = getComputedStyle(document.documentElement);
+    const primary = (styles.getPropertyValue('--primary')||'#7E57C2').trim();
+    const accent = (styles.getPropertyValue('--sky')||'#7BBBC4').trim();
+    const muted = (styles.getPropertyValue('--muted')||'#6b7280').trim();
+    const border = (styles.getPropertyValue('--border')||'#e3e5f0').trim();
+    const card = (styles.getPropertyValue('--card')||'#ffffff').trim();
+    const bg = (styles.getPropertyValue('--bg')||'#f6f7fb').trim();
+
+    const xs = data.xs||[];
+    const ys = data.ys||[];
+    const a = data.a; const b = data.b;
+    const fa = data.fa; const fb = data.fb;
+    const xmin = Math.min.apply(null, xs);
+    const xmax = Math.max.apply(null, xs);
+    const pad = (xmax - xmin) * 0.04;
+    // Calcular rango Y válido ignorando valores nulos o no finitos
+    const yValid = ys.filter(v => typeof v === 'number' && isFinite(v));
+    let ymin = (yValid.length ? Math.min.apply(null, yValid) : -1);
+    let ymax = (yValid.length ? Math.max.apply(null, yValid) : 1);
+    if(ymax - ymin < 1e-9){ ymin -= 1; ymax += 1; }
+    const ypad = (ymax - ymin) * 0.06;
+
+    const traceFunc = {
+      x: xs, y: ys, mode: 'lines', name: 'f(x)',
+      line: { color: primary, width: 2.5 }, hovertemplate: 'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>'
+    };
+    const traceAB = {
+      x: [a, b], y: [fa, fb], mode: 'markers+text', name: 'Extremos (a, b)',
+      text: ['a','b'], textposition: 'top center',
+      marker: { color: accent, size: 9, line: { color: '#fff', width: 1.5 } }, hovertemplate: '(%{x:.6f}, %{y:.6f})<extra></extra>'
+    };
+    const traceAxis = {
+      x: [xmin, xmax], y: [0, 0], mode: 'lines', name: 'y = 0',
+      line: { color: muted, dash: 'dot', width: 1.5 }, hoverinfo: 'skip'
+    };
+    // Eje Y (x = 0)
+    const traceAxisY = {
+      x: [0, 0], y: [ymin - ypad, ymax + ypad], mode: 'lines', name: 'x = 0',
+      line: { color: muted, dash: 'dot', width: 1.5 }, hoverinfo: 'skip'
+    };
+
+    const layout = {
+      margin: { l: 50, r: 20, t: 10, b: 40 },
+      paper_bgcolor: card,
+      plot_bgcolor: card,
+      hovermode: 'closest',
+      showlegend: true,
+      xaxis: {
+        title: 'x',
+        gridcolor: border, zerolinecolor: border,
+        range: [xmin - pad, xmax + pad]
+      },
+      yaxis: { title: 'f(x)', gridcolor: border, zerolinecolor: border, range: [ymin - ypad, ymax + ypad] },
+      legend: { orientation: 'h', x: 0, y: 1.1 }
+    };
+
+    Plotly.newPlot(el, [traceFunc, traceAxis, traceAxisY, traceAB], layout, { displayModeBar: false, responsive: true });
+  })();
+  </script>
+{% endif %}
 {% endblock %}

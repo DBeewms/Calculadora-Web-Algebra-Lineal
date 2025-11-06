@@ -1,17 +1,68 @@
 (function(){
+  // MathLive helpers
+  function latexToPlain(latex){
+    if(!latex) return '';
+    let s = String(latex);
+    s = s.replace(/\\left|\\right/g, '');
+    s = s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '($1)/($2)');
+    s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)');
+    s = s.replace(/\\cdot|\\times/g, '*');
+    s = s.replace(/\\div/g, '/');
+    s = s.replace(/_\{([^{}]+)\}/g, '$1');
+    s = s.replace(/\^\{([^{}]+)\}/g, '^(($1))');
+    s = s.replace(/\\pi/g, 'pi');
+    s = s.replace(/\\[ ,!;:]/g, '');
+    s = s.replace(/[{}]/g, '');
+    s = s.replace(/−/g, '-');
+    return s.trim();
+  }
+  // Convert LaTeX-like input for function parsing (bisection): map ^ -> **, functions names, etc.
+  function latexToFunction(latex){
+    let s = latexToPlain(latex);
+    // Trig/log function names
+    s = s.replace(/\\(sin|cos|tan|exp|log|ln)/g, (_,fn)=> fn);
+    s = s.replace(/\bln\b/g, 'log');
+    // Power: occurrences like x^(2) or x^2 (after latexToPlain may be '^(())')
+    // Normalize any ^(...) to **(...)
+    s = s.replace(/\^\s*\(/g, '**(');
+    // If any stray ^ number remains: x^2 -> x**2
+    s = s.replace(/\^(\d+)/g, '**$1');
+    return s.trim();
+  }
+  function isMathField(el){ return el && el.tagName === 'MATH-FIELD'; }
+  function getFieldPlain(el){
+    if(!el) return '';
+    if(isMathField(el)) return latexToPlain(el.value || '');
+    return (el.value || '').trim();
+  }
+
   function buildMatrix(container, rows, cols){
     container.innerHTML = '';
     const table = document.createElement('table');
     table.className = 'matriz editable';
+    const useMath = container.hasAttribute('data-use-math') || container.getAttribute('data-math') === 'true';
     for(let i=0;i<rows;i++){
       const tr = document.createElement('tr');
       for(let j=0;j<cols;j++){
         const td = document.createElement('td');
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.inputMode = 'numeric';
-        input.placeholder = '0';
-        td.appendChild(input);
+        if(useMath){
+          const mf = document.createElement('math-field');
+          // For matrices, keep VK off by default to avoid intrusive popups
+          mf.setAttribute('virtualkeyboardmode','off');
+          mf.setAttribute('virtualkeyboardtogglevisible','false');
+          mf.placeholder = '0';
+          try{
+            if(typeof mf.setOptions === 'function') mf.setOptions({ menuItems: [] });
+            if('menuToggleVisible' in mf) mf.menuToggleVisible = false;
+            if('virtualKeyboardToggleVisible' in mf) mf.virtualKeyboardToggleVisible = false;
+          }catch(_e){}
+          td.appendChild(mf);
+        } else {
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.placeholder = '0';
+          td.appendChild(inp);
+        }
         tr.appendChild(td);
       }
       table.appendChild(tr);
@@ -23,10 +74,10 @@
     const rows = [];
     table.querySelectorAll('tr').forEach(tr=>{
       const row = [];
-      tr.querySelectorAll('input').forEach(inp=>{
-        const val = inp.value.trim();
+      tr.querySelectorAll('math-field, input').forEach(inp=>{
+        const val = getFieldPlain(inp);
         row.push(val || '0');
-      })
+      });
       rows.push(row.join(' '));
     });
     return rows.join('\n');
@@ -49,7 +100,7 @@
         const table = box.querySelector('table');
         if(!name || !table) return;
         const rows = Array.from(table.querySelectorAll('tr'));
-        const values = rows.map(tr=> Array.from(tr.querySelectorAll('input')).map(inp=> inp.value || ''));
+        const values = rows.map(tr=> Array.from(tr.querySelectorAll('math-field, input')).map(inp=> inp.value || ''));
         const cols = values.length ? values[0].length : 0;
         state.matrices[name] = { rows: rows.length, cols, values };
       });
@@ -65,7 +116,7 @@
     // con el estado guardado en localStorage para evitar que los inputs
     // se borren al presionar "Calcular".
     try{
-      const hasServerValues = Array.from(form.querySelectorAll('input, textarea')).some(el=>{
+      const hasServerValues = Array.from(form.querySelectorAll('input, textarea, math-field')).some(el=>{
         return el.value !== null && String(el.value).trim() !== '';
       });
       if(hasServerValues) return;
@@ -88,13 +139,13 @@
             const mat = state.matrices[name];
             const table = box.querySelector('table');
             const currentRows = table ? table.querySelectorAll('tr').length : 0;
-            const currentCols = table ? (table.querySelector('tr')?.querySelectorAll('input').length || 0) : 0;
+            const currentCols = table ? (table.querySelector('tr')?.querySelectorAll('math-field, input').length || 0) : 0;
             if(currentRows !== mat.rows || currentCols !== mat.cols){
               buildMatrix(box, mat.rows, mat.cols);
             }
             const trs = box.querySelectorAll('tr');
             for(let i=0;i<mat.rows;i++){
-              const inputs = trs[i]?.querySelectorAll('input') || [];
+              const inputs = trs[i]?.querySelectorAll('math-field, input') || [];
               for(let j=0;j<mat.cols;j++){
                 if(inputs[j]) inputs[j].value = mat.values[i]?.[j] ?? '';
               }
@@ -121,10 +172,11 @@
       const hidden = form.querySelector(`input[name="${name}"]`);
       if(hidden) hidden.value = serializeMatrix(table);
     });
-    if(form.dataset.mode === 'aug'){
-      // compose matrizAug from matrizA and vectorB adding a pipe
-      const A = form.querySelector('input[name="matrizA"]').value.split('\n');
-      const b = form.querySelector('input[name="vectorB"]').value.split('\n');
+    const mode = form.dataset.mode;
+    // Per-mode hidden sync for dimensions and augmented matrix
+    if(mode === 'aug'){
+      const A = (form.querySelector('input[name="matrizA"]').value || '').split('\n');
+      const b = (form.querySelector('input[name="vectorB"]').value || '').split('\n');
       const rows = Math.max(A.length, b.length);
       const out = [];
       for(let i=0;i<rows;i++){
@@ -134,19 +186,40 @@
       }
       const hiddenAug = form.querySelector('input[name="matrizAug"]');
       if(hiddenAug) hiddenAug.value = out.join('\n');
-      // Sync dimension selectors to hidden fields so backend can enforce counts for equations input
       const rCtl = form.querySelector('[data-target="rows"]');
       const cCtl = form.querySelector('[data-target="cols"]');
       const rHidden = form.querySelector('input[name="rows"]');
       const cHidden = form.querySelector('input[name="cols"]');
       if(rCtl && rHidden){ rHidden.value = String(+rCtl.value || 0); }
       if(cCtl && cHidden){ cHidden.value = String(+cCtl.value || 0); }
-      // Update equations meta badges and hint if present
+    } else if(mode === 'cramer'){
+      const nCtl = form.querySelector('[data-target="rowsAcolsArowsB"]');
+      const rHidden = form.querySelector('input[name="rows"]');
+      const cHidden = form.querySelector('input[name="cols"]');
+      const n = +(nCtl?.value) || 0;
+      if(rHidden) rHidden.value = String(n);
+      if(cHidden) cHidden.value = String(n);
+    } else if(mode === 'simple'){
+      const rCtl = form.querySelector('[data-target="rows"]');
+      const cCtl = form.querySelector('[data-target="cols"]');
+      const rHidden = form.querySelector('input[name="rows"]');
+      const cHidden = form.querySelector('input[name="cols"]');
+      if(rCtl && rHidden){ rHidden.value = String(+rCtl.value || 0); }
+      if(cCtl && cHidden){ cHidden.value = String(+cCtl.value || 0); }
+    }
+    // Update equations meta badges and hint if present (generic)
+    (function(){
       const eqCountEl = form.querySelector('#eqCountBadge strong');
       const varCountEl = form.querySelector('#varCountBadge strong');
       const hintEl = form.querySelector('#eqHint');
-      const rVal = +rCtl?.value || 0;
-      const cVal = +cCtl?.value || 0;
+      let rVal = 0, cVal = 0;
+      if(mode === 'aug' || mode === 'simple'){
+        rVal = +form.querySelector('[data-target="rows"]')?.value || 0;
+        cVal = +form.querySelector('[data-target="cols"]')?.value || 0;
+      } else if(mode === 'cramer'){
+        const nCtl = form.querySelector('[data-target="rowsAcolsArowsB"]');
+        const n = +(nCtl?.value) || 0; rVal = n; cVal = n;
+      }
       if(eqCountEl) eqCountEl.textContent = String(rVal || 0);
       if(varCountEl) varCountEl.textContent = String(cVal || 0);
       if(hintEl){
@@ -157,11 +230,11 @@
       const eqList = form.querySelector('#equationsList');
       const eqHidden = form.querySelector('input[name="equations"]');
       if(eqList && eqHidden){
-        const lines = Array.from(eqList.querySelectorAll('input.eq-line')).map(inp=> (inp.value||'').trim());
+        const lines = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> getFieldPlain(inp));
         while(lines.length && lines[lines.length-1] === ''){ lines.pop(); }
         eqHidden.value = lines.join('\n');
       }
-    }
+    })();
   }
   function initForm(form){
     const mode = form.dataset.mode;
@@ -201,8 +274,8 @@
           // Colocar placeholders x1, x2, ... por fila
           let idx = 1;
           [...boxB.querySelectorAll('tr')].forEach(tr=>{
-            const inp = tr.querySelector('input');
-            if(inp){ inp.placeholder = 'x' + (idx++); inp.inputMode = 'text'; }
+            const inp = tr.querySelector('math-field, input');
+            if(inp){ inp.placeholder = 'x' + (idx++); }
           });
         }
       } else if(mode === 'cramer'){
@@ -212,6 +285,43 @@
         const [boxA, boxb] = matrices;
         if(boxA) buildMatrix(boxA, n, n);
         if(boxb){ boxb.setAttribute('data-cols','1'); buildMatrix(boxb, n, 1); }
+        // Build equation input lines to match n
+        const eqList = form.querySelector('#equationsList');
+        if(eqList){
+          const prevVals = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value);
+          eqList.innerHTML = '';
+          for(let i=0;i<n;i++){
+            const wrap = document.createElement('div');
+            wrap.className = 'eq-item';
+            const badge = document.createElement('span');
+            badge.className = 'eq-index';
+            badge.setAttribute('aria-hidden','true');
+            badge.textContent = String(i+1);
+            const inp = document.createElement('math-field');
+            inp.className = 'eq-line';
+            inp.setAttribute('virtualkeyboardmode','onfocus');
+            inp.setAttribute('virtualkeyboardtogglevisible','false');
+            try{
+              if(typeof inp.setOptions === 'function') inp.setOptions({ menuItems: [] });
+              if('menuToggleVisible' in inp) inp.menuToggleVisible = false;
+              if('virtualKeyboardToggleVisible' in inp) inp.virtualKeyboardToggleVisible = false;
+            }catch(_e){}
+            const c = n;
+            let example = 'x + 2y = 5';
+            if(c <= 1){ example = '3x = 6'; }
+            else if(c === 2){ example = 'x + 2y = 5'; }
+            else if(c === 3){ example = 'x + 2y - z = 7'; }
+            else { example = 'x1 + 2x2 + … = 7'; }
+            inp.placeholder = `Ecuación ${i+1} (ej: ${example})`;
+            inp.setAttribute('data-target', `eq${i}`);
+            inp.setAttribute('aria-label', `Ecuación ${i+1} de ${n}`);
+            if(prevVals[i] != null) inp.value = prevVals[i];
+            inp.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+            wrap.appendChild(badge);
+            wrap.appendChild(inp);
+            eqList.appendChild(wrap);
+          }
+        }
       } else if(mode === 'aug'){
         const r = +form.querySelector('[data-target="rows"]').value || 2;
         const c = +form.querySelector('[data-target="cols"]').value || 2;
@@ -222,7 +332,7 @@
         // Build equation input lines to match r
         const eqList = form.querySelector('#equationsList');
         if(eqList){
-          const prevVals = Array.from(eqList.querySelectorAll('input.eq-line')).map(inp=> inp.value);
+          const prevVals = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value);
           eqList.innerHTML = '';
           for(let i=0;i<r;i++){
             const wrap = document.createElement('div');
@@ -231,9 +341,15 @@
             badge.className = 'eq-index';
             badge.setAttribute('aria-hidden','true');
             badge.textContent = String(i+1);
-            const inp = document.createElement('input');
-            inp.type = 'text';
+            const inp = document.createElement('math-field');
             inp.className = 'eq-line';
+            inp.setAttribute('virtualkeyboardmode','onfocus');
+            inp.setAttribute('virtualkeyboardtogglevisible','false');
+            try{
+              if(typeof inp.setOptions === 'function') inp.setOptions({ menuItems: [] });
+              if('menuToggleVisible' in inp) inp.menuToggleVisible = false;
+              if('virtualKeyboardToggleVisible' in inp) inp.virtualKeyboardToggleVisible = false;
+            }catch(_e){}
             // Example placeholder according to variable count
             let example = 'x + 2y = 5';
             if(c <= 1){ example = '3x = 6'; }
@@ -272,6 +388,42 @@
           }
           zeroBox.appendChild(table);
         }
+        // Build equation input lines to match r
+        const eqList = form.querySelector('#equationsList');
+        if(eqList){
+          const prevVals = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value);
+          eqList.innerHTML = '';
+          for(let i=0;i<r;i++){
+            const wrap = document.createElement('div');
+            wrap.className = 'eq-item';
+            const badge = document.createElement('span');
+            badge.className = 'eq-index';
+            badge.setAttribute('aria-hidden','true');
+            badge.textContent = String(i+1);
+            const inp = document.createElement('math-field');
+            inp.className = 'eq-line';
+            inp.setAttribute('virtualkeyboardmode','onfocus');
+            inp.setAttribute('virtualkeyboardtogglevisible','false');
+            try{
+              if(typeof inp.setOptions === 'function') inp.setOptions({ menuItems: [] });
+              if('menuToggleVisible' in inp) inp.menuToggleVisible = false;
+              if('virtualKeyboardToggleVisible' in inp) inp.virtualKeyboardToggleVisible = false;
+            }catch(_e){}
+            let example = 'x + 2y = 0';
+            if(c <= 1){ example = '3x = 0'; }
+            else if(c === 2){ example = 'x + 2y = 0'; }
+            else if(c === 3){ example = 'x + 2y - z = 0'; }
+            else { example = 'x1 + 2x2 + … = 0'; }
+            inp.placeholder = `Ecuación ${i+1} (ej: ${example})`;
+            inp.setAttribute('data-target', `eq${i}`);
+            inp.setAttribute('aria-label', `Ecuación ${i+1} de ${r}`);
+            if(prevVals[i] != null) inp.value = prevVals[i];
+            inp.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+            wrap.appendChild(badge);
+            wrap.appendChild(inp);
+            eqList.appendChild(wrap);
+          }
+        }
       }
       else if(mode === 'compuestas'){
         // Construir A y B con controles separados
@@ -302,8 +454,8 @@
     // Controls: clear, example, copy-result
     form.querySelectorAll('[data-action="clear"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        form.querySelectorAll('.matrix input').forEach(inp=> inp.value='');
-        form.querySelectorAll('#equationsList input.eq-line').forEach(inp=> inp.value='');
+        form.querySelectorAll('.matrix input, .matrix math-field').forEach(inp=> inp.value='');
+        form.querySelectorAll('#equationsList input.eq-line, #equationsList math-field.eq-line').forEach(inp=> inp.value='');
         updateHidden(form);
         try{ localStorage.removeItem(getStateKey(form)); }catch(e){}
       });
@@ -321,9 +473,9 @@
           const [boxA, boxB] = matrices;
           // Relleno secuencial por filas
           let val = 1;
-          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('math-field, input').forEach(inp=> inp.value = String(val++)));
           val = 1;
-          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('math-field, input').forEach(inp=> inp.value = String(val++)));
         }
         if(mode==='mul' && ex==='mul'){
           const rA = rnd(1,5), p = rnd(1,5), cB = rnd(1,5);
@@ -333,9 +485,9 @@
           doResize();
           const [boxA, boxB] = matrices;
           let val = 1;
-          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('math-field, input').forEach(inp=> inp.value = String(val++)));
           val = 1;
-          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          [...boxB.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('math-field, input').forEach(inp=> inp.value = String(val++)));
         }
         if(mode==='aug'){
           // Dimensiones aleatorias y relleno secuencial A y b
@@ -359,12 +511,12 @@
           // A: 3x3 con valores secuenciales
           let val = 1;
           if(boxA){
-            [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+            [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('math-field, input').forEach(inp=> inp.value = String(val++)));
           }
           // b: 3x1 con 1,2,3
           if(boxb){
             let vb = 1;
-            [...boxb.querySelectorAll('tr')].forEach(tr=>{ const inp = tr.querySelector('input'); if(inp) inp.value = String(vb++); });
+            [...boxb.querySelectorAll('tr')].forEach(tr=>{ const inp = tr.querySelector('math-field, input'); if(inp) inp.value = String(vb++); });
           }
         }
         if(mode==='simple' && ex==='simple'){
@@ -375,7 +527,7 @@
           doResize();
           const [boxA] = matrices;
           let val = 1;
-          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('input').forEach(inp=> inp.value = String(val++)));
+          [...boxA.querySelectorAll('tr')].forEach(tr=> tr.querySelectorAll('math-field, input').forEach(inp=> inp.value = String(val++)));
         }
         updateHidden(form);
         saveFormState(form);
@@ -385,23 +537,39 @@
   }
 
   document.addEventListener('DOMContentLoaded', ()=>{
+    // Detectar soporte de hover real: evita hovers pegajosos en dispositivos táctiles
+    (function(){
+      const root = document.documentElement;
+      let applied = false;
+      function enable(){ if(!applied){ root.classList.add('has-hover'); applied = true; } }
+      function disable(){ root.classList.remove('has-hover'); }
+      window.addEventListener('mousemove', enable, { once:true });
+      window.addEventListener('touchstart', disable, { passive:true });
+    })();
     document.querySelectorAll('form.matrix-form').forEach(initForm);
     // Intentar restaurar el estado guardado (mantiene inputs tras enviar)
     document.querySelectorAll('form.matrix-form').forEach(loadFormState);
-    // Aplicar prefill derivado de ecuaciones (servidor) para A|b en vistas aug
-    document.querySelectorAll('form.matrix-form[data-mode="aug"]').forEach(form=>{
+    // Aplicar prefill derivado de ecuaciones (servidor) para vistas compatibles (aug, cramer, simple)
+    document.querySelectorAll('form.matrix-form').forEach(form=>{
       const script = form.querySelector('#prefillData');
       if(!script) return;
       let data = null;
       try{ data = JSON.parse(script.textContent||''); }catch(e){ data = null; }
-      if(!data || !Array.isArray(data.A) || !Array.isArray(data.b)) return;
+      if(!data || !Array.isArray(data.A)) return;
       const rows = data.A.length;
       const cols = rows ? (data.A[0]?.length||0) : 0;
-      const rCtl = form.querySelector('[data-target="rows"]');
-      const cCtl = form.querySelector('[data-target="cols"]');
-      if(rCtl) rCtl.value = String(rows||0);
-      if(cCtl) cCtl.value = String(cols||0);
-      // Redimensionar matrices acorde a A y b
+      const mode = form.dataset.mode;
+      // Ajustar controles de dimensiones por modo
+      if(mode === 'aug' || mode === 'simple'){
+        const rCtl = form.querySelector('[data-target="rows"]');
+        const cCtl = form.querySelector('[data-target="cols"]');
+        if(rCtl) rCtl.value = String(rows||0);
+        if(cCtl) cCtl.value = String(cols||0);
+      } else if(mode === 'cramer'){
+        const nCtl = form.querySelector('[data-target="rowsAcolsArowsB"]');
+        if(nCtl) nCtl.value = String(rows||0); // asume cuadrada
+      }
+      // Redimensionar acorde
       form.querySelector('[data-action="resize"]')?.click();
       // Rellenar A
       const boxA = form.querySelector('.matrix[data-name="matrizA"]');
@@ -409,19 +577,21 @@
       if(tableA && rows && cols){
         const trs = tableA.querySelectorAll('tr');
         for(let i=0;i<rows;i++){
-          const inputs = trs[i]?.querySelectorAll('input')||[];
+          const inputs = trs[i]?.querySelectorAll('math-field, input')||[];
           for(let j=0;j<cols;j++){
             if(inputs[j]) inputs[j].value = String(data.A[i]?.[j] ?? '0');
           }
         }
       }
-      // Rellenar b
-      const boxB = form.querySelector('.matrix[data-name="vectorB"]');
+      // Rellenar b si corresponde
+      const boxB1 = form.querySelector('.matrix[data-name="vectorB"]');
+      const boxB2 = form.querySelector('.matrix[data-name="vectorb"]');
+      const boxB = boxB1 || boxB2;
       const tableB = boxB?.querySelector('table');
-      if(tableB && rows){
+      if(tableB && Array.isArray(data.b)){
         const trsB = tableB.querySelectorAll('tr');
         for(let i=0;i<rows;i++){
-          const inp = trsB[i]?.querySelector('input');
+          const inp = trsB[i]?.querySelector('math-field, input');
           if(inp) inp.value = String(data.b?.[i] ?? '0');
         }
       }
@@ -429,13 +599,13 @@
       saveFormState(form);
     });
 
-    // Ecuaciones: abrir/cerrar popup lateral izquierdo
-    document.querySelectorAll('form.matrix-form[data-mode="aug"]').forEach(form=>{
+    // Ecuaciones: abrir/cerrar popup lateral izquierdo (en formularios que lo incluyan)
+    document.querySelectorAll('form.matrix-form').forEach(form=>{
       const popup = form.querySelector('.eq-popup');
       const openBtn = form.querySelector('[data-action="open-eq"]');
       if(!popup || !openBtn) return;
       const overlay = popup.querySelector('.eq-overlay');
-      function open(){ popup.classList.add('show'); popup.setAttribute('aria-hidden','false'); }
+      function open(){ popup.classList.add('show'); popup.setAttribute('aria-hidden','false'); updateHidden(form); }
       function close(){ popup.classList.remove('show'); popup.setAttribute('aria-hidden','true'); }
       openBtn.addEventListener('click', open);
       popup.addEventListener('click', (e)=>{
@@ -443,6 +613,21 @@
         if(btn || e.target === overlay){ close(); }
       });
       document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') close(); });
+
+      // Resolver desde el popup
+      popup.addEventListener('click', (e)=>{
+        const actionBtn = e.target.closest('[data-action]');
+        if(!actionBtn) return;
+        const action = actionBtn.getAttribute('data-action');
+        if(action === 'eq-solve'){
+          updateHidden(form);
+          saveFormState(form);
+          close();
+          // Enviar el formulario
+          try{ form.requestSubmit ? form.requestSubmit() : form.submit(); }catch(_e){ form.submit(); }
+          return;
+        }
+      });
     });
     // Mostrar/Ocultar control de precisión según formato de resultado
     document.querySelectorAll('form.matrix-form').forEach(form=>{
@@ -527,6 +712,36 @@
       if(dark){ root.removeAttribute('data-theme'); localStorage.setItem('theme','light'); }
       else { root.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); }
     });
+
+    // Floating toggle for MathLive virtual keyboard
+    (function(){
+      const btn = document.getElementById('vkToggle');
+      if(!btn) return;
+      function ensureTargetMathField(){
+        const active = document.activeElement;
+        if(active && active.tagName === 'MATH-FIELD') return active;
+        const eq = document.querySelector('math-field.eq-line');
+        if(eq) { try{ eq.focus(); }catch(_e){} return eq; }
+        return null;
+      }
+      btn.addEventListener('click', ()=>{
+        const vk = window.mathVirtualKeyboard;
+        if(!vk){ return; }
+        try{
+          // Try API methods if present
+          if(typeof vk.toggle === 'function'){ vk.toggle(); return; }
+          if(typeof vk.show === 'function' && typeof vk.hide === 'function'){
+            if(vk.visible){ vk.hide(); } else { ensureTargetMathField(); vk.show(); }
+            return;
+          }
+        }catch(_e){}
+        // Fallback: toggle visible flag
+        try{
+          vk.visible = !vk.visible;
+          if(vk.visible){ ensureTargetMathField(); }
+        }catch(_e){}
+      });
+    })();
     // Toggle visual de mostrar/ocultar pasos sin recargar
     document.querySelectorAll('label.toggle input[name="show_steps"]').forEach(chk=>{
       chk.addEventListener('change', ()=>{
@@ -544,8 +759,8 @@
     (function(){
       const menu = document.querySelector('.menu');
       if(!menu) return;
-  // Buscar los items con dropdown dentro del menú (clase .has-dropdown)
-  const items = menu.querySelectorAll('.has-dropdown');
+      // Buscar los items con dropdown dentro del menú (clase .has-dropdown)
+      const items = menu.querySelectorAll('.has-dropdown');
       function closeAll(except){
         items.forEach(it=>{ if(it!==except) { it.classList.remove('open'); const btn = it.querySelector('.menu-link'); if(btn) btn.setAttribute('aria-expanded','false'); } });
       }
@@ -577,6 +792,8 @@
       document.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){ closeAll(null); }
       });
+      // Cerrar también al hacer scroll (evita dropdowns persistentes)
+      window.addEventListener('scroll', ()=> closeAll(null), { passive:true });
     })();
 
     // Mobile nav toggle (hamburger)
@@ -621,22 +838,42 @@
       let targetInput = null;
       document.addEventListener('focusin', (e)=>{
         const el = e.target;
-        if(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')){
+        if(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'MATH-FIELD')){
           targetInput = el;
         }
       });
       // Prefer matrix inputs if available at init
-      targetInput = document.querySelector('.matrix input') || document.activeElement;
+      targetInput = document.querySelector('.matrix math-field, .matrix input') || document.activeElement;
 
       function ensureTarget(){
-        if(targetInput && (targetInput.tagName === 'INPUT' || targetInput.tagName === 'TEXTAREA')) return targetInput;
-        const fallback = document.querySelector('.matrix input, input[type="text"], textarea');
+        if(targetInput && (targetInput.tagName === 'INPUT' || targetInput.tagName === 'TEXTAREA' || targetInput.tagName === 'MATH-FIELD')) return targetInput;
+        const fallback = document.querySelector('.matrix math-field, .matrix input, input[type="text"], textarea');
         if(fallback){ targetInput = fallback; }
         return targetInput;
       }
 
       function insertAtCursor(el, text){
         if(!el) return;
+        if(el.tagName === 'MATH-FIELD'){
+          // Insert LaTeX-friendly equivalents
+          let latex = text;
+          if(text === '√()'){ latex = '\\sqrt{}'; }
+          else if(text === '()'){ latex = '()'; }
+          else if(text === '| |'){ latex = '\\lvert\\rvert'; }
+          else if(text === '^2'){ latex = '^{2}'; }
+          // common operators
+          else if(text === '×'){ latex = '\\times '}
+          else if(text === '÷'){ latex = '\\div '}
+          else if(text === 'π'){ latex = '\\pi '}
+          try{ el.insert ? el.insert(latex) : (el.value = (el.value||'') + latex); }catch(_e){ el.value = (el.value||'') + latex; }
+          // attempt to move cursor inside braces for sqrt, abs, etc.
+          if(text === '√()' || text === '| |' || text === '()'){
+            try{ el.executeCommand && el.executeCommand('moveToPreviousChar'); }catch(_e){}
+          }
+          el.dispatchEvent(new Event('input', { bubbles:true }));
+          el.focus();
+          return;
+        }
         try{
           const start = el.selectionStart ?? el.value.length;
           const end = el.selectionEnd ?? el.value.length;
@@ -654,6 +891,12 @@
       }
       function backspaceAtCursor(el){
         if(!el) return;
+        if(el.tagName === 'MATH-FIELD'){
+          try{ el.executeCommand && el.executeCommand('deleteBackward'); }catch(_e){}
+          el.dispatchEvent(new Event('input', { bubbles:true }));
+          el.focus();
+          return;
+        }
         const start = el.selectionStart ?? 0;
         const end = el.selectionEnd ?? 0;
         const v = el.value || '';
@@ -677,18 +920,26 @@
         if(action === 'backspace'){ backspaceAtCursor(ensureTarget()); return; }
         if(action === 'left'){
           const ti = ensureTarget();
-          try{ const s = ti?.selectionStart||0; const pos = Math.max(0, s-1); ti?.setSelectionRange?.(pos, pos); ti?.focus(); }catch(e){}
+          if(ti?.tagName === 'MATH-FIELD'){
+            try{ ti.executeCommand && ti.executeCommand('moveToPreviousChar'); ti.focus(); }catch(_e){}
+          } else {
+            try{ const s = ti?.selectionStart||0; const pos = Math.max(0, s-1); ti?.setSelectionRange?.(pos, pos); ti?.focus(); }catch(e){}
+          }
           return;
         }
         if(action === 'right'){
           const ti = ensureTarget();
-          try{ const s = ti?.selectionEnd||0; const len = (ti?.value||'').length; const pos = len ? Math.min(len, s+1) : s+1; ti?.setSelectionRange?.(pos, pos); ti?.focus(); }catch(e){}
+          if(ti?.tagName === 'MATH-FIELD'){
+            try{ ti.executeCommand && ti.executeCommand('moveToNextChar'); ti.focus(); }catch(_e){}
+          } else {
+            try{ const s = ti?.selectionEnd||0; const len = (ti?.value||'').length; const pos = len ? Math.min(len, s+1) : s+1; ti?.setSelectionRange?.(pos, pos); ti?.focus(); }catch(e){}
+          }
           return;
         }
         if(action === 'enter'){
           const ti = ensureTarget();
           // Mover foco al siguiente input/textarea (como Tab)
-          const focusables = Array.from(document.querySelectorAll('input, textarea')); // orden en DOM
+          const focusables = Array.from(document.querySelectorAll('math-field, input, textarea')); // orden en DOM
           const idx = focusables.indexOf(ti);
           if(idx >= 0 && idx < focusables.length - 1){
             const next = focusables[idx+1];
@@ -703,7 +954,7 @@
         if(ins != null){
           insertAtCursor(ti, ins);
           const move = parseInt(btn.dataset.cursor||'0', 10);
-          if(move !== 0){
+          if(move !== 0 && ti.tagName !== 'MATH-FIELD'){
             try{
               const s = ti.selectionStart||0; const pos = s + move; // move can be negative
               const len = (ti.value||'').length; const clamped = Math.max(0, Math.min(len, pos));
@@ -934,5 +1185,42 @@
       // Asegurar que al enviar se sincronice
       form?.addEventListener('submit', ()=> sync());
     })();
+
+    // Bisección: hook math-field inputs to hidden fields with proper conversion
+    document.querySelectorAll('form[data-page="biseccion"]').forEach(form=>{
+      const map = [
+        { mf:'#mf-function', hid:'#hid-function', conv: latexToFunction },
+        { mf:'#mf-a', hid:'#hid-a', conv: latexToFunction },
+        { mf:'#mf-b', hid:'#hid-b', conv: latexToFunction },
+        { mf:'#mf-tol', hid:'#hid-tol', conv: latexToFunction },
+        { mf:'#mf-maxit', hid:'#hid-maxit', conv: latexToFunction },
+      ];
+      function syncAll(){
+        map.forEach(({mf,hid,conv})=>{
+          const m = form.querySelector(mf);
+          const h = form.querySelector(hid);
+          if(m && h){ h.value = conv(m.value||''); }
+        });
+      }
+      map.forEach(({mf,hid,conv})=>{
+        const m = form.querySelector(mf);
+        const h = form.querySelector(hid);
+        if(!m || !h) return;
+        // initial sync
+        try{ h.value = conv(m.value||''); }catch(_e){}
+        m.addEventListener('input', ()=>{ try{ h.value = conv(m.value||''); }catch(_e){} });
+      });
+      form.addEventListener('submit', ()=> syncAll());
+      // Clear button
+      const clr = form.querySelector('[data-action="clear"]');
+      clr?.addEventListener('click', ()=>{
+        map.forEach(({mf,hid})=>{
+          const m = form.querySelector(mf);
+          const h = form.querySelector(hid);
+          if(m) m.value = '';
+          if(h) h.value = '';
+        });
+      });
+    });
   });
 })();

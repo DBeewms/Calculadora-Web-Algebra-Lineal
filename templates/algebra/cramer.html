@@ -31,6 +31,7 @@
       <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
     </div>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+    <button type="button" class="btn ghost" data-action="open-eq">Ecuaciones…</button>
   </div>
   <div class="grid matrices panel">
     <div>
@@ -44,11 +45,15 @@
       <input type="hidden" name="vectorb"/>
     </div>
   </div>
+  {% include "algebra/_equations_toggle.html" %}
+  <input type="hidden" name="rows"/>
+  <input type="hidden" name="cols"/>
   <div class="actions">
     <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
     <button type="button" class="btn ghost" data-action="example" data-example="cramer">Ejemplo</button>
     <button type="submit" class="btn primary">Resolver</button>
   </div>
+  {% if prefill %}<script id="prefillData" type="application/json">{{ prefill|safe }}</script>{% endif %}
 </form>
 
 {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
