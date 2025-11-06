@@ -88,6 +88,38 @@
   s = s.replace(/\*{3,}/g, '**');
     return s.trim();
   }
+  // Map normalized function string to a JS-evaluable expression with Math.* and constants
+  function toJSExpr(expr){
+    if(!expr) return '';
+    let s = String(expr);
+    // Ensure powers are JS-friendly
+    s = s.replace(/\^/g, '**');
+    // Map common function names to Math.*
+    s = s.replace(/\b(sin|cos|tan|exp|log|sqrt)\s*\(/g, 'Math.$1(');
+    // Constants: pi -> Math.PI, standalone e -> Math.E
+    s = s.replace(/\bpi\b/g, 'Math.PI');
+    s = s.replace(/\be\b/g, 'Math.E');
+    // As a safety, insert explicit multiplication for implicit cases that might remain
+    s = s.replace(/(\d)\s*([a-zA-Z\(])/g, '$1*$2');
+    s = s.replace(/([a-zA-Z\)])\s*\(/g, '$1*(');
+    s = s.replace(/([a-zA-Z])\s*(\d)/g, '$1*$2');
+    return s;
+  }
+
+  // Lazy-load Plotly the first time it's needed
+  let __plotlyLoading = null;
+  function ensurePlotly(){
+    if(window.Plotly) return Promise.resolve(window.Plotly);
+    if(__plotlyLoading) return __plotlyLoading;
+    __plotlyLoading = new Promise((resolve, reject)=>{
+      const script = document.createElement('script');
+      script.src = 'https://cdn.plot.ly/plotly-2.35.2.min.js';
+      script.onload = ()=> resolve(window.Plotly);
+      script.onerror = ()=> reject(new Error('No se pudo cargar Plotly.'));
+      document.head.appendChild(script);
+    });
+    return __plotlyLoading;
+  }
   
   // Try to evaluate a numeric expression safely on the client for numeric fields.
   // We only allow digits, operators, parentheses, decimal points, slash and 'e' for exponents.
@@ -118,6 +150,8 @@
     }
     return null;
   }
+  // Expose selected helpers for use in other inline scripts (legacy blocks)
+  try{ window.latexToFunction = latexToFunction; window.tryEvalNumeric = tryEvalNumeric; }catch(_e){}
   function isMathField(el){ return el && el.tagName === 'MATH-FIELD'; }
   function getFieldPlain(el){
     if(!el) return '';
@@ -1364,6 +1398,88 @@
         if(!ok){ e.preventDefault(); e.stopPropagation(); return false; }
         syncAll();
       });
+      // Quick-plot: graficar función solo con la ecuación
+      (function(){
+        const btn = form.querySelector('[data-action="plot-func"]');
+        const panel = document.getElementById('biseccionPreviewPanel');
+        const plotEl = document.getElementById('plotBiseccionPreview');
+        if(!btn || !panel || !plotEl) return;
+
+        function safeEvalFunc(exprJS, x){
+          // Basic guards against injection
+          const forbidden = /(constructor|prototype|__proto__|=>|new\s+Function|Function\s*\()/;
+          if(forbidden.test(exprJS)) throw new Error('Expresión inválida.');
+          // eslint-disable-next-line no-new-func
+          const fn = new Function('Math','x', 'return ( ' + exprJS + ' )');
+          const y = fn(Math, x);
+          if(typeof y !== 'number' || !isFinite(y)) return null;
+          return y;
+        }
+
+        async function plotPreview(){
+          // Normalize and validate; updates hidden as a side effect
+          const ok = doValidateAndPreview();
+          if(!ok){ panel.style.display = 'none'; return; }
+          const hid = form.querySelector('#hid-function');
+          const expr = (hid?.value || '').trim();
+          if(!expr){ panel.style.display = 'none'; return; }
+
+          const exprJS = toJSExpr(expr);
+          try{
+            await ensurePlotly();
+          }catch(err){
+            showError('No se pudo cargar la librería de gráficos (Plotly).');
+            panel.style.display = 'none';
+            return;
+          }
+
+          // Sampling domain and points
+          const xmin = -10, xmax = 10, n = 600;
+          const xs = new Array(n);
+          const ys = new Array(n);
+          for(let i=0;i<n;i++){
+            const x = xmin + (xmax - xmin) * (i/(n-1));
+            xs[i] = +x.toFixed(6);
+            let y = null;
+            try{ y = safeEvalFunc(exprJS, x); }catch(_e){ y = null; }
+            ys[i] = (y==null || !isFinite(y)) ? null : +y.toFixed(12);
+          }
+
+          // Determine Y range from valid values
+          const yValid = ys.filter(v=> typeof v === 'number' && isFinite(v));
+          if(!yValid.length){
+            showError('No se pudo evaluar f(x) en el dominio [-10, 10]. Revisa la expresión.');
+            panel.style.display = 'none';
+            return;
+          }
+          let ymin = Math.min.apply(null, yValid);
+          let ymax = Math.max.apply(null, yValid);
+          if(ymax - ymin < 1e-9){ ymin -= 1; ymax += 1; }
+          const ypad = (ymax - ymin) * 0.06;
+
+          const styles = getComputedStyle(document.documentElement);
+          const primary = (styles.getPropertyValue('--primary')||'#7E57C2').trim();
+          const muted = (styles.getPropertyValue('--muted')||'#6b7280').trim();
+          const border = (styles.getPropertyValue('--border')||'#e3e5f0').trim();
+          const card = (styles.getPropertyValue('--card')||'#ffffff').trim();
+
+          const pad = (xmax - xmin) * 0.04;
+          const traceFunc = { x: xs, y: ys, mode:'lines', name:'f(x)', line:{ color: primary, width: 2.5 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' };
+          const traceAxis = { x:[xmin, xmax], y:[0,0], mode:'lines', name:'y = 0', line:{ color: muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
+          const traceAxisY = { x:[0,0], y:[ymin-ypad, ymax+ypad], mode:'lines', name:'x = 0', line:{ color: muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
+          const layout = {
+            margin:{ l:50, r:20, t:10, b:40 }, paper_bgcolor: card, plot_bgcolor: card,
+            hovermode:'closest', showlegend:true,
+            xaxis:{ title:'x', gridcolor:border, zerolinecolor:border, range:[xmin - pad, xmax + pad] },
+            yaxis:{ title:'f(x)', gridcolor:border, zerolinecolor:border, range:[ymin - ypad, ymax + ypad] },
+            legend:{ orientation:'h', x:0, y:1.1 }
+          };
+          panel.style.display = '';
+          window.Plotly.newPlot(plotEl, [traceFunc, traceAxis, traceAxisY], layout, { displayModeBar:false, responsive:true });
+        }
+
+        btn.addEventListener('click', ()=>{ plotPreview(); });
+      })();
       // Clear button
       const clr = form.querySelector('[data-action="clear"]');
       clr?.addEventListener('click', ()=>{
@@ -1378,6 +1494,8 @@
         if(previewOk) previewOk.style.display = 'none';
         if(previewErr) previewErr.style.display = 'none';
         if(submitBtn) submitBtn.disabled = false;
+        const panel = document.getElementById('biseccionPreviewPanel');
+        if(panel) panel.style.display = 'none';
       });
     });
   });

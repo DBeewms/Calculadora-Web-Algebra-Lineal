@@ -40,9 +40,21 @@
     </div>
     <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
       <button type="submit" class="btn">Calcular</button>
+      <button type="button" class="btn secondary" data-action="plot-func" aria-label="Graficar función">Graficar función</button>
       <button type="button" class="btn ghost" data-action="clear" aria-label="Limpiar formulario">Limpiar</button>
     </div>
   </form>
+
+  <!-- Panel de previsualización (cliente) -->
+  <section id="biseccionPreviewPanel" class="panel" style="margin-top:12px; display:none;">
+    <div class="panel-header">
+      <h3 class="panel-title">Previsualización de f(x)</h3>
+      <div class="panel-actions">
+        <span class="badge">Solo función</span>
+      </div>
+    </div>
+    <div id="plotBiseccionPreview" style="width:100%; height:360px;"></div>
+  </section>
 
   {% if error %}
     <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #f5c2c7; background:#fff0f0; color:#811;">{{ error }}</div>
