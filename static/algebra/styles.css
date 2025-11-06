@@ -131,6 +131,17 @@ button:hover{ opacity:.9 }
 .zero-vector table.matriz{ margin:0; }
 .zero-vector .matriz td{ font-weight:600; color:var(--muted); }
 .matriz.editable td{ padding:2px }
+
+/* Bisección: tabla y resumen visual */
+.biseccion-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.biseccion-table thead th{ background:var(--primary); color:#fff; padding:10px; text-align:center; position:sticky; top:0 }
+.biseccion-table td, .biseccion-table th{ border:1px solid var(--border); padding:8px }
+.biseccion-table tbody tr:nth-child(odd){ background:#fbfdff }
+.biseccion-table tbody tr:nth-child(even){ background:#f7f9fc }
+.biseccion-summary{ margin-top:12px; padding:12px; border-radius:8px; background:linear-gradient(180deg, rgba(126,87,194,0.06), rgba(126,87,194,0.03)); border:1px solid rgba(126,87,194,0.12) }
+.biseccion-summary strong{ color:var(--primary) }
+
+.panel .control input{ width:100% }
 .matriz.editable input{ width:70px; padding:8px 10px; border:1px solid var(--border); border-radius:6px }
 .matrix-aug{ display:flex; gap:12px; align-items:center }
 .aug-bar{ font-weight:700; font-size:18px }

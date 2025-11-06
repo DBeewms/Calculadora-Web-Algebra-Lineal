@@ -3,11 +3,81 @@
 {% block content %}
 <section class="section">
   <h2>{{ title }}</h2>
-  <p class="lead">{{ note }}</p>
 
-  <div class="panel">
-    <p>Esta página es un marcador de posición para el Método de bisección. Aquí se añadirá el formulario para ingresar la función, el intervalo [a, b], tolerancia y el número máximo de iteraciones. También se mostrará la tabla de iteraciones y el resultado.</p>
-    <p>Estado: implementación pendiente.</p>
-  </div>
+  <form method="post" class="panel" style="padding:16px;">
+    {% csrf_token %}
+    <div class="grid">
+      <div class="control">
+        <label>Función f(x) (usar funciones de math: sin, cos, exp, log, sqrt, etc.)</label>
+        <input name="function" type="text" value="{{ function|default:'x**3 - x - 1' }}" placeholder="Ej: x**3 - x - 1" />
+      </div>
+      <div class="control">
+        <label>a (extremo izquierdo)</label>
+        <input name="a" type="text" value="{{ a_input|default:'1' }}" />
+      </div>
+      <div class="control">
+        <label>b (extremo derecho)</label>
+        <input name="b" type="text" value="{{ b_input|default:'2' }}" />
+      </div>
+      <div class="control">
+        <label>Tolerancia ε</label>
+        <input name="tol" type="text" value="{{ tol_input|default:'1e-6' }}" />
+      </div>
+      <div class="control">
+        <label>Max iteraciones</label>
+        <input name="maxit" type="text" value="{{ maxit_input|default:'100' }}" />
+      </div>
+    </div>
+    <button type="submit" class="btn">Calcular</button>
+  </form>
+
+  {% if error %}
+    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #f5c2c7; background:#fff0f0; color:#811;">{{ error }}</div>
+  {% endif %}
+
+  {% if message %}
+    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #cde; background:#f0f8ff;">{{ message }}</div>
+  {% endif %}
+
+  {% if iterations %}
+    <div class="panel" style="margin-top:12px; padding:12px; overflow:auto;">
+      <h3>Tabla de iteraciones</h3>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="border:1px solid var(--border); padding:8px;">n</th>
+            <th style="border:1px solid var(--border); padding:8px;">a</th>
+            <th style="border:1px solid var(--border); padding:8px;">f(a)</th>
+            <th style="border:1px solid var(--border); padding:8px;">b</th>
+            <th style="border:1px solid var(--border); padding:8px;">f(b)</th>
+            <th style="border:1px solid var(--border); padding:8px;">c</th>
+            <th style="border:1px solid var(--border); padding:8px;">f(c)</th>
+            <th style="border:1px solid var(--border); padding:8px;">Update</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in iterations %}
+          <tr>
+            <td style="border:1px solid var(--border); padding:6px; text-align:center;">{{ it.n }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.a|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fa|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.b|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fb|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.c|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fc|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px; text-align:center;">{{ it.update }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:12px;">Resumen</h4>
+      <p>El método {{ converged|yesno:"converge,no converge" }} en {{ iter_count }} iteraciones.</p>
+      <p>La raíz aproximada es: <strong>{{ root|floatformat:8 }}</strong></p>
+      <p>Estimación del error (intervalo/2): <strong>{{ error_estimate|floatformat:8 }}</strong></p>
+      <p>f(raíz) = {{ froot|floatformat:10 }}</p>
+    </div>
+  {% endif %}
+
 </section>
 {% endblock %}

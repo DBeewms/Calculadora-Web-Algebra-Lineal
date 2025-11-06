@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
+from .logic.metodos import biseccion, BisectionError
 import json
 
 def index(request: HttpRequest):
@@ -647,6 +648,66 @@ def metodos_cerrados(request: HttpRequest):
 
 
 def biseccion(request: HttpRequest):
-    """Página placeholder para el Método de bisección — espacio reservado sin lógica aún."""
-    ctx = {"title": "Método de bisección", "note": "Espacio reservado: la lógica se implementará más adelante."}
-    return render(request, "algebra/biseccion.html", ctx)
+    """Página para el Método de bisección.
+
+    Soporta GET (muestra formulario) y POST (ejecuta algoritmo y muestra tabla de iteraciones).
+    """
+    ctx = {"title": "Método de bisección"}
+    if request.method == 'POST':
+        func_txt = (request.POST.get('function') or '').strip()
+        a_txt = (request.POST.get('a') or '').strip()
+        b_txt = (request.POST.get('b') or '').strip()
+        tol_txt = (request.POST.get('tol') or '').strip()
+        maxit_txt = (request.POST.get('maxit') or '').strip()
+
+        # Parse numeric inputs with validations
+        try:
+            a = float(a_txt)
+            b = float(b_txt)
+        except Exception:
+            ctx['error'] = 'Parámetros numéricos inválidos: a y b deben ser números.'
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        try:
+            tol = float(tol_txt) if tol_txt != '' else 1e-6
+            if tol <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Tolerancia inválida; debe ser un número positivo.'
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        try:
+            maxit = int(maxit_txt) if maxit_txt != '' else 100
+            if maxit <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Max iteraciones inválido; debe ser entero y mayor que 0.'
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        # Call extracted algorithm, handle errors
+        try:
+            result = biseccion(func_txt, a, b, tol=tol, maxit=maxit)
+        except BisectionError as be:
+            ctx['error'] = str(be)
+            return render(request, 'algebra/biseccion.html', ctx)
+        except Exception as e:
+            ctx['error'] = f'Error interno: {e}'
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        # Populate context for template
+        ctx['iterations'] = result.get('iterations', [])
+        ctx['converged'] = result.get('converged', False)
+        ctx['iter_count'] = result.get('iter_count', 0)
+        ctx['root'] = result.get('root')
+        ctx['error_estimate'] = result.get('error_estimate')
+        ctx['froot'] = result.get('froot')
+        ctx['function'] = func_txt
+        ctx['a_input'] = a_txt
+        ctx['b_input'] = b_txt
+        ctx['tol_input'] = tol_txt
+        ctx['maxit_input'] = maxit_txt
+
+        return render(request, 'algebra/biseccion.html', ctx)
+
+    # GET
+    return render(request, 'algebra/biseccion.html', ctx)
