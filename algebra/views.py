@@ -716,20 +716,54 @@ def biseccion(request: HttpRequest):
         tol_txt = (request.POST.get('tol') or '').strip()
         maxit_txt = (request.POST.get('maxit') or '').strip()
 
+        # Helper to ensure numeric parsing accepts simple fractions like '1/2'
+        from fractions import Fraction
+        def parse_number(txt, default=None):
+            if txt is None or str(txt).strip() == '':
+                return default
+            s = str(txt).strip()
+            try:
+                return float(s)
+            except Exception:
+                try:
+                    # Accept forms like '1/2'
+                    return float(Fraction(s))
+                except Exception:
+                    # As last resort, try evaluating simple numeric expression safely
+                    try:
+                        # allow scientific notation and basic arithmetic
+                        s2 = s.replace('^', '**')
+                        return float(eval(s2, {'__builtins__': None}, {}))
+                    except Exception:
+                        raise
+
         # Parse numeric inputs with validations
         try:
-            a = float(a_txt)
-            b = float(b_txt)
+            a = parse_number(a_txt)
+            b = parse_number(b_txt)
+            if a is None or b is None:
+                raise ValueError('a o b vacío')
         except Exception:
-            ctx['error'] = 'Parámetros numéricos inválidos: a y b deben ser números.'
+            ctx['error'] = 'Parámetros numéricos inválidos: a y b deben ser números (aceptamos 0.5 o 1/2).'
+            # preserve user inputs so template shows them
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
 
         try:
-            tol = float(tol_txt) if tol_txt != '' else 1e-6
-            if tol <= 0:
+            tol = parse_number(tol_txt, default=1e-6)
+            if tol is None or tol <= 0:
                 raise ValueError()
         except Exception:
             ctx['error'] = 'Tolerancia inválida; debe ser un número positivo.'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
 
         try:
@@ -738,6 +772,11 @@ def biseccion(request: HttpRequest):
                 raise ValueError()
         except Exception:
             ctx['error'] = 'Max iteraciones inválido; debe ser entero y mayor que 0.'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
 
         # Ejecutar el algoritmo extraído y manejar errores específicos
@@ -745,9 +784,20 @@ def biseccion(request: HttpRequest):
             resultado = biseccion_algo(func_txt, a, b, tol=tol, maxit=maxit)
         except ErrorBiseccion as be:
             ctx['error'] = str(be)
+            # preserve inputs
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
         except Exception as e:
             ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
 
         # Formatear los números a cadenas usando punto decimal (.) y

@@ -10,8 +10,8 @@
       <div class="control">
   <label>Ecuación igualada a 0</label>
         <math-field class="mf" id="mf-function" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false"
-          placeholder="Ej: x^3 - x - 1 = 0">{{ function|default:'x**3 - x - 1 = 0' }}</math-field>
-        <input type="hidden" name="function" id="hid-function" value="{{ function|default:'x**3 - x - 1 = 0' }}" />
+          placeholder="Ej: x^3 - x - 1 = 0">{{ function|default:'' }}</math-field>
+        <input type="hidden" name="function" id="hid-function" value="{{ function|default:'' }}" />
         <div id="biseccion-preview" style="margin-top:6px; font-size:13px;">
           <div id="biseccion-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="biseccion-preview-text"></code></div>
           <div id="biseccion-preview-err" style="color:#b91c1c; display:none;">Error: <span id="biseccion-preview-err-txt"></span></div>
@@ -19,23 +19,23 @@
       </div>
       <div class="control">
         <label>a (extremo izquierdo)</label>
-        <math-field class="mf" id="mf-a" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1">{{ a_input|default:'1' }}</math-field>
-        <input type="hidden" name="a" id="hid-a" value="{{ a_input|default:'1' }}" />
+  <math-field class="mf" id="mf-a" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1">{{ a_input|default:'' }}</math-field>
+  <input type="hidden" name="a" id="hid-a" value="{{ a_input|default:'' }}" />
       </div>
       <div class="control">
         <label>b (extremo derecho)</label>
-        <math-field class="mf" id="mf-b" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 2">{{ b_input|default:'2' }}</math-field>
-        <input type="hidden" name="b" id="hid-b" value="{{ b_input|default:'2' }}" />
+  <math-field class="mf" id="mf-b" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 2">{{ b_input|default:'' }}</math-field>
+  <input type="hidden" name="b" id="hid-b" value="{{ b_input|default:'' }}" />
       </div>
       <div class="control">
         <label>Tolerancia ε</label>
-        <math-field class="mf" id="mf-tol" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1e-6">{{ tol_input|default:'1e-6' }}</math-field>
-        <input type="hidden" name="tol" id="hid-tol" value="{{ tol_input|default:'1e-6' }}" />
+  <math-field class="mf" id="mf-tol" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1e-6">{{ tol_input|default:'' }}</math-field>
+  <input type="hidden" name="tol" id="hid-tol" value="{{ tol_input|default:'' }}" />
       </div>
       <div class="control">
         <label>Max iteraciones</label>
-        <math-field class="mf" id="mf-maxit" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 100">{{ maxit_input|default:'100' }}</math-field>
-        <input type="hidden" name="maxit" id="hid-maxit" value="{{ maxit_input|default:'100' }}" />
+  <math-field class="mf" id="mf-maxit" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 100">{{ maxit_input|default:'' }}</math-field>
+  <input type="hidden" name="maxit" id="hid-maxit" value="{{ maxit_input|default:'' }}" />
       </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">

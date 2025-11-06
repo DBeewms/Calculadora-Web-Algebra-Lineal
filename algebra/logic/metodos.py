@@ -88,9 +88,23 @@ def _crear_evaluador(texto_funcion):
                 except Exception as e2:
                     raise ErrorBiseccion(f"Error evaluando la función (sympy) en x={x_val}: {e2}")
 
+        # Guardar el texto original para mensajes de error más claros
+        _orig_text = texto_funcion
+
+        def _es_secuencial(v):
+            # consideramos secuencial cualquier iterable con __len__ distinto de str/bytes
+            return (hasattr(v, '__len__') and not isinstance(v, (str, bytes)))
+
         def evaluar(x):
             try:
                 val = f_lamb(x)
+
+                # Detectar valores inesperados (None o estructuras secuenciales)
+                if val is None:
+                    raise ErrorBiseccion(f"El evaluador devolvió None para x={x}. Expresión: {repr(_orig_text)}")
+                if _es_secuencial(val):
+                    raise ErrorBiseccion(f"La función evaluada devolvió un objeto secuencial en x={x} (esperado escalar). Expresión: {repr(_orig_text)}")
+
                 # f_lamb puede devolver un int/float o un objeto sympy.
                 # Intentar convertir a float de forma robusta.
                 try:
@@ -104,7 +118,14 @@ def _crear_evaluador(texto_funcion):
                         # Como último recurso evaluar la expresión sympy numéricamente
                         # usando expresion.evalf con subs.
                         try:
-                            return float(expresion.evalf(subs={x_sym: x}))
+                            v2 = expresion.evalf(subs={x_sym: x})
+                            if v2 is None:
+                                raise ErrorBiseccion(f"La evaluación sympy devolvió None para x={x}. Expresión: {repr(_orig_text)}")
+                            if _es_secuencial(v2):
+                                raise ErrorBiseccion(f"La evaluación sympy devolvió un objeto secuencial en x={x}. Expresión: {repr(_orig_text)}")
+                            return float(v2)
+                        except ErrorBiseccion:
+                            raise
                         except Exception as e3:
                             raise ErrorBiseccion(f"Error evaluando la función (sympy) en x={x}: {e3}")
             except ErrorBiseccion:
@@ -132,7 +153,15 @@ def _crear_evaluador(texto_funcion):
                 contexto_local = {'x': x}
                 # Evaluar con __builtins__ deshabilitado y sólo los nombres
                 # permitidos en el globals/local.
-                return float(eval(codigo, {'__builtins__': None}, {**nombres_permitidos, **contexto_local}))
+                val = eval(codigo, {'__builtins__': None}, {**nombres_permitidos, **contexto_local})
+                # Comprobaciones defensivas: None o secuenciales no están permitidos
+                if val is None:
+                    raise ErrorBiseccion(f"El evaluador devolvió None para x={x}. Expresión: {repr(texto_normalizado)}")
+                if hasattr(val, '__len__') and not isinstance(val, (str, bytes)):
+                    raise ErrorBiseccion(f"La evaluación devolvió un objeto secuencial en x={x} (esperado escalar). Expresión: {repr(texto_normalizado)}")
+                return float(val)
+            except ErrorBiseccion:
+                raise
             except Exception as e:
                 raise ErrorBiseccion(f"Error evaluando la función en x={x}: {e}")
 
