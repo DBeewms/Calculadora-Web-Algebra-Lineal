@@ -4,11 +4,11 @@
 <section class="section">
   <h2>{{ title }}</h2>
 
-  <form method="post" class="panel" style="padding:16px;" data-page="biseccion">
+  <form method="post" class="panel matrix-form" style="padding:16px;" data-page="biseccion">
     {% csrf_token %}
     <div class="grid">
       <div class="control">
-        <label>Ecuación igualada a 0 (ej: x^3 - x - 1 = 0, sin(x) = 0.5)</label>
+  <label>Ecuación igualada a 0</label>
         <math-field class="mf" id="mf-function" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false"
           placeholder="Ej: x^3 - x - 1 = 0">{{ function|default:'x**3 - x - 1 = 0' }}</math-field>
         <input type="hidden" name="function" id="hid-function" value="{{ function|default:'x**3 - x - 1 = 0' }}" />

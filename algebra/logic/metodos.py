@@ -40,6 +40,18 @@ def _crear_evaluador(texto_funcion):
     # para obtener una expresión equivalente f(x) = lhs - rhs.
     texto_normalizado = texto_funcion.replace('^', '**')
 
+    # Normalizaciones adicionales para aceptar entradas tipo LaTeX que
+    # usan llaves y escapes: convertir '{' '}' a paréntesis y quitar '\\'.
+    # Ej: e^{-x} -> e**(-x)
+    try:
+        texto_normalizado = texto_normalizado.replace('{', '(').replace('}', ')')
+        texto_normalizado = texto_normalizado.replace('\\', '')
+        # Normalizar signos unicode comunes
+        texto_normalizado = texto_normalizado.replace('\u2212', '-')
+    except Exception:
+        # En caso de cualquier problema con replace, continuar sin bloquear.
+        pass
+
     # Si el usuario envía una ecuación con '=' convertimos a una expresión
     # restando los dos lados. Esto evita errores de sintaxis (por ejemplo
     # '=' no es válido en modo eval) y hace al servidor robusto frente a
@@ -65,7 +77,9 @@ def _crear_evaluador(texto_funcion):
         # Parsear la expresión con sympy
         try:
             x_sym = sp.symbols('x')
-            expresion = sp.sympify(texto_normalizado, evaluate=True)
+            # Aceptar alias comunes: 'ln' -> log y 'e' -> E (constante de Euler)
+            sym_locals = {'ln': sp.log, 'e': sp.E}
+            expresion = sp.sympify(texto_normalizado, locals=sym_locals, evaluate=True)
         except Exception as e:
             raise ErrorBiseccion(f"Expresión inválida (sympy): {e}")
 
@@ -73,7 +87,7 @@ def _crear_evaluador(texto_funcion):
         # para que devuelva valores numéricos con funciones estándar.
         try:
             f_lamb = sp.lambdify(x_sym, expresion, modules=["math"])
-        except Exception as e:
+        except Exception:
             # En caso de que lambdify falle por alguna razón usamos una conversión a
             # objeto sympy que luego evaluaremos numéricamente.
             def f_lamb(x_val):
@@ -85,7 +99,25 @@ def _crear_evaluador(texto_funcion):
         def evaluar(x):
             try:
                 val = f_lamb(x)
-                return float(val)
+                # f_lamb puede devolver un int/float o un objeto sympy.
+                # Intentar convertir a float de forma robusta.
+                try:
+                    return float(val)
+                except TypeError:
+                    # Si es un objeto sympy que no admite float() directamente,
+                    # intentar evalf() y convertir.
+                    try:
+                        return float(val.evalf())
+                    except Exception:
+                        # Como último recurso evaluar la expresión sympy numéricamente
+                        # usando expresion.evalf con subs.
+                        try:
+                            return float(expresion.evalf(subs={x_sym: x}))
+                        except Exception as e3:
+                            raise ErrorBiseccion(f"Error evaluando la función (sympy) en x={x}: {e3}")
+            except ErrorBiseccion:
+                # Re-lanzar nuestras propias excepciones sin envoltura extra
+                raise
             except Exception as e:
                 raise ErrorBiseccion(f"Error evaluando la función (sympy) en x={x}: {e}")
 
@@ -165,28 +197,39 @@ def biseccion(texto_funcion, a, b, tol=1e-6, maxit=100):
     # Limitar el número máximo de iteraciones por seguridad
     maxit = min(maxit, 10000)
 
+    # Evaluaciones iniciales
+    fa = evaluar(a_actual)
+    fb = evaluar(b_actual)
+
     for n in range(1, maxit + 1):
+        # Punto medio
         c = (a_actual + b_actual) / 2.0
-        fa = evaluar(a_actual)
-        fb = evaluar(b_actual)
         fc = evaluar(c)
 
-        if fc == 0.0:
+        # Registrar la iteración y decidir actualización
+        if fc == 0.0 or abs(fc) < 1e-14:
+            # Raíz exacta (o numéricamente cero)
             actualizacion = 'f(c) = 0'
             iteraciones.append({'i': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
             convergio = True
             break
 
+        # Si el signo de f(a) y f(c) es distinto, la raíz está en [a, c]
         if fa * fc < 0:
             actualizacion = 'b = c'
             iteraciones.append({'i': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            # acotamos el extremo derecho y actualizamos fb
             b_actual = c
+            fb = fc
         else:
             actualizacion = 'a = c'
             iteraciones.append({'i': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            # acotamos el extremo izquierdo y actualizamos fa
             a_actual = c
+            fa = fc
 
-        if abs(b_actual - a_actual) < tol:
+        # Criterio de parada: intervalo suficientemente pequeño o f(c) pequeño
+        if abs(b_actual - a_actual) / 2.0 < tol or abs(fc) < tol:
             convergio = True
             break
 

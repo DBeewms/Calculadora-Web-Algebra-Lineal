@@ -11,7 +11,13 @@
     s = s.replace(/_\{([^{}]+)\}/g, '$1');
     s = s.replace(/\^\{([^{}]+)\}/g, '^(($1))');
     s = s.replace(/\\pi/g, 'pi');
-    s = s.replace(/\\[ ,!;:]/g, '');
+  s = s.replace(/\\[ ,!;:]/g, '');
+  // Normalizar variantes de '=' que pueden venir del teclado virtual o de
+  // copiados/pegados con diferentes puntos de código unicode.
+  // Ejemplos: '＝' (fullwidth equals, U+FF1D), '≡' (U+2261) o el escape '\='.
+  s = s.replace(/\\=/g, '=');
+  s = s.replace(/\uFF1D/g, '=');
+  s = s.replace(/\u2261/g, '=');
     s = s.replace(/[{}]/g, '');
     s = s.replace(/−/g, '-');
     return s.trim();
@@ -111,16 +117,9 @@
     const key = getStateKey(form);
     let raw = null; try{ raw = localStorage.getItem(key); }catch(e){ raw = null; }
     if(!raw) return;
-    // Si el formulario ya tiene valores proporcionados por el servidor
-    // (p. ej. tras enviar y renderizar), no sobrescribimos esos valores
-    // con el estado guardado en localStorage para evitar que los inputs
-    // se borren al presionar "Calcular".
-    try{
-      const hasServerValues = Array.from(form.querySelectorAll('input, textarea, math-field')).some(el=>{
-        return el.value !== null && String(el.value).trim() !== '';
-      });
-      if(hasServerValues) return;
-    }catch(e){ /* no-op */ }
+    // Priorizar el estado guardado en localStorage para preservar siempre
+    // los valores que el usuario haya introducido, incluso si el servidor
+    // re-renderiza el formulario tras un POST con valores por defecto.
     try{
       const state = JSON.parse(raw);
       if(state && state.controls){
