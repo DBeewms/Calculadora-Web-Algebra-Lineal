@@ -1,28 +1,21 @@
-"""Módulo de métodos numéricos (versión en español).
+"""Módulo de métodos numéricos
 
 Descripción:
-- Aquí se implementa el Método de la bisección. El código usa nombres y
-  comentarios en español. Para evaluar expresiones ingresadas por el
-  usuario se emplea un evaluador controlado (limitado) que sólo expone
+- Para evaluar expresiones ingresadas por el
+  usuario se emplea un evaluador controlado que sólo expone
   funciones del módulo math y un pequeño conjunto de funciones seguras.
 
 Importaciones:
 - math: proporciona funciones matemáticas (sin, cos, exp, log, etc.) y
   constantes (pi, e). Se usa para permitir que el usuario escriba
   expresiones usando esas funciones.
-
-Nota de seguridad:
-- El evaluador usa eval() en un entorno muy restringido. Para producción
-  se recomienda reemplazarlo por un parser seguro (por ejemplo sympy).
 """
 import math
 from typing import Callable
 
-
 class ErrorBiseccion(ValueError):
     """Excepción específica para errores durante el proceso de bisección."""
     pass
-
 
 def _crear_evaluador(texto_funcion):
     """Construye y devuelve una función evaluadora f(x) a partir de la
@@ -68,9 +61,8 @@ def _crear_evaluador(texto_funcion):
             # el ErrorBiseccion correspondiente.
             pass
 
-    # Intentar usar sympy para parseo seguro y lambdify (más robusto que eval).
-    # Si sympy no está disponible, se usa la estrategia anterior basada en compile/eval
-    # dentro de un entorno restringido.
+    # Intentar usar sympy para parseo seguro y lambdify
+    # Si sympy no está disponible, se usa la estrategia anterior dentro de un entorno restringido.
     try:
         import sympy as sp
 
