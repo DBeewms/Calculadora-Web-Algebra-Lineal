@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
-from .logic.metodos import biseccion, BisectionError
+from .logic.metodos import biseccion as biseccion_algo, ErrorBiseccion
 import json
 
 def index(request: HttpRequest):
@@ -684,23 +684,23 @@ def biseccion(request: HttpRequest):
             ctx['error'] = 'Max iteraciones inválido; debe ser entero y mayor que 0.'
             return render(request, 'algebra/biseccion.html', ctx)
 
-        # Call extracted algorithm, handle errors
+        # Ejecutar el algoritmo extraído y manejar errores específicos
         try:
-            result = biseccion(func_txt, a, b, tol=tol, maxit=maxit)
-        except BisectionError as be:
+            resultado = biseccion_algo(func_txt, a, b, tol=tol, maxit=maxit)
+        except ErrorBiseccion as be:
             ctx['error'] = str(be)
             return render(request, 'algebra/biseccion.html', ctx)
         except Exception as e:
-            ctx['error'] = f'Error interno: {e}'
+            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
             return render(request, 'algebra/biseccion.html', ctx)
 
-        # Populate context for template
-        ctx['iterations'] = result.get('iterations', [])
-        ctx['converged'] = result.get('converged', False)
-        ctx['iter_count'] = result.get('iter_count', 0)
-        ctx['root'] = result.get('root')
-        ctx['error_estimate'] = result.get('error_estimate')
-        ctx['froot'] = result.get('froot')
+        # Poblamos el contexto con las claves en español que devuelve el módulo
+        ctx['iteraciones'] = resultado.get('iteraciones', [])
+        ctx['convergio'] = resultado.get('convergio', False)
+        ctx['conteo_iter'] = resultado.get('conteo_iter', 0)
+        ctx['raiz'] = resultado.get('raiz')
+        ctx['estimacion_error'] = resultado.get('estimacion_error')
+        ctx['f_en_raiz'] = resultado.get('f_en_raiz')
         ctx['function'] = func_txt
         ctx['a_input'] = a_txt
         ctx['b_input'] = b_txt

@@ -1,110 +1,151 @@
-"""Métodos numéricos - implementaciones de algoritmos.
+"""Módulo de métodos numéricos (versión en español).
 
-Por ahora incluye el Método de bisección con validaciones y un evaluador
-seguro limitado a funciones del módulo math y operaciones básicas.
+Descripción:
+- Aquí se implementa el Método de la bisección. El código usa nombres y
+  comentarios en español. Para evaluar expresiones ingresadas por el
+  usuario se emplea un evaluador controlado (limitado) que sólo expone
+  funciones del módulo math y un pequeño conjunto de funciones seguras.
+
+Importaciones:
+- math: proporciona funciones matemáticas (sin, cos, exp, log, etc.) y
+  constantes (pi, e). Se usa para permitir que el usuario escriba
+  expresiones usando esas funciones.
+
+Nota de seguridad:
+- El evaluador usa eval() en un entorno muy restringido. Para producción
+  se recomienda reemplazarlo por un parser seguro (por ejemplo sympy).
 """
-from typing import Any, Dict, List
 import math
 
-class BisectionError(ValueError):
+
+class ErrorBiseccion(ValueError):
+    """Excepción específica para errores durante el proceso de bisección."""
     pass
 
-def _make_eval(func_txt: str):
-    if not func_txt or not func_txt.strip():
-        raise BisectionError("La expresión de la función está vacía.")
-    # Precompile expression
+
+def _crear_evaluador(texto_funcion):
+    """Construye y devuelve una función evaluadora f(x) a partir de la
+    cadena `texto_funcion`.
+
+    Lanza ErrorBiseccion si la expresión es inválida o falla la compilación.
+    """
+    if not texto_funcion or not texto_funcion.strip():
+        raise ErrorBiseccion("La expresión de la función está vacía.")
+
+    # Compilar la expresión una vez para mejorar rendimiento y detectar
+    # errores de sintaxis tempranamente.
     try:
-        code = compile(func_txt, '<bisection>', 'eval')
+        codigo = compile(texto_funcion, '<biseccion>', 'eval')
     except Exception as e:
-        raise BisectionError(f"Expresión inválida: {e}")
+        raise ErrorBiseccion(f"Expresión inválida: {e}")
 
-    safe_names = {k: getattr(math, k) for k in dir(math) if not k.startswith('__')}
-    safe_names.update({'abs': abs, 'pow': pow})
+    # Exponer sólo las funciones y constantes del módulo math y un par de
+    # funciones seguras adicionales.
+    nombres_permitidos = {k: getattr(math, k) for k in dir(math) if not k.startswith('__')}
+    nombres_permitidos.update({'abs': abs, 'pow': pow})
 
-    def f(x: float) -> float:
+    def evaluar(x):
+        """Evalúa la expresión compilada en el punto x y devuelve un float.
+
+        Envuelve errores de evaluación en ErrorBiseccion para un manejo
+        uniforme en la capa de vista.
+        """
         try:
-            local = {'x': x}
-            return float(eval(code, {'__builtins__': None}, {**safe_names, **local}))
+            contexto_local = {'x': x}
+            # Evaluar con __builtins__ deshabilitado y sólo los nombres
+            # permitidos en el globals/local.
+            return float(eval(codigo, {'__builtins__': None}, {**nombres_permitidos, **contexto_local}))
         except Exception as e:
-            raise BisectionError(f"Error evaluando la función en x={x}: {e}")
+            raise ErrorBiseccion(f"Error evaluando la función en x={x}: {e}")
 
-    return f
+    return evaluar
 
 
-def biseccion(func_txt: str, a: float, b: float, tol: float = 1e-6, maxit: int = 100) -> Dict[str, Any]:
-    """Ejecuta el método de la bisección sobre f definida por func_txt en [a,b].
+def biseccion(texto_funcion, a, b, tol=1e-6, maxit=100):
+    """Ejecuta el método de la bisección en el intervalo [a, b].
 
-    Retorna un diccionario con claves:
-      - iterations: lista de filas {n,a,fa,b,fb,c,fc,update}
-      - converged (bool), iter_count (int), root (float), error_estimate (float), froot (float)
+    Parámetros:
+    - texto_funcion: cadena con la expresión matemática en variable 'x'.
+    - a, b: extremos del intervalo (números).
+    - tol: tolerancia (positivo).
+    - maxit: máximo de iteraciones.
 
-    Lanza BisectionError en caso de parámetros inválidos o errores al evaluar f.
+    Retorna un diccionario con las siguientes claves (en español):
+      - 'iteraciones': lista de diccionarios por iteración
+      - 'convergio' (bool)
+      - 'conteo_iter' (int)
+      - 'raiz' (float)
+      - 'estimacion_error' (float)
+      - 'f_en_raiz' (float)
+
+    Lanza ErrorBiseccion en caso de parámetros inválidos o errores de evaluación.
     """
     # Validaciones básicas
     if tol <= 0:
-        raise BisectionError("La tolerancia debe ser un número positivo.")
+        raise ErrorBiseccion("La tolerancia debe ser un número positivo.")
     if maxit <= 0:
-        raise BisectionError("El número máximo de iteraciones debe ser mayor que 0.")
+        raise ErrorBiseccion("El número máximo de iteraciones debe ser mayor que 0.")
     if a >= b:
-        raise BisectionError("Se requiere a < b como intervalo inicial.")
+        raise ErrorBiseccion("Se requiere a < b como intervalo inicial.")
 
-    f = _make_eval(func_txt)
+    evaluar = _crear_evaluador(texto_funcion)
 
-    fa = f(a)
-    fb = f(b)
-    # Raíz exacta en extremos
+    fa = evaluar(a)
+    fb = evaluar(b)
+
+    # Si la función se anula exactamente en los extremos, devolvemos la raíz
     if fa == 0.0:
-        return { 'iterations': [], 'converged': True, 'iter_count': 0, 'root': float(a), 'error_estimate': 0.0, 'froot': 0.0 }
+        return {'iteraciones': [], 'convergio': True, 'conteo_iter': 0, 'raiz': float(a), 'estimacion_error': 0.0, 'f_en_raiz': 0.0}
     if fb == 0.0:
-        return { 'iterations': [], 'converged': True, 'iter_count': 0, 'root': float(b), 'error_estimate': 0.0, 'froot': 0.0 }
+        return {'iteraciones': [], 'convergio': True, 'conteo_iter': 0, 'raiz': float(b), 'estimacion_error': 0.0, 'f_en_raiz': 0.0}
 
     if fa * fb > 0:
-        raise BisectionError("No hay cambio de signo en el intervalo [a,b]. f(a)·f(b) debe ser < 0.")
+        raise ErrorBiseccion("No hay cambio de signo en el intervalo [a,b]. f(a)·f(b) debe ser < 0.")
 
-    iterations: List[Dict[str, Any]] = []
-    curr_a = float(a)
-    curr_b = float(b)
-    converged = False
+    iteraciones = []
+    a_actual = float(a)
+    b_actual = float(b)
+    convergio = False
     c = None
 
-    # Cap iterations to reasonable safety limit
+    # Limitar el número máximo de iteraciones por seguridad
     maxit = min(maxit, 10000)
 
     for n in range(1, maxit + 1):
-        c = (curr_a + curr_b) / 2.0
-        fa = f(curr_a)
-        fb = f(curr_b)
-        fc = f(c)
+        c = (a_actual + b_actual) / 2.0
+        fa = evaluar(a_actual)
+        fb = evaluar(b_actual)
+        fc = evaluar(c)
 
         if fc == 0.0:
-            update = 'f(c) = 0'
-            iterations.append({'n': n, 'a': curr_a, 'fa': fa, 'b': curr_b, 'fb': fb, 'c': c, 'fc': fc, 'update': update})
-            converged = True
+            actualizacion = 'f(c) = 0'
+            iteraciones.append({'n': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            convergio = True
             break
 
         if fa * fc < 0:
-            update = 'b = c'
-            iterations.append({'n': n, 'a': curr_a, 'fa': fa, 'b': curr_b, 'fb': fb, 'c': c, 'fc': fc, 'update': update})
-            curr_b = c
+            actualizacion = 'b = c'
+            iteraciones.append({'n': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            b_actual = c
         else:
-            update = 'a = c'
-            iterations.append({'n': n, 'a': curr_a, 'fa': fa, 'b': curr_b, 'fb': fb, 'c': c, 'fc': fc, 'update': update})
-            curr_a = c
+            actualizacion = 'a = c'
+            iteraciones.append({'n': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            a_actual = c
 
-        if abs(curr_b - curr_a) < tol:
-            converged = True
+        if abs(b_actual - a_actual) < tol:
+            convergio = True
             break
 
     if c is None:
-        raise BisectionError('No se pudo calcular una aproximación.')
+        raise ErrorBiseccion('No se pudo calcular una aproximación.')
 
-    final_root = float(c)
-    final_interval = abs(curr_b - curr_a)
+    raiz_final = float(c)
+    intervalo_final = abs(b_actual - a_actual)
     return {
-        'iterations': iterations,
-        'converged': converged,
-        'iter_count': iterations[-1]['n'] if iterations else 0,
-        'root': final_root,
-        'error_estimate': final_interval / 2.0,
-        'froot': f(final_root)
+        'iteraciones': iteraciones,
+        'convergio': convergio,
+        'conteo_iter': iteraciones[-1]['n'] if iteraciones else 0,
+        'raiz': raiz_final,
+        'estimacion_error': intervalo_final / 2.0,
+        'f_en_raiz': evaluar(raiz_final)
     }
