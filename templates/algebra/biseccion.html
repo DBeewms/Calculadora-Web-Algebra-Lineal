@@ -28,7 +28,10 @@
         <input name="maxit" type="text" value="{{ maxit_input|default:'100' }}" />
       </div>
     </div>
-    <button type="submit" class="btn">Calcular</button>
+    <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+      <button type="submit" class="btn">Calcular</button>
+      <button type="button" class="btn ghost" data-action="clear" aria-label="Limpiar formulario">Limpiar</button>
+    </div>
   </form>
 
   {% if error %}
