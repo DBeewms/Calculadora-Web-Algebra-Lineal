@@ -694,13 +694,40 @@ def biseccion(request: HttpRequest):
             ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
             return render(request, 'algebra/biseccion.html', ctx)
 
-        # Poblamos el contexto con las claves en español que devuelve el módulo
-        ctx['iteraciones'] = resultado.get('iteraciones', [])
+        # Formatear los números a cadenas usando punto decimal (.) y
+        # reordenar columnas tal como se solicita. Esto evita el uso de
+        # filtros de plantilla que podrían aplicar coma según la localización.
+        raw_iters = resultado.get('iteraciones', [])
+        iteraciones_formateadas = []
+        for it in raw_iters:
+            # asegurar que las claves numéricas existen y convertir a float
+            a_val = float(it.get('a', 0))
+            b_val = float(it.get('b', 0))
+            c_val = float(it.get('c', 0))
+            fa_val = float(it.get('fa', 0))
+            fb_val = float(it.get('fb', 0))
+            fc_val = float(it.get('fc', 0))
+            iteraciones_formateadas.append({
+                'i': it.get('i', 0),
+                'a': format(a_val, '.6f'),
+                'b': format(b_val, '.6f'),
+                'c': format(c_val, '.6f'),
+                'fa': format(fa_val, '.6f'),
+                'fb': format(fb_val, '.6f'),
+                'fc': format(fc_val, '.6f'),
+                'actualizacion': it.get('actualizacion', '')
+            })
+
+        ctx['iteraciones'] = iteraciones_formateadas
         ctx['convergio'] = resultado.get('convergio', False)
         ctx['conteo_iter'] = resultado.get('conteo_iter', 0)
-        ctx['raiz'] = resultado.get('raiz')
-        ctx['estimacion_error'] = resultado.get('estimacion_error')
-        ctx['f_en_raiz'] = resultado.get('f_en_raiz')
+        # Resumen también formateado con punto decimal
+        raiz_val = resultado.get('raiz')
+        estim_err_val = resultado.get('estimacion_error')
+        f_en_raiz_val = resultado.get('f_en_raiz')
+        ctx['raiz'] = format(float(raiz_val), '.8f') if raiz_val is not None else ''
+        ctx['estimacion_error'] = format(float(estim_err_val), '.8f') if estim_err_val is not None else ''
+        ctx['f_en_raiz'] = format(float(f_en_raiz_val), '.10f') if f_en_raiz_val is not None else ''
         ctx['function'] = func_txt
         ctx['a_input'] = a_txt
         ctx['b_input'] = b_txt

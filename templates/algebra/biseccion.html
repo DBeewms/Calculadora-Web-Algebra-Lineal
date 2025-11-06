@@ -45,26 +45,26 @@
       <table style="width:100%; border-collapse:collapse;">
         <thead>
           <tr>
-            <th style="border:1px solid var(--border); padding:8px;">n</th>
+            <th style="border:1px solid var(--border); padding:8px;">i</th>
             <th style="border:1px solid var(--border); padding:8px;">a</th>
-            <th style="border:1px solid var(--border); padding:8px;">f(a)</th>
             <th style="border:1px solid var(--border); padding:8px;">b</th>
+            <th style="border:1px solid var(--border); padding:8px;">c = (a+b)/2</th>
+            <th style="border:1px solid var(--border); padding:8px;">f(a)</th>
             <th style="border:1px solid var(--border); padding:8px;">f(b)</th>
-            <th style="border:1px solid var(--border); padding:8px;">c</th>
             <th style="border:1px solid var(--border); padding:8px;">f(c)</th>
-            <th style="border:1px solid var(--border); padding:8px;">Update</th>
+            <th style="border:1px solid var(--border); padding:8px;">Actualización</th>
           </tr>
         </thead>
         <tbody>
           {% for it in iteraciones %}
           <tr>
-            <td style="border:1px solid var(--border); padding:6px; text-align:center;">{{ it.n }}</td>
-            <td style="border:1px solid var(--border); padding:6px;">{{ it.a|floatformat:6 }}</td>
-            <td style="border:1px solid var(--border); padding:6px;">{{ it.fa|floatformat:6 }}</td>
-            <td style="border:1px solid var(--border); padding:6px;">{{ it.b|floatformat:6 }}</td>
-            <td style="border:1px solid var(--border); padding:6px;">{{ it.fb|floatformat:6 }}</td>
-            <td style="border:1px solid var(--border); padding:6px;">{{ it.c|floatformat:6 }}</td>
-            <td style="border:1px solid var(--border); padding:6px;">{{ it.fc|floatformat:6 }}</td>
+            <td style="border:1px solid var(--border); padding:6px; text-align:center;">{{ it.i }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.a }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.b }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.c }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fa }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fb }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fc }}</td>
             <td style="border:1px solid var(--border); padding:6px; text-align:center;">{{ it.actualizacion }}</td>
           </tr>
           {% endfor %}
@@ -73,9 +73,9 @@
 
       <h4 style="margin-top:12px;">Resumen</h4>
       <p>El método {{ convergio|yesno:"converge,no converge" }} en {{ conteo_iter }} iteraciones.</p>
-      <p>La raíz aproximada es: <strong>{{ raiz|floatformat:8 }}</strong></p>
-      <p>Estimación del error (intervalo/2): <strong>{{ estimacion_error|floatformat:8 }}</strong></p>
-      <p>f(raíz) = {{ f_en_raiz|floatformat:10 }}</p>
+      <p>La raíz aproximada es: <strong>{{ raiz }}</strong></p>
+      <p>Estimación del error (intervalo/2): <strong>{{ estimacion_error }}</strong></p>
+      <p>f(raíz) = {{ f_en_raiz }}</p>
     </div>
   {% endif %}
 

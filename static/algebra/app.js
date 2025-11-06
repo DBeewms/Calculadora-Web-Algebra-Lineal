@@ -60,6 +60,16 @@
     const key = getStateKey(form);
     let raw = null; try{ raw = localStorage.getItem(key); }catch(e){ raw = null; }
     if(!raw) return;
+    // Si el formulario ya tiene valores proporcionados por el servidor
+    // (p. ej. tras enviar y renderizar), no sobrescribimos esos valores
+    // con el estado guardado en localStorage para evitar que los inputs
+    // se borren al presionar "Calcular".
+    try{
+      const hasServerValues = Array.from(form.querySelectorAll('input, textarea')).some(el=>{
+        return el.value !== null && String(el.value).trim() !== '';
+      });
+      if(hasServerValues) return;
+    }catch(e){ /* no-op */ }
     try{
       const state = JSON.parse(raw);
       if(state && state.controls){

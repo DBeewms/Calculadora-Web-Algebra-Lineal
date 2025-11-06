@@ -16,6 +16,7 @@ Nota de seguridad:
   se recomienda reemplazarlo por un parser seguro (por ejemplo sympy).
 """
 import math
+from typing import Callable
 
 
 class ErrorBiseccion(ValueError):
@@ -32,33 +33,69 @@ def _crear_evaluador(texto_funcion):
     if not texto_funcion or not texto_funcion.strip():
         raise ErrorBiseccion("La expresión de la función está vacía.")
 
-    # Compilar la expresión una vez para mejorar rendimiento y detectar
-    # errores de sintaxis tempranamente.
+    # Normalizaciones menores: muchos usuarios escriben '^' para potencia
+    # (ej: x^2). En Python '^' es XOR, no potencia, por eso transformamos a
+    # '**' antes de compilar. Para producción podría usarse un parser más
+    # robusto que entienda notación matemática común.
+    texto_normalizado = texto_funcion.replace('^', '**')
+
+    # Intentar usar sympy para parseo seguro y lambdify (más robusto que eval).
+    # Si sympy no está disponible, se usa la estrategia anterior basada en compile/eval
+    # dentro de un entorno restringido.
     try:
-        codigo = compile(texto_funcion, '<biseccion>', 'eval')
-    except Exception as e:
-        raise ErrorBiseccion(f"Expresión inválida: {e}")
+        import sympy as sp
 
-    # Exponer sólo las funciones y constantes del módulo math y un par de
-    # funciones seguras adicionales.
-    nombres_permitidos = {k: getattr(math, k) for k in dir(math) if not k.startswith('__')}
-    nombres_permitidos.update({'abs': abs, 'pow': pow})
-
-    def evaluar(x):
-        """Evalúa la expresión compilada en el punto x y devuelve un float.
-
-        Envuelve errores de evaluación en ErrorBiseccion para un manejo
-        uniforme en la capa de vista.
-        """
+        # Parsear la expresión con sympy
         try:
-            contexto_local = {'x': x}
-            # Evaluar con __builtins__ deshabilitado y sólo los nombres
-            # permitidos en el globals/local.
-            return float(eval(codigo, {'__builtins__': None}, {**nombres_permitidos, **contexto_local}))
+            x_sym = sp.symbols('x')
+            expresion = sp.sympify(texto_normalizado, evaluate=True)
         except Exception as e:
-            raise ErrorBiseccion(f"Error evaluando la función en x={x}: {e}")
+            raise ErrorBiseccion(f"Expresión inválida (sympy): {e}")
 
-    return evaluar
+        # Crear una función numérica eficiente usando lambdify. Usamos el módulo 'math'
+        # para que devuelva valores numéricos con funciones estándar.
+        try:
+            f_lamb = sp.lambdify(x_sym, expresion, modules=["math"])
+        except Exception as e:
+            # En caso de que lambdify falle por alguna razón usamos una conversión a
+            # objeto sympy que luego evaluaremos numéricamente.
+            def f_lamb(x_val):
+                try:
+                    return float(expresion.evalf(subs={x_sym: x_val}))
+                except Exception as e2:
+                    raise ErrorBiseccion(f"Error evaluando la función (sympy) en x={x_val}: {e2}")
+
+        def evaluar(x):
+            try:
+                val = f_lamb(x)
+                return float(val)
+            except Exception as e:
+                raise ErrorBiseccion(f"Error evaluando la función (sympy) en x={x}: {e}")
+
+        return evaluar
+
+    except ImportError:
+        # Fallback: usar el evaluador basado en compile/eval en un entorno restringido.
+        try:
+            codigo = compile(texto_normalizado, '<biseccion>', 'eval')
+        except Exception as e:
+            raise ErrorBiseccion(f"Expresión inválida: {e}")
+
+        # Exponer sólo las funciones y constantes del módulo math y un par de
+        # funciones seguras adicionales.
+        nombres_permitidos = {k: getattr(math, k) for k in dir(math) if not k.startswith('__')}
+        nombres_permitidos.update({'abs': abs, 'pow': pow})
+
+        def evaluar(x):
+            try:
+                contexto_local = {'x': x}
+                # Evaluar con __builtins__ deshabilitado y sólo los nombres
+                # permitidos en el globals/local.
+                return float(eval(codigo, {'__builtins__': None}, {**nombres_permitidos, **contexto_local}))
+            except Exception as e:
+                raise ErrorBiseccion(f"Error evaluando la función en x={x}: {e}")
+
+        return evaluar
 
 
 def biseccion(texto_funcion, a, b, tol=1e-6, maxit=100):
@@ -119,17 +156,17 @@ def biseccion(texto_funcion, a, b, tol=1e-6, maxit=100):
 
         if fc == 0.0:
             actualizacion = 'f(c) = 0'
-            iteraciones.append({'n': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            iteraciones.append({'i': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
             convergio = True
             break
 
         if fa * fc < 0:
             actualizacion = 'b = c'
-            iteraciones.append({'n': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            iteraciones.append({'i': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
             b_actual = c
         else:
             actualizacion = 'a = c'
-            iteraciones.append({'n': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
+            iteraciones.append({'i': n, 'a': a_actual, 'fa': fa, 'b': b_actual, 'fb': fb, 'c': c, 'fc': fc, 'actualizacion': actualizacion})
             a_actual = c
 
         if abs(b_actual - a_actual) < tol:
@@ -144,7 +181,7 @@ def biseccion(texto_funcion, a, b, tol=1e-6, maxit=100):
     return {
         'iteraciones': iteraciones,
         'convergio': convergio,
-        'conteo_iter': iteraciones[-1]['n'] if iteraciones else 0,
+        'conteo_iter': iteraciones[-1]['i'] if iteraciones else 0,
         'raiz': raiz_final,
         'estimacion_error': intervalo_final / 2.0,
         'f_en_raiz': evaluar(raiz_final)
