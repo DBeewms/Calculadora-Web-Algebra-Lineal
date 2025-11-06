@@ -1202,6 +1202,52 @@
           if(m && h){ h.value = conv(m.value||''); }
         });
       }
+
+      // Client-side lightweight validation + preview for equation input
+      const previewText = form.querySelector('#biseccion-preview-text');
+      const previewOk = form.querySelector('#biseccion-preview-ok');
+      const previewErr = form.querySelector('#biseccion-preview-err');
+      const previewErrTxt = form.querySelector('#biseccion-preview-err-txt');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      function showError(msg){ if(previewErrTxt) previewErrTxt.textContent = msg; if(previewErr) previewErr.style.display = ''; if(previewOk) previewOk.style.display = 'none'; if(submitBtn) submitBtn.disabled = true; }
+      function showPreview(text){ if(previewText) previewText.textContent = text; if(previewOk) previewOk.style.display = ''; if(previewErr) previewErr.style.display = 'none'; if(submitBtn) submitBtn.disabled = false; }
+
+      function doValidateAndPreview(){
+        const mf = form.querySelector('#mf-function');
+        const hid = form.querySelector('#hid-function');
+        if(!mf || !previewText) return true;
+        const raw = String(mf.value || '');
+        const plain = latexToPlain(raw);
+        if(!plain.includes('=')){
+          showError("La ecuación debe contener exactamente un '=' que separa ambos lados.");
+          return false;
+        }
+        const parts = plain.split('=');
+        if(parts.length !== 2){
+          showError("Use exactamente un '=' para separar ambos lados de la ecuación.");
+          return false;
+        }
+        const left = parts[0].trim();
+        const right = parts[1].trim();
+        if(!left || !right){
+          showError("Asegúrate de que ambos lados de la ecuación no estén vacíos.");
+          return false;
+        }
+        // Try to normalize each side to a function-like expression
+        try{
+          const lnorm = latexToFunction(left);
+          const rnorm = latexToFunction(right);
+          const expr = `${lnorm} - (${rnorm})`;
+          // Update hidden field with normalized function text so server receives it
+          if(hid) hid.value = expr;
+          showPreview(expr);
+          return true;
+        }catch(e){
+          showError('No se pudo normalizar la ecuación: ' + (e && e.message ? e.message : String(e)));
+          return false;
+        }
+      }
       map.forEach(({mf,hid,conv})=>{
         const m = form.querySelector(mf);
         const h = form.querySelector(hid);
@@ -1210,7 +1256,12 @@
         try{ h.value = conv(m.value||''); }catch(_e){}
         m.addEventListener('input', ()=>{ try{ h.value = conv(m.value||''); }catch(_e){} });
       });
-      form.addEventListener('submit', ()=> syncAll());
+      // Validate and preview before submit; prevent submit if client validation fails
+      form.addEventListener('submit', (e)=>{
+        const ok = doValidateAndPreview();
+        if(!ok){ e.preventDefault(); e.stopPropagation(); return false; }
+        syncAll();
+      });
       // Clear button
       const clr = form.querySelector('[data-action="clear"]');
       clr?.addEventListener('click', ()=>{
@@ -1220,6 +1271,11 @@
           if(m) m.value = '';
           if(h) h.value = '';
         });
+        // clear preview
+        if(previewText) previewText.textContent = '';
+        if(previewOk) previewOk.style.display = 'none';
+        if(previewErr) previewErr.style.display = 'none';
+        if(submitBtn) submitBtn.disabled = false;
       });
     });
   });

@@ -35,9 +35,26 @@ def _crear_evaluador(texto_funcion):
 
     # Normalizaciones menores: muchos usuarios escriben '^' para potencia
     # (ej: x^2). En Python '^' es XOR, no potencia, por eso transformamos a
-    # '**' antes de compilar. Para producción podría usarse un parser más
-    # robusto que entienda notación matemática común.
+    # '**' antes de compilar. También permitimos que el usuario envíe una
+    # ecuación del tipo "lhs = rhs" y la normalizamos a "(lhs) - (rhs)"
+    # para obtener una expresión equivalente f(x) = lhs - rhs.
     texto_normalizado = texto_funcion.replace('^', '**')
+
+    # Si el usuario envía una ecuación con '=' convertimos a una expresión
+    # restando los dos lados. Esto evita errores de sintaxis (por ejemplo
+    # '=' no es válido en modo eval) y hace al servidor robusto frente a
+    # clientes que no normalicen correctamente antes de enviar.
+    if '=' in texto_normalizado:
+        try:
+            left, right = texto_normalizado.split('=', 1)
+            left = left.strip() or '0'
+            right = right.strip() or '0'
+            texto_normalizado = f"({left}) - ({right})"
+        except Exception:
+            # Si por alguna razón el split falla, dejamos la cadena original
+            # y seguiremos con el intento de parseo/compilación que levantará
+            # el ErrorBiseccion correspondiente.
+            pass
 
     # Intentar usar sympy para parseo seguro y lambdify (más robusto que eval).
     # Si sympy no está disponible, se usa la estrategia anterior basada en compile/eval

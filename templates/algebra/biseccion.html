@@ -8,10 +8,14 @@
     {% csrf_token %}
     <div class="grid">
       <div class="control">
-        <label>Función f(x) (usar sin, cos, exp, log, sqrt, etc.)</label>
+        <label>Ecuación igualada a 0 (ej: x^3 - x - 1 = 0, sin(x) = 0.5)</label>
         <math-field class="mf" id="mf-function" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false"
-          placeholder="Ej: x^3 - x - 1">{{ function|default:'x**3 - x - 1' }}</math-field>
-        <input type="hidden" name="function" id="hid-function" value="{{ function|default:'x**3 - x - 1' }}" />
+          placeholder="Ej: x^3 - x - 1 = 0">{{ function|default:'x**3 - x - 1 = 0' }}</math-field>
+        <input type="hidden" name="function" id="hid-function" value="{{ function|default:'x**3 - x - 1 = 0' }}" />
+        <div id="biseccion-preview" style="margin-top:6px; font-size:13px;">
+          <div id="biseccion-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="biseccion-preview-text"></code></div>
+          <div id="biseccion-preview-err" style="color:#b91c1c; display:none;">Error: <span id="biseccion-preview-err-txt"></span></div>
+        </div>
       </div>
       <div class="control">
         <label>a (extremo izquierdo)</label>
