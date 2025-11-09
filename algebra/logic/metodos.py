@@ -271,3 +271,94 @@ def biseccion(texto_funcion, a, b, tol=1e-6, maxit=100):
         'estimacion_error': intervalo_final / 2.0,
         'f_en_raiz': evaluar(raiz_final)
     }
+
+
+def regula_falsi(texto_funcion, a, b, tol=1e-6, maxit=100):
+    """Método de Regla Falsa (Regula Falsi).
+
+    Misma interfaz que `biseccion` pero la elección de c es por regla falsa:
+      c = (a*f(b) - b*f(a)) / (f(b) - f(a))
+    Retorna el mismo diccionario que `biseccion`.
+    """
+    # Validaciones básicas (mismas que biseccion)
+    if tol <= 0:
+        raise ErrorBiseccion("La tolerancia debe ser un número positivo.")
+    if maxit <= 0:
+        raise ErrorBiseccion("El número máximo de iteraciones debe ser mayor que 0.")
+    if a >= b:
+        raise ErrorBiseccion("Se requiere a < b como intervalo inicial.")
+
+    evaluar = _crear_evaluador(texto_funcion)
+
+    fa = evaluar(a)
+    fb = evaluar(b)
+
+    # Si la función se anula exactamente en los extremos, devolvemos la raíz
+    if fa == 0.0:
+        return {'iteraciones': [], 'convergio': True, 'conteo_iter': 0, 'raiz': float(a), 'estimacion_error': 0.0, 'f_en_raiz': 0.0}
+    if fb == 0.0:
+        return {'iteraciones': [], 'convergio': True, 'conteo_iter': 0, 'raiz': float(b), 'estimacion_error': 0.0, 'f_en_raiz': 0.0}
+
+    if fa * fb > 0:
+        raise ErrorBiseccion("No hay cambio de signo en el intervalo [a,b]. f(a)·f(b) debe ser < 0.")
+
+    iteraciones = []
+    a_actual = float(a)
+    b_actual = float(b)
+    convergio = False
+    c = None
+
+    maxit = min(maxit, 10000)
+
+    fa = evaluar(a_actual)
+    fb = evaluar(b_actual)
+
+    for n in range(1, maxit + 1):
+        # Regla falsa (forma robusta): c = (a*fb - b*fa) / (fb - fa)
+        denom = (fb - fa)
+        if denom == 0:
+            raise ErrorBiseccion('Denominador cero al calcular c en Regula Falsi.')
+        c = (a_actual * fb - b_actual * fa) / denom
+        fc = evaluar(c)
+
+        # Guardar la iteración
+        actualizacion = ''
+        if fa * fc < 0:
+            # raíz en [a, c]
+            b_actual = c
+            fb = fc
+            actualizacion = 'b <- c'
+        else:
+            a_actual = c
+            fa = fc
+            actualizacion = 'a <- c'
+
+        iteraciones.append({
+            'i': n,
+            'a': a_actual,
+            'b': b_actual,
+            'c': c,
+            'fa': fa,
+            'fb': fb,
+            'fc': fc,
+            'actualizacion': actualizacion
+        })
+
+        # Criterio de parada
+        if abs(b_actual - a_actual) / 2.0 < tol or (fc is not None and abs(fc) < tol):
+            convergio = True
+            break
+
+    if c is None:
+        raise ErrorBiseccion('No se pudo calcular una aproximación.')
+
+    raiz_final = float(c)
+    intervalo_final = abs(b_actual - a_actual)
+    return {
+        'iteraciones': iteraciones,
+        'convergio': convergio,
+        'conteo_iter': iteraciones[-1]['i'] if iteraciones else 0,
+        'raiz': raiz_final,
+        'estimacion_error': intervalo_final / 2.0,
+        'f_en_raiz': evaluar(raiz_final)
+    }

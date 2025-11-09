@@ -18,4 +18,5 @@ urlpatterns = [
     path("metodos/", views.metodos_index, name="metodos_index"),
     path("metodos/cerrados/", views.metodos_cerrados, name="metodos_cerrados"),
     path("metodos/cerrados/biseccion/", views.biseccion, name="biseccion"),
+    path("metodos/cerrados/regula_falsi/", views.regula_falsi, name="regula_falsi"),
 ]

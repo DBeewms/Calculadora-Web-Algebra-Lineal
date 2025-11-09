@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
-from .logic.metodos import biseccion as biseccion_algo, ErrorBiseccion, _crear_evaluador
+from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, ErrorBiseccion, _crear_evaluador
 import json
 
 def index(request: HttpRequest):
@@ -697,7 +697,8 @@ def metodos_cerrados(request: HttpRequest):
     ctx = {
         "subclass": "Métodos cerrados",
         "methods": [
-            {"name": "Método de bisección", "url_name": "biseccion", "slug": "biseccion"}
+            {"name": "Método de bisección", "url_name": "biseccion", "slug": "biseccion"},
+            {"name": "Regla Falsa (Regula Falsi)", "url_name": "regula_falsi", "slug": "regula_falsi"}
         ]
     }
     return render(request, "algebra/metodos_cerrados.html", ctx)
@@ -937,6 +938,225 @@ def biseccion(request: HttpRequest):
             })
         except Exception:
             # Si algo falla en la generación de la gráfica, ignoramos silenciosamente para no romper la vista
+            pass
+
+        return render(request, 'algebra/biseccion.html', ctx)
+
+    # GET
+    return render(request, 'algebra/biseccion.html', ctx)
+
+
+def regula_falsi(request: HttpRequest):
+    """Vista para el método de Regla Falsa. Reutiliza la plantilla de bisección
+    porque la interfaz y los parámetros son equivalentes.
+    """
+    ctx = {"title": "Método de Regla Falsa (Regula Falsi)"}
+    if request.method == 'POST':
+        # Reuse the same parsing/validation logic as biseccion to avoid duplication
+        func_txt = (request.POST.get('function') or '').strip()
+        a_txt = (request.POST.get('a') or '').strip()
+        b_txt = (request.POST.get('b') or '').strip()
+        tol_txt = (request.POST.get('tol') or '').strip()
+        maxit_txt = (request.POST.get('maxit') or '').strip()
+
+        from fractions import Fraction
+        def _replace_vulgar_fraction_chars(s: str) -> str:
+            vf_map = {
+                '\u00BC': '1/4', '\u00BD': '1/2', '\u00BE': '3/4',
+                '\u2150': '1/7', '\u2151': '1/9', '\u2152': '1/10',
+                '\u2153': '1/3', '\u2154': '2/3', '\u2155': '1/5', '\u2156': '2/5', '\u2157': '3/5', '\u2158': '4/5',
+                '\u2159': '1/6', '\u215A': '5/6', '\u215B': '1/8', '\u215C': '3/8', '\u215D': '5/8', '\u215E': '7/8'
+            }
+            out = []
+            for ch in s:
+                if ch in vf_map:
+                    out.append(vf_map[ch])
+                else:
+                    out.append(ch)
+            return ''.join(out)
+
+        def parse_number(txt, default=None):
+            if txt is None or str(txt).strip() == '':
+                return default
+            s = str(txt).strip()
+            s = s.replace('\u2212', '-')
+            s = s.replace('\u2060', '')
+            s = s.replace('\u2009', '')
+            s = s.replace('\u00A0', '')
+            s = _replace_vulgar_fraction_chars(s)
+            try:
+                return float(s)
+            except Exception:
+                try:
+                    return float(Fraction(s))
+                except Exception:
+                    try:
+                        s2 = s.replace('^', '**')
+                        return float(eval(s2, {'__builtins__': None}, {}))
+                    except Exception:
+                        raise
+
+        try:
+            a = parse_number(a_txt)
+            b = parse_number(b_txt)
+            if a is None or b is None:
+                raise ValueError('a o b vacío')
+        except Exception:
+            ctx['error'] = 'Parámetros numéricos inválidos: a y b deben ser números (aceptamos 0.5 o 1/2).'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        try:
+            tol = parse_number(tol_txt, default=1e-6)
+            if tol is None or tol <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Tolerancia inválida; debe ser un número positivo.'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        try:
+            maxit = int(maxit_txt) if maxit_txt != '' else 100
+            if maxit <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Max iteraciones inválido; debe ser entero y mayor que 0.'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        try:
+            resultado = regula_falsi_algo(func_txt, a, b, tol=tol, maxit=maxit)
+        except ErrorBiseccion as be:
+            ctx['error'] = str(be)
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/biseccion.html', ctx)
+        except Exception as e:
+            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            ctx['function'] = func_txt
+            ctx['a_input'] = a_txt
+            ctx['b_input'] = b_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/biseccion.html', ctx)
+
+        # Reuse the same post-processing as the bisection view to format results & plot
+        raw_iters = resultado.get('iteraciones', [])
+        iteraciones_formateadas = []
+        for it in raw_iters:
+            a_val = float(it.get('a', 0))
+            b_val = float(it.get('b', 0))
+            c_val = float(it.get('c', 0))
+            fa_val = float(it.get('fa', 0))
+            fb_val = float(it.get('fb', 0))
+            fc_val = float(it.get('fc', 0))
+            iteraciones_formateadas.append({
+                'i': it.get('i', 0),
+                'a': format(a_val, '.6f'),
+                'b': format(b_val, '.6f'),
+                'c': format(c_val, '.6f'),
+                'fa': format(fa_val, '.6f'),
+                'fb': format(fb_val, '.6f'),
+                'fc': format(fc_val, '.6f'),
+                'actualizacion': it.get('actualizacion', '')
+            })
+
+        ctx['iteraciones'] = iteraciones_formateadas
+        if not iteraciones_formateadas and resultado.get('convergio'):
+            try:
+                a_val = float(a)
+                b_val = float(b)
+                raiz_val = resultado.get('raiz')
+                c_val = float(raiz_val) if raiz_val is not None else (a_val + b_val) / 2.0
+                f = _crear_evaluador(func_txt)
+                fa_val = float(f(a_val)) if a_val is not None else 0.0
+                fb_val = float(f(b_val)) if b_val is not None else 0.0
+                fc_val = float(f(c_val)) if c_val is not None else 0.0
+                ctx['iteraciones'] = [{
+                    'i': 0,
+                    'a': format(a_val, '.6f'),
+                    'b': format(b_val, '.6f'),
+                    'c': format(c_val, '.6f'),
+                    'fa': format(fa_val, '.6f'),
+                    'fb': format(fb_val, '.6f'),
+                    'fc': format(fc_val, '.6f'),
+                    'actualizacion': 'resultado directo'
+                }]
+            except Exception:
+                pass
+
+        ctx['convergio'] = resultado.get('convergio', False)
+        ctx['conteo_iter'] = resultado.get('conteo_iter', 0)
+        raiz_val = resultado.get('raiz')
+        estim_err_val = resultado.get('estimacion_error')
+        f_en_raiz_val = resultado.get('f_en_raiz')
+        ctx['raiz'] = format(float(raiz_val), '.8f') if raiz_val is not None else ''
+        ctx['estimacion_error'] = format(float(estim_err_val), '.8f') if estim_err_val is not None else ''
+        ctx['f_en_raiz'] = format(float(f_en_raiz_val), '.10f') if f_en_raiz_val is not None else ''
+        ctx['function'] = func_txt
+        ctx['a_input'] = a_txt
+        ctx['b_input'] = b_txt
+        ctx['tol_input'] = tol_txt
+        ctx['maxit_input'] = maxit_txt
+
+        try:
+            f = _crear_evaluador(func_txt)
+            N = 401
+            xs = []
+            ys = []
+            aa = float(min(a, b))
+            bb = float(max(a, b))
+            span = bb - aa
+            if span <= 0:
+                span = 2.0
+                aa -= 1.0
+                bb += 1.0
+            center = (aa + bb) / 2.0
+            scale = 2.5
+            x1 = center - span * scale
+            x2 = center + span * scale
+            x1 = min(x1, 0.0)
+            x2 = max(x2, 0.0)
+            for i in range(N):
+                t = i / (N - 1)
+                x = x1 + (x2 - x1) * t
+                try:
+                    y = float(f(x))
+                except Exception:
+                    y = None
+                xs.append(x)
+                ys.append(y)
+            fa = None
+            fb = None
+            try: fa = float(f(float(a)))
+            except Exception: fa = None
+            try: fb = float(f(float(b)))
+            except Exception: fb = None
+            import json as _json
+            ctx['plot'] = _json.dumps({
+                'xs': xs,
+                'ys': ys,
+                'a': float(a),
+                'b': float(b),
+                'fa': fa,
+                'fb': fb
+            })
+        except Exception:
             pass
 
         return render(request, 'algebra/biseccion.html', ctx)
