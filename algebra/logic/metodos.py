@@ -327,11 +327,13 @@ def regula_falsi(texto_funcion, a, b, tol=1e-6, maxit=100):
             # raíz en [a, c]
             b_actual = c
             fb = fc
-            actualizacion = 'b <- c'
+            # Use '=' in the update message for consistency with bisección
+            actualizacion = 'b = c'
         else:
             a_actual = c
             fa = fc
-            actualizacion = 'a <- c'
+            # Use '=' in the update message for consistency with bisección
+            actualizacion = 'a = c'
 
         iteraciones.append({
             'i': n,
