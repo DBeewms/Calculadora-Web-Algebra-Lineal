@@ -181,16 +181,96 @@
       plot_bgcolor: card,
       hovermode: 'closest',
       showlegend: true,
+      dragmode: 'pan',
       xaxis: {
         title: 'x',
         gridcolor: border, zerolinecolor: border,
-        range: [xmin - pad, xmax + pad]
+        range: [xmin - pad, xmax + pad],
+        rangeslider: { visible: true }
       },
       yaxis: { title: 'f(x)', gridcolor: border, zerolinecolor: border, range: [ymin - ypad, ymax + ypad] },
-      legend: { orientation: 'h', x: 0, y: 1.1 }
+      legend: { orientation: 'h', x: 0, y: 1.1 },
+      uirevision: 'biseccion-plot'
     };
 
-    Plotly.newPlot(el, [traceFunc, traceAxis, traceAxisY, traceAB], layout, { displayModeBar: false, responsive: true });
+    Plotly.newPlot(el, [traceFunc, traceAxis, traceAxisY, traceAB], layout, {
+      displayModeBar: true,
+      responsive: true,
+      scrollZoom: true,
+      doubleClick: 'reset'
+    });
+
+    // Dynamic resampling on pan/zoom to avoid cut-offs and allow exploring more quadrants
+    try{
+      const hidFn = document.getElementById('hid-function');
+      const exprRaw = (hidFn?.value || '').trim();
+      if(exprRaw && window.toJSExpr){
+        const exprJS = window.toJSExpr(exprRaw);
+        const forbidden = /(constructor|prototype|__proto__|=>|new\s+Function|Function\s*\()/;
+        function safeEvalFunc(x){
+          if(forbidden.test(exprJS)) return null;
+          // eslint-disable-next-line no-new-func
+          const fn = new Function('Math','x', 'return ( ' + exprJS + ' )');
+          let y = null;
+          try{ y = fn(Math, x); }catch(_e){ y = null; }
+          if(typeof y !== 'number' || !isFinite(y)) return null;
+          return y;
+        }
+
+        // Debounce relayout events
+        let relayoutTimer = null;
+        function resampleForRange(x0, x1){
+          if(!(isFinite(x0) && isFinite(x1)) || x0 === x1) return;
+          // Choose sample count based on pixel width for good density
+          const width = el.clientWidth || 800;
+          const n = Math.max(300, Math.min(1600, Math.floor(width * 1.5)));
+          const xs2 = new Array(n);
+          const ys2 = new Array(n);
+          const xa = Math.min(x0, x1), xb = Math.max(x0, x1);
+          for(let i=0;i<n;i++){
+            const t = i/(n-1);
+            const x = xa + (xb - xa) * t;
+            xs2[i] = +x.toFixed(6);
+            const y = safeEvalFunc(x);
+            ys2[i] = (y==null || !isFinite(y)) ? null : +y.toFixed(12);
+          }
+          // Update trace 0 (function) efficiently
+          Plotly.restyle(el, { x: [xs2], y: [ys2] }, [0]);
+          // Recompute y-range from valid points in view
+          const yValid = ys2.filter(v => typeof v === 'number' && isFinite(v));
+          if(yValid.length){
+            let ymin2 = Math.min.apply(null, yValid);
+            let ymax2 = Math.max.apply(null, yValid);
+            if(ymax2 - ymin2 < 1e-9){ ymin2 -= 1; ymax2 += 1; }
+            const ypad2 = (ymax2 - ymin2) * 0.06;
+            Plotly.relayout(el, { 'yaxis.range': [ymin2 - ypad2, ymax2 + ypad2] });
+          }
+        }
+
+        el.on('plotly_relayout', (ev)=>{
+          // Get new x range
+          if(relayoutTimer) window.clearTimeout(relayoutTimer);
+          relayoutTimer = window.setTimeout(()=>{
+            let x0 = null, x1 = null;
+            if(ev && typeof ev === 'object'){
+              if('xaxis.range[0]' in ev && 'xaxis.range[1]' in ev){
+                x0 = Number(ev['xaxis.range[0]']);
+                x1 = Number(ev['xaxis.range[1]']);
+              } else if('xaxis.autorange' in ev){
+                // On autorange reset, fetch current axis range from layout
+                const xr = el.layout?.xaxis?.range;
+                if(Array.isArray(xr) && xr.length === 2){ x0 = xr[0]; x1 = xr[1]; }
+              }
+            }
+            if(x0 == null || x1 == null){
+              const xr = el.layout?.xaxis?.range;
+              if(Array.isArray(xr) && xr.length === 2){ x0 = xr[0]; x1 = xr[1]; }
+            }
+            if(x0 != null && x1 != null) resampleForRange(x0, x1);
+          }, 120);
+        });
+      }
+    }catch(_e){ /* ignore dynamic resampling errors to keep plot usable */ }
   })();
   </script>
 {% endif %}

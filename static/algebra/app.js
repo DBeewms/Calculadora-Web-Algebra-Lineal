@@ -179,7 +179,7 @@
     return null;
   }
   // Expose selected helpers for use in other inline scripts (legacy blocks)
-  try{ window.latexToFunction = latexToFunction; window.tryEvalNumeric = tryEvalNumeric; }catch(_e){}
+  try{ window.latexToFunction = latexToFunction; window.tryEvalNumeric = tryEvalNumeric; window.toJSExpr = toJSExpr; }catch(_e){}
   function isMathField(el){ return el && el.tagName === 'MATH-FIELD'; }
   function getFieldPlain(el){
     if(!el) return '';
@@ -1497,13 +1497,13 @@
           const traceAxisY = { x:[0,0], y:[ymin-ypad, ymax+ypad], mode:'lines', name:'x = 0', line:{ color: muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
           const layout = {
             margin:{ l:50, r:20, t:10, b:40 }, paper_bgcolor: card, plot_bgcolor: card,
-            hovermode:'closest', showlegend:true,
+            hovermode:'closest', showlegend:true, dragmode:'pan',
             xaxis:{ title:'x', gridcolor:border, zerolinecolor:border, range:[xmin - pad, xmax + pad] },
             yaxis:{ title:'f(x)', gridcolor:border, zerolinecolor:border, range:[ymin - ypad, ymax + ypad] },
             legend:{ orientation:'h', x:0, y:1.1 }
           };
           panel.style.display = '';
-          window.Plotly.newPlot(plotEl, [traceFunc, traceAxis, traceAxisY], layout, { displayModeBar:false, responsive:true });
+          window.Plotly.newPlot(plotEl, [traceFunc, traceAxis, traceAxisY], layout, { displayModeBar:true, responsive:true, scrollZoom:true });
         }
 
         btn.addEventListener('click', ()=>{ plotPreview(); });
