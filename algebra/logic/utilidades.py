@@ -59,8 +59,10 @@ def crear_fraccion_desde_cadena(fraccion_texto):
 
     Soporta:
     - enteros ("12"), decimales ("3.5"), fracciones simples ("3/4")
-    - expresiones con +, -, *, ×, /, ÷, ^, paréntesis y raíz: sqrt( … ) o "√( … )"
-      Ej.: "-3/4 + 2^3", "√(2)", "(1+1/2)/3"
+    - expresiones con +, -, *, ×, /, ÷, ^, paréntesis y funciones: sqrt(…), sin, cos, tan,
+      ln (log natural), log (base 10), exp, y constantes pi (π) y e.
+      Se admite multiplicación implícita: 2pi, 2(3+4), 2sin(1), pi(2).
+      Ej.: "-3/4 + 2^3", "√(2)", "(1+1/2)/3", "2cos(pi/3)", "ln(2) + exp(1)".
     """
     texto = fraccion_texto.strip()
 
@@ -194,9 +196,20 @@ def copiar_matriz(M):
 # =====================
 
 def _normalizar_entrada(expr: str) -> str:
-    # Unificar símbolos unicode a ASCII y eliminar espacios
-    e = expr.replace("×", "*").replace("÷", "/").replace("−", "-")
+    # Unificar símbolos y alias comunes a ASCII, y eliminar espacios
+    if expr is None:
+        return ""
+    e = expr
+    # Operadores y raíces
+    e = e.replace("×", "*").replace("÷", "/").replace("−", "-")
     e = e.replace("√", "sqrt")
+    # Potencia en notación Python a caret que usa este parser
+    e = e.replace("**", "^")
+    # Constantes y funciones comunes (alias en español)
+    e = e.replace("π", "pi")
+    e = e.replace("sen", "sin")
+    e = e.replace("tg", "tan")
+    e = e.replace("ctg", "cot")
     # permitir coma decimal? lo ignoramos, usamos '.'
     return "".join(ch for ch in e if ch not in [" ", "\t", "\n"])
 
@@ -214,25 +227,73 @@ def _tokenizar(expr: str):
     e = _normalizar_entrada(expr)
     tokens = []
     i = 0
+    # Catálogos de funciones y constantes soportadas
+    func_names = {
+        'sqrt', 'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
+        'asin', 'acos', 'atan',
+        'sinh', 'cosh', 'tanh',
+        'ln', 'log', 'exp', 'abs'
+    }
+    const_names = {'pi', 'e'}
+
+    def maybe_insert_mul(prev_tok: str, curr_tok: str):
+        # Inserta multiplicación implícita en casos comunes: 2pi, 2(…), pi(…), )(…)
+        if not tokens:
+            return
+        prev = tokens[-1]
+        # Clasificar prev y curr
+        def is_number(tok):
+            return _es_numero_token(tok)
+        def is_const(tok):
+            return tok in const_names
+        def is_func(tok):
+            return tok in func_names
+        # Insertar * si prev es número/const/')' y curr es '('/func/const o número tras ')'
+        if (is_number(prev) or is_const(prev) or prev == ')'):
+            if curr_tok == '(' or curr_tok in func_names or curr_tok in const_names:
+                tokens.append('*')
+        if prev == ')' and (curr_tok and (curr_tok.isdigit() or curr_tok == '.')):
+            tokens.append('*')
+
     while i < len(e):
         ch = e[i]
-        # función sqrt
-        if e.startswith('sqrt', i):
-            tokens.append('sqrt')
-            i += 4
-            continue
+        # Identificadores (funciones/constantes)
+        if ch.isalpha():
+            j = i + 1
+            while j < len(e) and (e[j].isalpha() or e[j].isdigit() or e[j] == '_'):
+                j += 1
+            name = e[i:j]
+            # normalizar a minúsculas para reconocer constantes/funciones
+            name_l = name.lower()
+            if name_l in func_names or name_l in const_names:
+                maybe_insert_mul(tokens[-1] if tokens else None, name_l)
+                tokens.append(name_l)
+                i = j
+                continue
+            # identificador no reconocido en expresiones numéricas puras
+            raise Exception(f"Nombre no soportado en la expresión numérica: '{name}'")
+
+        # Números (enteros/decimales)
         if ch.isdigit() or ch == '.':
             j = i + 1
             while j < len(e) and (e[j].isdigit() or e[j] == '.'):
                 j += 1
-            tokens.append(e[i:j])
+            tok = e[i:j]
+            maybe_insert_mul(tokens[-1] if tokens else None, tok)
+            tokens.append(tok)
             i = j
             continue
+
+        # Paréntesis y operadores
         if ch in '+-*/^()':
+            # multiplicación implícita: )(
+            if ch == '(':
+                maybe_insert_mul(tokens[-1] if tokens else None, '(')
             tokens.append(ch)
             i += 1
             continue
-        # caracteres no ASCII que ya normalizamos: si quedara algo, error
+
+        # caracteres no soportados
         raise Exception(f"Carácter no soportado en la expresión: '{ch}'")
     return tokens
 
@@ -244,7 +305,8 @@ def _precedencia(op: str) -> int:
     if op == 'neg_hi':
         # Variante para exponentes: 2^-3 => 2^( -3 )
         return 5
-    if op == 'sqrt':
+    # funciones unarias
+    if op in ('sqrt', 'sin', 'cos', 'tan', 'cot', 'sec', 'csc', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'ln', 'log', 'exp', 'abs'):
         return 4
     if op == '^':
         return 3
@@ -261,13 +323,18 @@ def _a_rpn(tokens):
     salida = []
     pila = []
     prev = None
+    func_names = {
+        'sqrt', 'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
+        'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh',
+        'ln', 'log', 'exp', 'abs'
+    }
     for tok in tokens:
         if _es_numero_token(tok):
             salida.append(tok)
             prev = 'num'
             continue
-        if tok == 'sqrt':
-            pila.append('sqrt')
+        if tok in func_names:
+            pila.append(tok)
             prev = 'op'
             continue
         if tok in '+-*/^':
@@ -298,8 +365,8 @@ def _a_rpn(tokens):
             if not pila:
                 raise Exception('Paréntesis no balanceados')
             pila.pop()  # eliminar '('
-            # si hay una función en la cima (sqrt), sacarla a salida
-            if pila and pila[-1] == 'sqrt':
+            # si hay una función en la cima (p.ej. sqrt, sin, ...), sacarla a salida
+            if pila and pila[-1] in func_names:
                 salida.append(pila.pop())
             prev = 'rp'
             continue
@@ -362,13 +429,33 @@ def sqrt_fraccion(a, precision_decimales: int = 10):
     num = int(round(val * escala))
     return simplificar_fraccion(num, escala)
 
+def _real_a_fraccion(val: float, precision_decimales: int = 10):
+    """Aproxima un real 'val' a una fracción con denominador 10^precision_decimales."""
+    escala = 10 ** precision_decimales
+    try:
+        num = int(round(float(val) * escala))
+    except Exception:
+        raise Exception('No se pudo convertir el valor a fracción')
+    return simplificar_fraccion(num, escala)
+
 def _evaluar_rpn(rpn):
+    import math
     pila = []
     for tok in rpn:
         if _es_numero_token(tok):
             pila.append(_num_token_a_fraccion(tok))
             continue
-        if tok in ('+', '-', '*', '/', '^', 'sqrt', 'neg', 'neg_hi'):
+        # Constantes
+        if tok == 'pi':
+            pila.append(_real_a_fraccion(math.pi))
+            continue
+        if tok == 'e':
+            pila.append(_real_a_fraccion(math.e))
+            continue
+        if tok in ('+', '-', '*', '/', '^', 'sqrt', 'neg', 'neg_hi',
+                   'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
+                   'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh',
+                   'ln', 'log', 'exp', 'abs'):
             if tok == 'neg':
                 if not pila:
                     raise Exception('Falta operando para negación')
@@ -383,6 +470,51 @@ def _evaluar_rpn(rpn):
                 if not pila:
                     raise Exception('Falta operando para raíz')
                 pila.append(sqrt_fraccion(pila.pop()))
+                continue
+            # Funciones unarias
+            if tok in ('sin', 'cos', 'tan', 'cot', 'sec', 'csc',
+                       'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh',
+                       'ln', 'log', 'exp', 'abs'):
+                if not pila:
+                    raise Exception('Falta operando para función')
+                a = pila.pop()
+                x = a[0] / a[1]
+                if tok == 'sin':
+                    val = math.sin(x)
+                elif tok == 'cos':
+                    val = math.cos(x)
+                elif tok == 'tan':
+                    val = math.tan(x)
+                elif tok == 'cot':
+                    val = 1.0 / math.tan(x)
+                elif tok == 'sec':
+                    val = 1.0 / math.cos(x)
+                elif tok == 'csc':
+                    val = 1.0 / math.sin(x)
+                elif tok == 'asin':
+                    val = math.asin(x)
+                elif tok == 'acos':
+                    val = math.acos(x)
+                elif tok == 'atan':
+                    val = math.atan(x)
+                elif tok == 'sinh':
+                    val = math.sinh(x)
+                elif tok == 'cosh':
+                    val = math.cosh(x)
+                elif tok == 'tanh':
+                    val = math.tanh(x)
+                elif tok == 'ln':
+                    val = math.log(x)
+                elif tok == 'log':
+                    # log base 10
+                    val = math.log10(x)
+                elif tok == 'exp':
+                    val = math.exp(x)
+                elif tok == 'abs':
+                    val = abs(x)
+                else:
+                    raise Exception(f'Función no soportada: {tok}')
+                pila.append(_real_a_fraccion(val))
                 continue
             # binarios
             if len(pila) < 2:
@@ -420,13 +552,18 @@ def _evaluar_expresion_a_fraccion(expr: str):
 
 def _normalizar_ecuacion(s: str) -> str:
     """Normaliza símbolos aritméticos pero preserva variables. Quita espacios.
-    Permite ×, ÷, √ en los coeficientes.
+    Permite ×, ÷, √ y funciones comunes en los coeficientes: sin, cos, tan, ln, log, exp; y constantes pi, e.
     """
     if s is None:
         return ""
     # Reutiliza normalización pero sin eliminar letras
     e = s.replace("×", "*").replace("÷", "/").replace("−", "-")
     e = e.replace("√", "sqrt")
+    e = e.replace("**", "^")
+    e = e.replace("π", "pi")
+    e = e.replace("sen", "sin")
+    e = e.replace("tg", "tan")
+    e = e.replace("ctg", "cot")
     # eliminar espacios
     return "".join(ch for ch in e if ch not in [" ", "\t", "\n", "\r"])
 
@@ -448,20 +585,39 @@ def _parse_nombre_variable(s: str, i: int):
 
 def _parse_numeric_expr(s: str, i: int):
     """Intenta leer una expresión numérica (sin variables) desde s[i:].
-    Acepta dígitos, '.', '+', '-', '*', '/', '^', '(', ')', y 'sqrt'.
+    Acepta dígitos, '.', '+', '-', '*', '/', '^', '(', ')', y funciones: sqrt, sin, cos, tan,
+    cot, sec, csc, asin, acos, atan, sinh, cosh, tanh, ln, log, exp; y constantes: pi, e.
     Se detiene antes de una variable o un '+'/'-' de nivel superior.
     Retorna (expr_str, j). expr_str puede ser "" si no hay nada que consumir.
     """
     start = i
     depth = 0
+    func_names = [
+        'sqrt','sin','cos','tan','cot','sec','csc','asin','acos','atan','sinh','cosh','tanh','ln','log','exp'
+    ]
+    const_names = ['pi', 'e']
     while i < len(s):
         ch = s[i]
         if ch.isalpha():
-            # inicio de variable o 'sqrt' pero si es 'sqrt' es parte numérica
-            if s.startswith('sqrt', i):
-                # consumir 'sqrt'
-                i += 4
+            # permitir funciones reconocidas y constantes en la parte numérica
+            matched = False
+            # funciones
+            for name in func_names:
+                if s.startswith(name, i):
+                    i += len(name)
+                    matched = True
+                    break
+            if matched:
                 continue
+            # constantes
+            for cname in const_names:
+                if s.startswith(cname, i):
+                    i += len(cname)
+                    matched = True
+                    break
+            if matched:
+                continue
+            # si no es función/constante, probablemente es variable -> detener
             break
         if depth == 0 and (ch == '+' or ch == '-'):
             break

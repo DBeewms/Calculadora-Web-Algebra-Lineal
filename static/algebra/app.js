@@ -6,6 +6,15 @@
     // Remove sizing directives but keep braces for fraction handling
     s = s.replace(/\\left|\\right/g, '');
 
+    // Support indexed roots and unicode root symbol
+    // \sqrt[n]{x} -> (x)^(1/(n));  √(x) -> sqrt(x)
+    s = s.replace(/\\sqrt\[([^\]]+)\]\{([^{}]+)\}/g, '($2)^(1/($1))');
+    s = s.replace(/√\s*\(([^()]+)\)/g, 'sqrt($1)');
+
+    // Absolute value: \lvert ... \rvert or |...| -> abs(...)
+    s = s.replace(/\\lvert\s*([\s\S]*?)\s*\\rvert/g, 'abs($1)');
+    s = s.replace(/\|([^|]+)\|/g, 'abs($1)');
+
     // Replace common vulgar fraction characters (½, ¼, ¾) with ascii form
     s = s.replace(/\u00BD/g, '1/2') // ½
          .replace(/\u00BC/g, '1/4') // ¼
@@ -32,6 +41,9 @@
          .replace(/\\div/g, '/')
          .replace(/\\pi/g, 'pi');
 
+  // Decimal comma -> dot (e.g., 3,5 -> 3.5)
+  s = s.replace(/(\d),(\d)/g, '$1.$2');
+
     // Superscript/braced exponents: turn ^{...} into **(...)
     // Handle ^{...}, ^(...) and simple ^n
     s = s.replace(/\^\{([^{}]+)\}/g, '**($1)');
@@ -41,6 +53,10 @@
     // Remove stray backslash escapes for symbols we already handled
     s = s.replace(/\\=/g, '=')
          .replace(/\\[a-zA-Z]+/g, function(m){ return m.slice(1); });
+
+    // Handle log base via LaTeX-style subscripts: log_{10}(x) or log_2(x)
+    s = s.replace(/log_\{?\s*10\s*\}?\s*\(/g, 'log10(')
+      .replace(/log_\{?\s*2\s*\}?\s*\(/g, 'log2(');
 
     // Normalize variants of equals and minus sign
     s = s.replace(/\uFF1D/g, '=').replace(/\u2261/g, '=');
@@ -57,11 +73,17 @@
     let s = latexToPlain(latex);
     if(!s) return '';
     // Map common function names (keep plain names)
-    s = s.replace(/\b(lg|ln)\b/g, 'log');
+    s = s.replace(/\bln\b/g, 'log');
+    s = s.replace(/\blg\b/g, 'log10');
+    // Spanish aliases
+    s = s.replace(/\bsen\b/g, 'sin');
+    s = s.replace(/\btg\b/g, 'tan');
     s = s.replace(/\bsin\b|\\sin/g, 'sin');
     s = s.replace(/\bcos\b|\\cos/g, 'cos');
     s = s.replace(/\btan\b|\\tan/g, 'tan');
     s = s.replace(/\\exp/g, 'exp');
+    // keep abs if produced from |x|
+    s = s.replace(/\\abs/g, 'abs');
 
     // Normalize caret-like powers that may remain: ^( -> **( ; ^number -> **number
     s = s.replace(/\^\s*\(/g, '**(');
@@ -73,11 +95,15 @@
     // Collapse repeated parentheses like ((1)) -> (1)
   s = s.replace(/\(\s*\(/g, '(').replace(/\)\s*\)/g, ')');
 
-  // Insert explicit multiplication where users write implicit forms like '6x' or ')(' or '2(' -> '2*(' or 'x(' -> 'x*('
-  // number followed by letter or '(' -> 6x -> 6*x, 2( -> 2*(
+  // Insert explicit multiplication where users write implicit forms like '6x', ')(', '2(', 'x2'.
+  // 1) number followed by letter or '(' -> 6x -> 6*x, 2( -> 2*(
   s = s.replace(/(\d)\s*([a-zA-Z\(])/g, '$1*$2');
-  // letter or ')' followed by '(' or digit -> x( -> x*(, )( -> )*(, x2 -> x*2
-  s = s.replace(/([a-zA-Z\)])\s*\(/g, '$1*(');
+  // 2) single-letter variable before '(' (avoid function names like sin(), sqrt(), Math.sin())
+  s = s.replace(/\b(?!sin|cos|tan|exp|log|sqrt|abs|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|log10|log2)([a-zA-Z])\s*\(/g, '$1*(');
+  // 3) closing paren before '(' or alnum -> )( -> )*( ; )x -> )*x ; )2 -> )*2
+  s = s.replace(/\)\s*\(/g, ')*(');
+  s = s.replace(/\)\s*([a-zA-Z0-9])/g, ')*$1');
+  // 4) letter followed by digit -> x2 -> x*2
   s = s.replace(/([a-zA-Z])\s*(\d)/g, '$1*$2');
 
   // Collapse repeated operator sequences like '* *' or '** *(' -> '**(' or '* *(' -> '*('
@@ -95,14 +121,16 @@
     // Ensure powers are JS-friendly
     s = s.replace(/\^/g, '**');
     // Map common function names to Math.*
-    s = s.replace(/\b(sin|cos|tan|exp|log|sqrt)\s*\(/g, 'Math.$1(');
+    s = s.replace(/\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|exp|log|sqrt|abs|log10|log2|pow)\s*\(/g, 'Math.$1(');
     // Constants: pi -> Math.PI, standalone e -> Math.E
     s = s.replace(/\bpi\b/g, 'Math.PI');
     s = s.replace(/\be\b/g, 'Math.E');
-    // As a safety, insert explicit multiplication for implicit cases that might remain
-    s = s.replace(/(\d)\s*([a-zA-Z\(])/g, '$1*$2');
-    s = s.replace(/([a-zA-Z\)])\s*\(/g, '$1*(');
-    s = s.replace(/([a-zA-Z])\s*(\d)/g, '$1*$2');
+  // As a safety, insert explicit multiplication for implicit cases, avoiding function calls
+  s = s.replace(/(\d)\s*([a-zA-Z\(])/g, '$1*$2');
+  s = s.replace(/\b(?!sin|cos|tan|exp|log|sqrt|abs|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|log10|log2)([a-zA-Z])\s*\(/g, '$1*(');
+  s = s.replace(/\)\s*\(/g, ')*(');
+  s = s.replace(/\)\s*([a-zA-Z0-9])/g, ')*$1');
+  s = s.replace(/([a-zA-Z])\s*(\d)/g, '$1*$2');
     return s;
   }
 
