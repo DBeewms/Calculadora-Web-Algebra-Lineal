@@ -1,14 +1,132 @@
 (function(){
   // MathLive helpers
+  // Balanced extractors to handle nested braces/brackets in \frac and \sqrt
+  function extractBalanced(s, start, openChar, closeChar){
+    let depth = 0;
+    let i = start;
+    if(s[i] !== openChar) return null;
+    i++; // skip opening
+    const begin = i;
+    while(i < s.length){
+      const ch = s[i];
+      if(ch === openChar) depth++;
+      else if(ch === closeChar){
+        if(depth === 0){
+          return { content: s.slice(begin, i), end: i }; // end at the index of the closing char
+        }
+        depth--;
+      }
+      i++;
+    }
+    return null; // unbalanced
+  }
+  function replaceAllFracs(input){
+    let s = input;
+    let guard = 0;
+    while(guard++ < 500){
+      const i = s.indexOf('\\frac');
+      if(i === -1) break;
+      // expect \frac{...}{...}
+      let j = i + 5;
+      // skip optional spaces
+      while(j < s.length && /\s/.test(s[j])) j++;
+      if(s[j] !== '{'){ // not a standard frac, skip this occurrence
+        // move past this to avoid infinite loop
+        s = s.slice(0, i) + 'frac' + s.slice(i+5);
+        continue;
+      }
+      const num = extractBalanced(s, j, '{', '}');
+      if(!num) break;
+      j = num.end + 1; // position after first '}'
+      while(j < s.length && /\s/.test(s[j])) j++;
+      if(s[j] !== '{') { s = s.slice(0, i) + '(' + num.content + ')/(' + s.slice(j) ; break; }
+      const den = extractBalanced(s, j, '{', '}');
+      if(!den) break;
+      const replaceEnd = den.end + 1;
+      const rep = '(' + num.content + ')/(' + den.content + ')';
+      s = s.slice(0, i) + rep + s.slice(replaceEnd);
+    }
+    return s;
+  }
+  function replaceAllSqrt(input){
+    let s = input;
+    let guard = 0;
+    while(guard++ < 500){
+      const i = s.indexOf('\\sqrt');
+      if(i === -1) break;
+      let j = i + 5;
+      // optional index [n]
+      while(j < s.length && /\s/.test(s[j])) j++;
+      let idx = null;
+      if(s[j] === '['){
+        const idxRes = extractBalanced(s, j, '[', ']');
+        if(!idxRes) break;
+        idx = idxRes.content;
+        j = idxRes.end + 1;
+      }
+      while(j < s.length && /\s/.test(s[j])) j++;
+      if(s[j] !== '{'){ // malformed, strip command
+        s = s.slice(0, i) + 'sqrt' + s.slice(i+5);
+        continue;
+      }
+      const rad = extractBalanced(s, j, '{', '}');
+      if(!rad) break;
+      const end = rad.end + 1;
+      const rep = idx ? '(' + rad.content + ')^(1/(' + idx + '))' : 'sqrt(' + rad.content + ')';
+      s = s.slice(0, i) + rep + s.slice(end);
+    }
+    return s;
+  }
+  function replaceAllPowers(input){
+    let s = input;
+    let i = 0;
+    let guard = 0;
+    while(i < s.length && guard++ < 2000){
+      const hat = s.indexOf('^', i);
+      if(hat === -1) break;
+      let j = hat + 1;
+      // skip spaces
+      while(j < s.length && /\s/.test(s[j])) j++;
+      if(j >= s.length){ i = j; continue; }
+      if(s[j] === '{'){
+        const grp = extractBalanced(s, j, '{', '}');
+        if(!grp){ i = j+1; continue; }
+        const rep = '**(' + grp.content + ')';
+        s = s.slice(0, hat) + rep + s.slice(grp.end + 1);
+        i = hat + rep.length;
+        continue;
+      }
+      if(s[j] === '('){
+        const grp = extractBalanced(s, j, '(', ')');
+        if(!grp){ i = j+1; continue; }
+        const rep = '**(' + grp.content + ')';
+        s = s.slice(0, hat) + rep + s.slice(grp.end + 1);
+        i = hat + rep.length;
+        continue;
+      }
+      // number or variable token
+      const m = s.slice(j).match(/^[A-Za-z0-9\.]+/);
+      if(m && m[0]){
+        const token = m[0];
+        const rep = '**' + token;
+        s = s.slice(0, hat) + rep + s.slice(j + token.length);
+        i = hat + rep.length;
+      }else{
+        i = j + 1;
+      }
+    }
+    return s;
+  }
   function latexToPlain(latex){
     if(!latex) return '';
     let s = String(latex);
     // Remove sizing directives but keep braces for fraction handling
     s = s.replace(/\\left|\\right/g, '');
 
-    // Support indexed roots and unicode root symbol
-    // \sqrt[n]{x} -> (x)^(1/(n));  √(x) -> sqrt(x)
-    s = s.replace(/\\sqrt\[([^\]]+)\]\{([^{}]+)\}/g, '($2)^(1/($1))');
+    // Robust handling for \frac and \sqrt (nested)
+    s = replaceAllFracs(s);
+    s = replaceAllSqrt(s);
+    // Unicode root symbol
     s = s.replace(/√\s*\(([^()]+)\)/g, 'sqrt($1)');
 
     // Absolute value: \lvert ... \rvert or |...| -> abs(...)
@@ -23,20 +141,14 @@
     // Normalize some LaTeX fraction variants to \frac
     s = s.replace(/\\d?frac/g, '\\frac').replace(/\\tfrac/g, '\\frac');
 
-    // Iteratively replace innermost \frac{A}{B} with (A)/(B) until none left.
-    // This handles nested fractions like \frac{\frac{1}{2}}{3} safely.
-    const simpleFracRe = /\\frac\{([^{}]*)\}\{([^{}]*)\}/;
-    let loopGuard = 0;
-    while (simpleFracRe.test(s) && loopGuard < 200) {
-      s = s.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '($1)/($2)');
-      loopGuard++;
-    }
+    // (legacy simple \frac replace removed; handled by replaceAllFracs)
 
     // Convert unicode division slash to ASCII '/'
     s = s.replace(/\u2215/g, '/');
 
     // Common LaTeX -> ascii conversions
-    s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)')
+  // (legacy simple sqrt replaced by replaceAllSqrt above)
+  s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)')
          .replace(/\\cdot|\\times/g, '*')
          .replace(/\\div/g, '/')
          .replace(/\\pi/g, 'pi');
@@ -44,11 +156,8 @@
   // Decimal comma -> dot (e.g., 3,5 -> 3.5)
   s = s.replace(/(\d),(\d)/g, '$1.$2');
 
-    // Superscript/braced exponents: turn ^{...} into **(...)
-    // Handle ^{...}, ^(...) and simple ^n
-    s = s.replace(/\^\{([^{}]+)\}/g, '**($1)');
-    s = s.replace(/\^\(([^()]+)\)/g, '**($1)');
-    s = s.replace(/\^(\-?\d+(?:\.\d+)?)/g, '**$1');
+  // Superscripts: robust conversion to **(...) supporting nesting
+  s = replaceAllPowers(s);
 
     // Remove stray backslash escapes for symbols we already handled
     s = s.replace(/\\=/g, '=')
@@ -1460,30 +1569,94 @@
             panel.style.display = 'none';
             return;
           }
+          // Global sampling (X_MIN..X_MAX), finite mask, near-zero band selection, local crop
+          const X_MIN = -10, X_MAX = 10, N = 2000;
+          const Y_HARD_LIMIT = 1e8;   // descartar |y| > 1e8
+          const T_MIN = 0.1, T_MAX = 10; // banda cerca de cero acotada
+          const P_NEAR = 0.30;        // percentil para banda |f(x)|
+          const P_Y_LOW = 0.05, P_Y_HIGH = 0.95; // percentiles para eje Y
+          const MIN_NEAR_POINTS = 50; // puntos mínimos en banda; si no, fallback
 
-          // Sampling domain and points
-          const xmin = -10, xmax = 10, n = 600;
-          const xs = new Array(n);
-          const ys = new Array(n);
-          for(let i=0;i<n;i++){
-            const x = xmin + (xmax - xmin) * (i/(n-1));
-            xs[i] = +x.toFixed(6);
+          const dxEst = (X_MAX - X_MIN) / (N - 1);
+          const xsAll = new Array(N);
+          const ysAll = new Array(N);
+          for(let i=0;i<N;i++){
+            const x = X_MIN + (X_MAX - X_MIN) * (i/(N-1));
+            xsAll[i] = +x.toFixed(6);
             let y = null;
             try{ y = safeEvalFunc(exprJS, x); }catch(_e){ y = null; }
-            ys[i] = (y==null || !isFinite(y)) ? null : +y.toFixed(12);
+            if(y==null || !isFinite(y) || Math.abs(y) > Y_HARD_LIMIT){ ysAll[i] = null; }
+            else { ysAll[i] = +y.toFixed(12); }
           }
 
-          // Determine Y range from valid values
-          const yValid = ys.filter(v=> typeof v === 'number' && isFinite(v));
-          if(!yValid.length){
-            showError('No se pudo evaluar f(x) en el dominio [-10, 10]. Revisa la expresión.');
+          // Finite mask
+          const xs = [];
+          const ys = [];
+          for(let i=0;i<N;i++){
+            const yv = ysAll[i];
+            if(typeof yv === 'number' && isFinite(yv)){
+              xs.push(xsAll[i]); ys.push(yv);
+            }
+          }
+          if(!ys.length){
+            showError('No se encontraron valores finitos de f(x) en el rango global.');
             panel.style.display = 'none';
             return;
           }
-          let ymin = Math.min.apply(null, yValid);
-          let ymax = Math.max.apply(null, yValid);
-          if(ymax - ymin < 1e-9){ ymin -= 1; ymax += 1; }
-          const ypad = (ymax - ymin) * 0.06;
+
+          // Percentile helper
+          function percentile(arr, p){
+            if(!arr.length) return NaN;
+            const a = arr.slice().sort((u,v)=> u-v);
+            const idx = Math.max(0, Math.min(a.length-1, Math.floor(p * (a.length-1))));
+            return a[idx];
+          }
+
+          // Near-zero band selection
+          const absY = ys.map(v=> Math.abs(v));
+          let T = percentile(absY, P_NEAR);
+          if(!isFinite(T)) T = 1;
+          T = Math.min(T, T_MAX);
+          T = Math.max(T, T_MIN);
+
+          const nearIdx = [];
+          for(let i=0;i<ys.length;i++) if(Math.abs(ys[i]) <= T) nearIdx.push(i);
+
+          let x0 = X_MIN, x1 = X_MAX;
+          if(nearIdx.length >= MIN_NEAR_POINTS){
+            let xminLocal = Infinity, xmaxLocal = -Infinity;
+            for(const k of nearIdx){
+              const xv = xs[k];
+              if(xv < xminLocal) xminLocal = xv;
+              if(xv > xmaxLocal) xmaxLocal = xv;
+            }
+            const w = Math.max(1e-9, (xmaxLocal - xminLocal));
+            const margin = 0.1 * w;
+            x0 = xminLocal - margin; x1 = xmaxLocal + margin;
+            // clamp to global
+            x0 = Math.max(X_MIN, x0); x1 = Math.min(X_MAX, x1);
+          }
+
+          // Crop xs, ys to [x0, x1]
+          const xsPlot = [];
+          const ysPlot = [];
+          for(let i=0;i<xs.length;i++){
+            const xv = xs[i];
+            if(xv >= x0 && xv <= x1){ xsPlot.push(xv); ysPlot.push(ys[i]); }
+          }
+          if(!ysPlot.length){
+            showError('No hay suficientes puntos para graficar en la banda seleccionada.');
+            panel.style.display = 'none';
+            return;
+          }
+
+          // Robust Y range from 5%..95% percentiles + margin
+          let ylow = percentile(ysPlot, P_Y_LOW);
+          let yhigh = percentile(ysPlot, P_Y_HIGH);
+          if(!isFinite(ylow) || !isFinite(yhigh) || ylow === yhigh){ ylow = (ylow||0)-1; yhigh = (yhigh||0)+1; }
+          const ypad = 0.1 * (yhigh - ylow);
+          let ymin = ylow - ypad;
+          let ymax = yhigh + ypad;
 
           const styles = getComputedStyle(document.documentElement);
           const primary = (styles.getPropertyValue('--primary')||'#7E57C2').trim();
@@ -1491,19 +1664,35 @@
           const border = (styles.getPropertyValue('--border')||'#e3e5f0').trim();
           const card = (styles.getPropertyValue('--card')||'#ffffff').trim();
 
+          const xmin = x0, xmax = x1;
           const pad = (xmax - xmin) * 0.04;
-          const traceFunc = { x: xs, y: ys, mode:'lines', name:'f(x)', line:{ color: primary, width: 2.5 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' };
+          // Split xsPlot/ysPlot into contiguous segments (avoid connecting gaps)
+          const traces = [];
+          let segX = [], segY = [];
+          for(let i=0;i<xsPlot.length;i++){
+            if(i>0 && Math.abs(xsPlot[i] - xsPlot[i-1]) > dxEst*1.5){
+              if(segX.length){
+                traces.push({ x: segX, y: segY, mode:'lines', name: traces.length? `f(x) seg ${traces.length+1}`:'f(x)', line:{ color: primary, width: 2.2 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' });
+                segX = []; segY = [];
+              }
+            }
+            segX.push(xsPlot[i]); segY.push(ysPlot[i]);
+          }
+          if(segX.length){
+            traces.push({ x: segX, y: segY, mode:'lines', name: traces.length? `f(x) seg ${traces.length+1}`:'f(x)', line:{ color: primary, width: 2.2 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' });
+          }
           const traceAxis = { x:[xmin, xmax], y:[0,0], mode:'lines', name:'y = 0', line:{ color: muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
           const traceAxisY = { x:[0,0], y:[ymin-ypad, ymax+ypad], mode:'lines', name:'x = 0', line:{ color: muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
           const layout = {
             margin:{ l:50, r:20, t:10, b:40 }, paper_bgcolor: card, plot_bgcolor: card,
-            hovermode:'closest', showlegend:true, dragmode:'pan',
-            xaxis:{ title:'x', gridcolor:border, zerolinecolor:border, range:[xmin - pad, xmax + pad] },
-            yaxis:{ title:'f(x)', gridcolor:border, zerolinecolor:border, range:[ymin - ypad, ymax + ypad] },
+            hovermode:'closest', showlegend:true, dragmode:'pan', title:{ text:'Vista previa de f(x)' },
+            // 1:1 squares on the grid
+            xaxis:{ title:'x', gridcolor:border, zerolinecolor:border, showgrid:true, dtick:1, tick0:0, range:[xmin - pad, xmax + pad], zeroline:true },
+            yaxis:{ title:'f(x)', gridcolor:border, zerolinecolor:border, showgrid:true, dtick:1, tick0:0, scaleanchor:'x', scaleratio:1, range:[ymin - ypad, ymax + ypad], zeroline:true },
             legend:{ orientation:'h', x:0, y:1.1 }
           };
           panel.style.display = '';
-          window.Plotly.newPlot(plotEl, [traceFunc, traceAxis, traceAxisY], layout, { displayModeBar:true, responsive:true, scrollZoom:true });
+          window.Plotly.newPlot(plotEl, [...traces, traceAxis, traceAxisY], layout, { displayModeBar:true, responsive:true, scrollZoom:true });
         }
 
         btn.addEventListener('click', ()=>{ plotPreview(); });

@@ -86,7 +86,9 @@
             <th style="border:1px solid var(--border); padding:8px;">i</th>
             <th style="border:1px solid var(--border); padding:8px;">a</th>
             <th style="border:1px solid var(--border); padding:8px;">b</th>
-            <th style="border:1px solid var(--border); padding:8px;">c = (a+b)/2</th>
+            {% with request.resolver_match.url_name as url_name %}
+            <th style="border:1px solid var(--border); padding:8px;">{% if url_name == 'regula_falsi' %}c{% else %}c = (a+b)/2{% endif %}</th>
+            {% endwith %}
             <th style="border:1px solid var(--border); padding:8px;">f(a)</th>
             <th style="border:1px solid var(--border); padding:8px;">f(b)</th>
             <th style="border:1px solid var(--border); padding:8px;">f(c)</th>
