@@ -73,8 +73,17 @@ def _crear_evaluador(texto_funcion):
         # Parsear la expresión con sympy
         try:
             x_sym = sp.symbols('x')
-            # Aceptar alias comunes: 'ln' -> log y 'e' -> E (constante de Euler)
-            sym_locals = {'ln': sp.log, 'e': sp.E}
+            # Aceptar alias comunes y funciones adicionales
+            sym_locals = {
+                'ln': sp.log,
+                'e': sp.E,
+                'E': sp.E,
+                'sqrt': sp.sqrt,
+                'abs': sp.Abs,
+                # Bases de logaritmo comunes
+                'log10': lambda z: sp.log(z, 10),
+                'log2': lambda z: sp.log(z, 2),
+            }
             expresion = sp.sympify(texto_normalizado, locals=sym_locals, evaluate=True)
         except Exception as e:
             raise ErrorBiseccion(f"Expresión inválida (sympy): {e}")

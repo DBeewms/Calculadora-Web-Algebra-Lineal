@@ -91,7 +91,8 @@
       if(s[j] === '{'){
         const grp = extractBalanced(s, j, '{', '}');
         if(!grp){ i = j+1; continue; }
-        const rep = '**(' + grp.content + ')';
+        const inner = replaceAllPowers(grp.content);
+        const rep = '**(' + inner + ')';
         s = s.slice(0, hat) + rep + s.slice(grp.end + 1);
         i = hat + rep.length;
         continue;
@@ -99,13 +100,22 @@
       if(s[j] === '('){
         const grp = extractBalanced(s, j, '(', ')');
         if(!grp){ i = j+1; continue; }
-        const rep = '**(' + grp.content + ')';
+        const inner = replaceAllPowers(grp.content);
+        const rep = '**(' + inner + ')';
         s = s.slice(0, hat) + rep + s.slice(grp.end + 1);
         i = hat + rep.length;
         continue;
       }
-      // number or variable token
-      const m = s.slice(j).match(/^[A-Za-z0-9\.]+/);
+      // number or variable token, also detect simple rational like 1/2 immediately after
+      const rest = s.slice(j);
+      const mfrac = rest.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
+      if(mfrac){
+        const rep = '**(' + mfrac[1] + '/' + mfrac[2] + ')';
+        s = s.slice(0, hat) + rep + s.slice(j + mfrac[0].length);
+        i = hat + rep.length;
+        continue;
+      }
+      const m = rest.match(/^[A-Za-z0-9\.]+/);
       if(m && m[0]){
         const token = m[0];
         const rep = '**' + token;
