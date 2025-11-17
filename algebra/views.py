@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
-from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, ErrorBiseccion, _crear_evaluador
+from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, newton_raphson as newton_raphson_algo, ErrorBiseccion, _crear_evaluador
 import json
 
 def index(request: HttpRequest):
@@ -704,6 +704,17 @@ def metodos_cerrados(request: HttpRequest):
     return render(request, "algebra/metodos_cerrados.html", ctx)
 
 
+def metodos_abiertos(request: HttpRequest):
+    """Página para la subclase 'Métodos abiertos' (lista de métodos)."""
+    ctx = {
+        "subclass": "Métodos abiertos",
+        "methods": [
+            {"name": "Newton–Raphson", "url_name": "newton_raphson", "slug": "newton_raphson"},
+        ]
+    }
+    return render(request, "algebra/metodos_abiertos.html", ctx)
+
+
 def biseccion(request: HttpRequest):
     """Página para el Método de bisección.
 
@@ -1163,3 +1174,174 @@ def regula_falsi(request: HttpRequest):
 
     # GET
     return render(request, 'algebra/biseccion.html', ctx)
+
+
+def newton_raphson(request: HttpRequest):
+    """Vista para el método de Newton–Raphson (método abierto)."""
+    ctx = {"title": "Método de Newton–Raphson"}
+    if request.method == 'POST':
+        func_txt = (request.POST.get('function') or '').strip()
+        x0_txt = (request.POST.get('x0') or '').strip()
+        tol_txt = (request.POST.get('tol') or '').strip()
+        maxit_txt = (request.POST.get('maxit') or '').strip()
+
+        from fractions import Fraction
+        def _replace_vulgar_fraction_chars(s: str) -> str:
+            vf_map = {
+                '\u00BC': '1/4', '\u00BD': '1/2', '\u00BE': '3/4',
+                '\u2150': '1/7', '\u2151': '1/9', '\u2152': '1/10',
+                '\u2153': '1/3', '\u2154': '2/3', '\u2155': '1/5', '\u2156': '2/5', '\u2157': '3/5', '\u2158': '4/5',
+                '\u2159': '1/6', '\u215A': '5/6', '\u215B': '1/8', '\u215C': '3/8', '\u215D': '5/8', '\u215E': '7/8'
+            }
+            return ''.join(vf_map.get(ch, ch) for ch in s)
+
+        def parse_number(txt, default=None):
+            if txt is None or str(txt).strip() == '':
+                return default
+            s = str(txt).strip()
+            s = s.replace('\u2212', '-')
+            s = s.replace('\u2060', '')
+            s = s.replace('\u2009', '')
+            s = s.replace('\u00A0', '')
+            s = _replace_vulgar_fraction_chars(s)
+            try:
+                return float(s)
+            except Exception:
+                try:
+                    return float(Fraction(s))
+                except Exception:
+                    try:
+                        s2 = s.replace('^', '**')
+                        return float(eval(s2, {'__builtins__': None}, {}))
+                    except Exception:
+                        raise
+
+        try:
+            x0 = parse_number(x0_txt)
+            if x0 is None:
+                raise ValueError('x0 vacío')
+        except Exception:
+            ctx['error'] = 'Parámetros numéricos inválidos: x0 debe ser un número (aceptamos 0.5 o 1/2).'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/newton_raphson.html', ctx)
+
+        try:
+            tol = parse_number(tol_txt, default=1e-6)
+            if tol is None or tol <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Tolerancia inválida; debe ser un número positivo.'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/newton_raphson.html', ctx)
+
+        try:
+            maxit = int(maxit_txt) if maxit_txt != '' else 100
+            if maxit <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Max iteraciones inválido; debe ser entero y mayor que 0.'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/newton_raphson.html', ctx)
+
+        try:
+            resultado = newton_raphson_algo(func_txt, x0, tol=tol, maxit=maxit)
+        except ErrorBiseccion as be:
+            ctx['error'] = str(be)
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/newton_raphson.html', ctx)
+        except Exception as e:
+            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/newton_raphson.html', ctx)
+
+        # Formatear iteraciones
+        raw_iters = resultado.get('iteraciones', [])
+        it_out = []
+        for it in raw_iters:
+            def _fmt(v, nd='8'):
+                try:
+                    return format(float(v), f'.{nd}f')
+                except Exception:
+                    return ''
+            it_out.append({
+                'i': it.get('i', 0),
+                'x': _fmt(it.get('x', 0.0), '8'),
+                'x_next': _fmt(it.get('x_next', 0.0), '8') if it.get('x_next') is not None else '',
+                'fx': _fmt(it.get('fx', 0.0), '8'),
+                'dfx': _fmt(it.get('dfx', 0.0), '8'),
+                'err': _fmt(it.get('err', None), '8') if it.get('err') is not None else ''
+            })
+        ctx['iteraciones'] = it_out
+
+        ctx['convergio'] = resultado.get('convergio', False)
+        ctx['conteo_iter'] = resultado.get('conteo_iter', 0)
+        raiz_val = resultado.get('raiz')
+        err_val = resultado.get('estimacion_error')
+        f_en_raiz_val = resultado.get('f_en_raiz')
+        ctx['raiz'] = format(float(raiz_val), '.8f') if raiz_val is not None else ''
+        ctx['estimacion_error'] = format(float(err_val), '.8f') if err_val is not None else ''
+        ctx['f_en_raiz'] = format(float(f_en_raiz_val), '.10f') if f_en_raiz_val is not None else ''
+        # Mostrar advertencias (por ejemplo, f'(x)≈0) como mensaje informativo
+        try:
+            warns = resultado.get('warnings') or []
+            if isinstance(warns, list) and len(warns) > 0:
+                ctx['message'] = ' '.join(str(w) for w in warns)
+        except Exception:
+            pass
+        ctx['function'] = func_txt
+        ctx['x0_input'] = x0_txt
+        ctx['tol_input'] = tol_txt
+        ctx['maxit_input'] = maxit_txt
+
+        # Gráfica alrededor de x0 y la raíz estimada
+        try:
+            f = _crear_evaluador(func_txt)
+            N = 401
+            xs = []
+            ys = []
+            # Ventana centrada en x0 y raíz, algo amplia
+            try:
+                xr = float(raiz_val)
+            except Exception:
+                xr = float(x0)
+            center = (float(x0) + xr) / 2.0
+            span = abs(xr - float(x0))
+            if span <= 0:
+                span = 2.0
+            scale = 2.5
+            x1 = center - span * scale
+            x2 = center + span * scale
+            x1 = min(x1, 0.0)
+            x2 = max(x2, 0.0)
+            for i in range(N):
+                t = i / (N - 1)
+                x = x1 + (x2 - x1) * t
+                try:
+                    y = float(f(x))
+                except Exception:
+                    y = None
+                xs.append(x)
+                ys.append(y)
+            import json as _json
+            ctx['plot'] = _json.dumps({'xs': xs, 'ys': ys, 'x0': float(x0), 'xr': float(raiz_val) if raiz_val is not None else None})
+        except Exception:
+            pass
+
+        return render(request, 'algebra/newton_raphson.html', ctx)
+
+    return render(request, 'algebra/newton_raphson.html', ctx)

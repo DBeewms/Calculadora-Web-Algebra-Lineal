@@ -1,0 +1,166 @@
+{% extends "algebra/base.html" %}
+{% block title %}Método de Newton–Raphson — KiwiSolve{% endblock %}
+{% block content %}
+<section class="section">
+  <h2>{{ title }}</h2>
+
+  <form method="post" class="panel matrix-form" style="padding:16px;" data-page="newton">
+    {% csrf_token %}
+    <div class="grid">
+      <div class="control">
+        <label>Ecuación igualada a 0</label>
+        <math-field class="mf" id="mf-function" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false"
+          placeholder="Ej: x^3 - x - 1 = 0">{{ function|default:'' }}</math-field>
+        <input type="hidden" name="function" id="hid-function" value="{{ function|default:'' }}" />
+        <div id="newton-preview" style="margin-top:6px; font-size:13px;">
+          <div id="newton-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="newton-preview-text"></code></div>
+          <div id="newton-preview-err" style="color:#b91c1c; display:none;">Error: <span id="newton-preview-err-txt"></span></div>
+        </div>
+        <div class="mini-toolbar" style="margin-top:6px; display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted);">
+          <span>Atajos:</span>
+          <button type="button" class="btn ghost" data-action="insert-sqrt" title="Insertar raíz cuadrada" style="padding:2px 6px; font-size:12px;">√{ }</button>
+          <button type="button" class="btn ghost" data-action="insert-nthroot" title="Insertar raíz n-ésima" style="padding:2px 6px; font-size:12px;">ⁿ√{ }</button>
+          <span style="margin-left:6px;">Tip: también puedes escribir <code>\sqrt[n]{...}</code></span>
+        </div>
+      </div>
+      <div class="control">
+        <label>x₀ (aprox. inicial)</label>
+        <math-field class="mf" id="mf-x0" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1">{{ x0_input|default:'' }}</math-field>
+        <input type="hidden" name="x0" id="hid-x0" value="{{ x0_input|default:'' }}" />
+      </div>
+      <div class="control">
+        <label>Tolerancia ε</label>
+        <math-field class="mf" id="mf-tol" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 1e-6">{{ tol_input|default:'' }}</math-field>
+        <input type="hidden" name="tol" id="hid-tol" value="{{ tol_input|default:'' }}" />
+      </div>
+      <div class="control">
+        <label>Max iteraciones</label>
+        <math-field class="mf" id="mf-maxit" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: 100">{{ maxit_input|default:'' }}</math-field>
+        <input type="hidden" name="maxit" id="hid-maxit" value="{{ maxit_input|default:'' }}" />
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+      <button type="submit" class="btn">Calcular</button>
+      <button type="button" class="btn secondary" data-action="plot-func" aria-label="Graficar función">Graficar función</button>
+      <button type="button" class="btn ghost" data-action="clear" aria-label="Limpiar formulario">Limpiar</button>
+    </div>
+  </form>
+
+  <!-- Panel de previsualización (cliente) -->
+  <section id="newtonPreviewPanel" class="panel" style="margin-top:12px; display:none;">
+    <div class="panel-header">
+      <h3 class="panel-title">Previsualización de f(x)</h3>
+      <div class="panel-actions">
+        <span class="badge">Solo función</span>
+      </div>
+    </div>
+    <div id="plotNewtonPreview" style="width:100%; height:360px;"></div>
+  </section>
+
+  <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #cde; background:#f8fbff; color:#234;">
+    Nota: si f'(x) = 0 en algún paso, el método de Newton–Raphson puede fallar o detenerse para evitar una división por cero. Considere cambiar x₀ o usar otro método si esto ocurre.
+  </div>
+
+  {% if error %}
+    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #f5c2c7; background:#fff0f0; color:#811;">{{ error }}</div>
+  {% endif %}
+
+  {% if message %}
+    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #cde; background:#f0f8ff;">{{ message }}</div>
+  {% endif %}
+
+  {% if plot %}
+  <section class="panel" style="margin-top:12px;">
+    <div class="panel-header">
+      <h3 class="panel-title">Gráfica de f(x)</h3>
+    </div>
+    <div id="plotNewton" style="width:100%; height:360px;"></div>
+    <script id="plotData" type="application/json">{{ plot|safe }}</script>
+  </section>
+  {% endif %}
+
+  {% if iteraciones %}
+    <div class="panel" style="margin-top:12px; padding:12px; overflow:auto;">
+      <h3>Tabla de iteraciones</h3>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="border:1px solid var(--border); padding:8px;">i</th>
+            <th style="border:1px solid var(--border); padding:8px;">x<sub>i</sub></th>
+            <th style="border:1px solid var(--border); padding:8px;">x<sub>i+1</sub></th>
+            <th style="border:1px solid var(--border); padding:8px;">f(x<sub>i</sub>)</th>
+            <th style="border:1px solid var(--border); padding:8px;">f'(x<sub>i</sub>)</th>
+            <th style="border:1px solid var(--border); padding:8px;">Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in iteraciones %}
+          <tr>
+            <td style="border:1px solid var(--border); padding:6px; text-align:center;">{{ it.i }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.x }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.x_next }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.fx }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.dfx }}</td>
+            <td style="border:1px solid var(--border); padding:6px;">{{ it.err }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:12px;">Solución</h4>
+      {% if convergio %}
+        <p>El método converge en la iteración {{ conteo_iter }}</p>
+      {% else %}
+        <p>El método no converge en {{ conteo_iter }} iteraciones</p>
+      {% endif %}
+
+      <p>La raíz aproximada es {{ raiz }}</p>
+      <p>El error es = {{ estimacion_error }}</p>
+    </div>
+  {% endif %}
+
+</section>
+{% endblock %}
+{% block extra_js %}
+{% if plot %}
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script>
+  (function(){
+    const el = document.getElementById('plotNewton');
+    const payloadEl = document.getElementById('plotData');
+    if(!el || !payloadEl) return;
+    let data = null; try{ data = JSON.parse(payloadEl.textContent||''); }catch(e){ data = null; }
+    if(!data) return;
+    const styles = getComputedStyle(document.documentElement);
+    const primary = (styles.getPropertyValue('--primary')||'#7E57C2').trim();
+    const muted = (styles.getPropertyValue('--muted')||'#6b7280').trim();
+    const border = (styles.getPropertyValue('--border')||'#e3e5f0').trim();
+    const card = (styles.getPropertyValue('--card')||'#ffffff').trim();
+
+    const xs = data.xs||[];
+    const ys = data.ys||[];
+    const xmin = Math.min.apply(null, xs);
+    const xmax = Math.max.apply(null, xs);
+    const pad = (xmax - xmin) * 0.04;
+    const yValid = ys.filter(v => typeof v === 'number' && isFinite(v));
+    let ymin = (yValid.length ? Math.min.apply(null, yValid) : -1);
+    let ymax = (yValid.length ? Math.max.apply(null, yValid) : 1);
+    if(ymax - ymin < 1e-9){ ymin -= 1; ymax += 1; }
+    const ypad = (ymax - ymin) * 0.06;
+
+    const traceFunc = { x: xs, y: ys, mode: 'lines', name: 'f(x)', line: { color: primary, width: 2.5 }, hovertemplate: 'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' };
+    const traceAxis = { x: [xmin, xmax], y: [0, 0], mode: 'lines', name: 'y = 0', line: { color: muted, dash: 'dot', width: 1.5 }, hoverinfo: 'skip' };
+    const traceAxisY = { x: [0, 0], y: [ymin - ypad, ymax + ypad], mode: 'lines', name: 'x = 0', line: { color: muted, dash: 'dot', width: 1.5 }, hoverinfo: 'skip' };
+
+    const layout = {
+      margin: { l: 50, r: 20, t: 10, b: 40 }, paper_bgcolor: card, plot_bgcolor: card,
+      hovermode: 'closest', showlegend: true, dragmode: 'pan',
+      xaxis: { title: 'x', gridcolor: border, zerolinecolor: border, range: [xmin - pad, xmax + pad] },
+      yaxis: { title: 'f(x)', gridcolor: border, zerolinecolor: border, range: [ymin - ypad, ymax + ypad] },
+      legend: { orientation: 'h', x: 0, y: 1.1 }
+    };
+    Plotly.newPlot(el, [traceFunc, traceAxis, traceAxisY], layout, { displayModeBar: true, responsive: true, scrollZoom: true });
+  })();
+  </script>
+{% endif %}
+{% endblock %}

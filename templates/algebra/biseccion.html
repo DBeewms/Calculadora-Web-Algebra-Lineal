@@ -16,6 +16,12 @@
           <div id="biseccion-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="biseccion-preview-text"></code></div>
           <div id="biseccion-preview-err" style="color:#b91c1c; display:none;">Error: <span id="biseccion-preview-err-txt"></span></div>
         </div>
+        <div class="mini-toolbar" style="margin-top:6px; display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted);">
+          <span>Atajos:</span>
+          <button type="button" class="btn ghost" data-action="insert-sqrt" title="Insertar raíz cuadrada" style="padding:2px 6px; font-size:12px;">√{ }</button>
+          <button type="button" class="btn ghost" data-action="insert-nthroot" title="Insertar raíz n-ésima" style="padding:2px 6px; font-size:12px;">ⁿ√{ }</button>
+          <span style="margin-left:6px;">Tip: también puedes escribir <code>\sqrt[n]{...}</code></span>
+        </div>
       </div>
       <div class="control">
         <label>a (extremo izquierdo)</label>
@@ -118,9 +124,8 @@
         <p>El método no converge en {{ conteo_iter }} iteraciones</p>
       {% endif %}
 
-      <p>La raíz aproximada es {{ raiz }}</p>
-      <p>El error estándar es {{ estimacion_error }}</p>
-      <p>f(raíz) = {{ f_en_raiz }}</p>
+      <p>La raíz aproximada (c) es {{ raiz }}</p>
+      <p>El error es f(c) = {{ f_en_raiz }}</p>
     </div>
   {% endif %}
 

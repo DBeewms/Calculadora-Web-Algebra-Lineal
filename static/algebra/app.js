@@ -136,7 +136,10 @@
     // Robust handling for \frac and \sqrt (nested)
     s = replaceAllFracs(s);
     s = replaceAllSqrt(s);
-    // Unicode root symbol
+    // Unicode root symbols
+    // Handle nth-root with unicode: √[n](radicand) -> (radicand)^(1/(n))
+    s = s.replace(/√\s*\[\s*([^\]]+)\s*\]\s*\(\s*([^\)]+)\s*\)/g, '($2)^(1/($1))');
+    // Handle simple square root: √(radicand) -> sqrt(radicand)
     s = s.replace(/√\s*\(([^()]+)\)/g, 'sqrt($1)');
 
     // Absolute value: \lvert ... \rvert or |...| -> abs(...)
@@ -161,7 +164,9 @@
   s = s.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)')
          .replace(/\\cdot|\\times/g, '*')
          .replace(/\\div/g, '/')
-         .replace(/\\pi/g, 'pi');
+        .replace(/\\pi/g, 'pi')
+        // Unicode pi character
+        .replace(/π/g, 'pi');
 
   // Decimal comma -> dot (e.g., 3,5 -> 3.5)
   s = s.replace(/(\d),(\d)/g, '$1.$2');
@@ -211,8 +216,8 @@
     // If someone used the MathLive token exponentialE, map to e
     s = s.replace(/exponentialE/g, 'e');
 
-    // Collapse repeated parentheses like ((1)) -> (1)
-  s = s.replace(/\(\s*\(/g, '(').replace(/\)\s*\)/g, ')');
+    // Avoid collapsing repeated parentheses; this can break exponents like **(1/(3))
+    // Previously: s = s.replace(/\(\s*\(/g, '(').replace(/\)\s*\)/g, ')');
 
   // Insert explicit multiplication where users write implicit forms like '6x', ')(', '2(', 'x2'.
   // 1) number followed by letter or '(' -> 6x -> 6*x, 2( -> 2*(
@@ -239,6 +244,91 @@
     let s = String(expr);
     // Ensure powers are JS-friendly
     s = s.replace(/\^/g, '**');
+    // Robustly rewrite any base**(p/q) with odd q into sign-preserving roots,
+    // even when base is a complex parenthesized expression.
+    (function(){
+      function rewriteRationalPowers(out){
+        let i = 0; let guard = 0;
+        while((i = out.indexOf('**', i)) !== -1 && guard++ < 5000){
+          let j = i + 2;
+          while(j < out.length && /\s/.test(out[j])) j++;
+          if(j >= out.length || out[j] !== '('){ i = j; continue; }
+          const exp = extractBalanced(out, j, '(', ')');
+          if(!exp){ i = j+1; continue; }
+          let inner = exp.content.trim();
+          // Strip one layer of redundant parens around simple fraction
+          if(/^\(.*\)$/.test(inner)){
+            const chk = inner.slice(1, -1).trim();
+            if(/^[^()]+$/.test(chk)) inner = chk;
+          }
+          // Accept optional parentheses around numerator/denominator: (p)/(q)
+          const m = inner.match(/^\(?\s*(-?\d+)\s*\)?\s*\/\s*\(?\s*(\d+)\s*\)?$/);
+          if(!m){ i = exp.end + 1; continue; }
+          const p = parseInt(m[1], 10);
+          const q = parseInt(m[2], 10);
+          if(!isFinite(p) || !isFinite(q) || q === 0 || (q % 2) === 0){ i = exp.end + 1; continue; }
+          // Find base to the left of '**'
+          let k = i - 1; while(k >= 0 && /\s/.test(out[k])) k--;
+          if(k < 0){ i = exp.end + 1; continue; }
+          let baseStart = null, baseStr = '';
+          if(out[k] === ')'){
+            let depth = 0; let t = k;
+            while(t >= 0){
+              const ch = out[t];
+              if(ch === ')') depth++;
+              else if(ch === '('){ depth--; if(depth === 0){ baseStart = t; break; } }
+              t--;
+            }
+            if(baseStart == null){ i = exp.end + 1; continue; }
+            baseStr = out.slice(baseStart, k+1); // keep parentheses
+            const before = out.slice(0, baseStart);
+            const after = out.slice(exp.end + 1);
+            let rep = '';
+            if(Math.abs(p) === 1){
+              rep = (p === 1) ? `sgnRoot(${baseStr},${q})` : `(1/sgnRoot(${baseStr},${q}))`;
+            } else {
+              rep = `(sgnRoot(${baseStr},${q}))**${p}`;
+            }
+            out = before + rep + after;
+            i = before.length + rep.length;
+            continue;
+          } else {
+            // identifier/number token
+            let t = k;
+            while(t >= 0 && /[A-Za-z0-9_\.]/.test(out[t])) t--;
+            const tokenStart = t + 1;
+            if(tokenStart > k){ i = exp.end + 1; continue; }
+            baseStr = out.slice(tokenStart, k+1);
+            const before = out.slice(0, tokenStart);
+            const after = out.slice(exp.end + 1);
+            let rep = '';
+            if(Math.abs(p) === 1){
+              rep = (p === 1) ? `sgnRoot(${baseStr},${q})` : `(1/sgnRoot(${baseStr},${q}))`;
+            } else {
+              rep = `(sgnRoot(${baseStr},${q}))**${p}`;
+            }
+            out = before + rep + after;
+            i = before.length + rep.length;
+            continue;
+          }
+        }
+        return out;
+      }
+      s = rewriteRationalPowers(s);
+    })();
+    // Rewrite rational exponents with odd denominators to sign-preserving real root in JS for plotting:
+    // General: base**(p/q), q odd -> (sgnRoot(base,q))**p
+    s = s.replace(/((?:\([^()]*\))|(?:[A-Za-z_]\w*))\s*\*\*\s*\(\s*(?:\(\s*)?(-?\d+)\s*\/\s*\(?\s*(\d+)\s*\)?\s*(?:\)\s*)?\)/g,
+      (m, base, p, q)=>{
+        const Q = parseInt(q,10); if(!isFinite(Q)) return m; return (Q % 2 === 1) ? `(sgnRoot(${base},${Q}))**${parseInt(p,10)}` : m;
+      }
+    );
+    // Specific 1/n form: base**(1/n) with n odd -> sgnRoot(base,n). Allow extra parens like ((1/3)).
+    s = s.replace(/((?:\([^()]*\))|(?:[A-Za-z_]\w*))\s*\*\*\s*\(\s*(?:\(\s*)?1\s*\/\s*\(?\s*(\d+)\s*\)?\s*(?:\)\s*)?\)/g,
+      (m, base, n)=>{
+        const N = parseInt(n,10); if(!isFinite(N)) return m; return (N % 2 === 1) ? `sgnRoot(${base},${N})` : m;
+      }
+    );
     // Map common function names to Math.*
     s = s.replace(/\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|exp|log|sqrt|abs|log10|log2|pow)\s*\(/g, 'Math.$1(');
     // Constants: pi -> Math.PI, standalone e -> Math.E
@@ -1005,6 +1095,56 @@
         }catch(_e){}
       });
     })();
+
+    // Insert helpers for roots in bisección/regula falsi form
+    document.querySelectorAll('form.matrix-form[data-page="biseccion"]').forEach(form=>{
+      form.addEventListener('click', (e)=>{
+        const t = e.target.closest('[data-action="insert-sqrt"], [data-action="insert-nthroot"]');
+        if(!t) return;
+        e.preventDefault();
+        const mf = document.getElementById('mf-function');
+        if(!mf) return;
+        const isNth = t.matches('[data-action="insert-nthroot"]');
+        const latex = isNth ? '\\sqrt[\\placeholder{}]{\\placeholder{}}' : '\\sqrt{\\placeholder{}}';
+        try{
+          if(typeof mf.executeCommand === 'function'){
+            // Prefer MathLive command insertion with placeholders
+            mf.executeCommand([ 'insert', latex ]);
+            // Position cursor into first placeholder if supported
+            if(isNth) mf.executeCommand('moveToPreviousPlaceholder');
+          } else if('value' in mf){
+            // Fallback: append at the end
+            mf.value = (mf.value||'') + (isNth ? '\\sqrt[]{ }' : '\\sqrt{ }');
+          }
+          // Ensure focus for immediate typing
+          if(typeof mf.focus === 'function') mf.focus();
+        }catch(_e){
+          // Last resort fallback: do nothing silently
+        }
+      });
+    });
+
+    // Insert helpers for roots in Newton–Raphson form
+    document.querySelectorAll('form.matrix-form[data-page="newton"]').forEach(form=>{
+      form.addEventListener('click', (e)=>{
+        const t = e.target.closest('[data-action="insert-sqrt"], [data-action="insert-nthroot"]');
+        if(!t) return;
+        e.preventDefault();
+        const mf = document.getElementById('mf-function');
+        if(!mf) return;
+        const isNth = t.matches('[data-action="insert-nthroot"]');
+        const latex = isNth ? '\\sqrt[\\placeholder{}]{\\placeholder{}}' : '\\sqrt{\\placeholder{}}';
+        try{
+          if(typeof mf.executeCommand === 'function'){
+            mf.executeCommand([ 'insert', latex ]);
+            if(isNth) mf.executeCommand('moveToPreviousPlaceholder');
+          } else if('value' in mf){
+            mf.value = (mf.value||'') + (isNth ? '\\sqrt[]{}' : '\\sqrt{}');
+          }
+          if(typeof mf.focus === 'function') mf.focus();
+        }catch(_e){}
+      });
+    });
     // Toggle visual de mostrar/ocultar pasos sin recargar
     document.querySelectorAll('label.toggle input[name="show_steps"]').forEach(chk=>{
       chk.addEventListener('change', ()=>{
@@ -1501,6 +1641,12 @@
         const hid = form.querySelector('#hid-function');
         if(!mf || !previewText) return true;
         const raw = String(mf.value || '');
+        // Guard: if MathLive placeholders are present, ask user to complete them
+        if(/\\placeholder(\[[^\]]*\])?\{[^}]*\}/.test(raw)){
+          showError('Completa los campos de la raíz (índice/radicando) antes de graficar.');
+          if(hid) hid.value = '';
+          return false;
+        }
         const plain = latexToPlain(raw);
         // Accept two forms:
         // 1) equation with '=': left = right --> treat as left - (right)
@@ -1521,6 +1667,12 @@
           } else {
             // No '=' provided: accept the expression as-is (user wrote f(x) directly)
             const exprNorm = latexToFunction(plain);
+            // Guard: if normalization still leaked placeholder tokens, block
+            if(/\bplaceholder\b/.test(exprNorm)){
+              showError('Completa los campos de la raíz (índice/radicando) antes de graficar.');
+              if(hid) hid.value = '';
+              return false;
+            }
             if(!exprNorm || String(exprNorm).trim()==='') throw new Error('Expresión vacía.');
             if(hid) hid.value = exprNorm;
             showPreview(exprNorm);
@@ -1551,13 +1703,87 @@
         const panel = document.getElementById('biseccionPreviewPanel');
         const plotEl = document.getElementById('plotBiseccionPreview');
         if(!btn || !panel || !plotEl) return;
+        
+        // Developer-only parser self-test. Run when URL has ?debug=parse
+        (function(){
+          try{
+            const urlHas = /[?&]debug=parse(\b|=|&)/.test(location.search);
+            if(!urlHas) return;
+            const cases = [
+              { L:'\\sqrt[3]{x}', note:'cube-root' },
+              { L:'(\\sqrt[3]{x})^{2}', note:'root-then-power-2' },
+              { L:'(\\sqrt[5]{x-1})^{3}', note:'root-then-power-3-shifted' },
+              { L:'(\\sqrt[3]{x})^{-1}', note:'root-then-power-neg1' },
+              { L:'\\sqrt{\\sqrt[3]{x}}', note:'root-over-root' },
+              { L:'x^{1/2}', note:'power-of-fraction' },
+              { L:'x^{\\frac{1}{3}}', note:'power-of-frac-latex' },
+              { L:'x^{2/3}', note:'power-2-3' },
+              { L:'(x-1)^{2/3}', note:'power-2-3-of-shift' },
+              { L:'(\\frac{1}{x})^{2}', note:'fraction-to-a-power' },
+              { L:'\\frac{\\frac{1}{x}}{1+\\frac{1}{x}}', note:'nested-fractions' },
+              { L:'(\\sqrt[5]{x})^{3}', note:'root-to-power' },
+              { L:'x^{x^{1/3}}', note:'power-on-power-nested' },
+              { L:'\\sqrt[3]{\\frac{1}{x^{2}}}', note:'nth-root-of-fraction-power' },
+              { L:'√[3](x)', note:'unicode-nth-root' },
+              { L:'√(x)', note:'unicode-sqrt' },
+            ];
+            const isBalanced = (t)=>{
+              let c=0; for(const ch of t){ if(ch==='(') c++; else if(ch===')') c--; if(c<0) return false; } return c===0;
+            };
+            const results = [];
+            for(const tc of cases){
+              const P = latexToPlain(tc.L);
+              const F = latexToFunction(tc.L);
+              const okParen = isBalanced(F);
+              const hasPow = /\*\*/.test(F) || /\^/.test(F);
+              const hasSqrt = /sqrt\(/.test(F) || /\*\*/.test(F);
+              let evalOk = true;
+              try{
+                const js = toJSExpr(F || P);
+                // Quick eval at x=2 avoiding explosions
+                // eslint-disable-next-line no-new-func
+                const fn = new Function('Math','x', 'return ( ' + js + ' )');
+                const y = fn(Math, 2);
+                evalOk = typeof y === 'number' && isFinite(y);
+              }catch(e){ evalOk = false; }
+              results.push({
+                case: tc.note, L: tc.L, P, F,
+                okParen, hasPowOrSqrt: hasPow || hasSqrt, evalOk
+              });
+            }
+            const bad = results.filter(r=> !r.okParen || !r.evalOk);
+            // Surface in console for devs
+            // eslint-disable-next-line no-console
+            console.table(results);
+            if(bad.length){
+              // eslint-disable-next-line no-console
+              console.error('Parser self-test failures:', bad);
+            }
+          }catch(_e){ /* ignore */ }
+        })();
 
         function safeEvalFunc(exprJS, x){
           // Basic guards against injection
           const forbidden = /(constructor|prototype|__proto__|=>|new\s+Function|Function\s*\()/;
           if(forbidden.test(exprJS)) throw new Error('Expresión inválida.');
+          // Provide sgnRoot helper for odd roots on negative x (avoid arrow functions for compatibility)
           // eslint-disable-next-line no-new-func
-          const fn = new Function('Math','x', 'return ( ' + exprJS + ' )');
+          // Convert exponentiation '**' into Math.pow for maximum compatibility
+          let evalExpr = exprJS
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*\(([^()]*)\)/g, 'Math.pow($1, ($2))')
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*(-?\d+(?:\.\d+)?)/g, 'Math.pow($1, $2)')
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*([A-Za-z_]\w*)/g, 'Math.pow($1, $2)');
+          const fn = new Function(
+            'Math','x',
+            'return (function(){\n' +
+            '  function sgnRoot(v,n){\n' +
+            '    var N = Math.abs(n|0);\n' +
+            '    if(N % 2 === 1){ var s = v<0?-1:(v>0?1:0); return s * Math.pow(Math.abs(v), 1/N); }\n' +
+            '    return Math.pow(v, 1/N);\n' +
+            '  }\n' +
+            '  return ( ' + evalExpr + ' );\n' +
+            '})()'
+          );
           const y = fn(Math, x);
           if(typeof y !== 'number' || !isFinite(y)) return null;
           return y;
@@ -1600,8 +1826,8 @@
           }
 
           // Finite mask
-          const xs = [];
-          const ys = [];
+          let xs = [];
+          let ys = [];
           for(let i=0;i<N;i++){
             const yv = ysAll[i];
             if(typeof yv === 'number' && isFinite(yv)){
@@ -1609,9 +1835,46 @@
             }
           }
           if(!ys.length){
-            showError('No se encontraron valores finitos de f(x) en el rango global.');
-            panel.style.display = 'none';
-            return;
+            // Fallbacks for domain-restricted functions (e.g., roots/logs): try positive-only ranges
+            const candidates = [ [0, 10], [1e-6, 10], [-10, -1e-6] ];
+            let recovered = false;
+            for(const [A,B] of candidates){
+              const xsAll2 = new Array(N);
+              const ysAll2 = new Array(N);
+              for(let i=0;i<N;i++){
+                const x = A + (B - A) * (i/(N-1));
+                xsAll2[i] = +x.toFixed(6);
+                let y = null; try{ y = safeEvalFunc(exprJS, x); }catch(_e){ y = null; }
+                if(y==null || !isFinite(y) || Math.abs(y) > Y_HARD_LIMIT){ ysAll2[i] = null; }
+                else { ysAll2[i] = +y.toFixed(12); }
+              }
+              const xs2 = []; const ys2 = [];
+              for(let i=0;i<N;i++){
+                const yv = ysAll2[i]; if(typeof yv === 'number' && isFinite(yv)){ xs2.push(xsAll2[i]); ys2.push(yv); }
+              }
+              if(ys2.length){ xs = xs2; ys = ys2; recovered = true; break; }
+            }
+            if(!recovered){
+              // Optional debug: print expr and a few eval attempts when URL has ?debug=plot
+              try{
+                const dbg = /[?&]debug=plot(\b|=|&)/.test(location.search);
+                if(dbg){
+                  // eslint-disable-next-line no-console
+                  console.error('Plot debug: no finite values for exprJS=', exprJS);
+                  const probe = [-10,-5,-1,-0.5,0,0.5,1,5,10];
+                  const out = [];
+                  for(const x of probe){
+                    let y; try{ y = safeEvalFunc(exprJS, x); }catch(e){ y = 'ERR:'+ (e && e.message ? e.message : String(e)); }
+                    out.push({ x, y });
+                  }
+                  // eslint-disable-next-line no-console
+                  console.table(out);
+                }
+              }catch(_e){}
+              showError('No se encontraron valores finitos de f(x) en el rango global.');
+              panel.style.display = 'none';
+              return;
+            }
           }
 
           // Percentile helper
@@ -1725,6 +1988,181 @@
         if(panel) panel.style.display = 'none';
       });
     });
+    // Newton–Raphson: hook math-field inputs and quick preview/plot
+    document.querySelectorAll('form[data-page="newton"]').forEach(form=>{
+      const map = [
+        { mf:'#mf-function', hid:'#hid-function', conv: latexToFunction },
+        { mf:'#mf-x0', hid:'#hid-x0', conv: latexToFunction },
+        { mf:'#mf-tol', hid:'#hid-tol', conv: latexToFunction },
+        { mf:'#mf-maxit', hid:'#hid-maxit', conv: latexToFunction },
+      ];
+      function syncAll(){
+        map.forEach(({mf,hid,conv})=>{
+          const m = form.querySelector(mf);
+          const h = form.querySelector(hid);
+          if(!m || !h) return;
+          const rawConv = conv(m.value||'');
+          const numericHids = ['#hid-x0','#hid-tol','#hid-maxit'];
+          if(numericHids.includes(hid)){
+            try{
+              const evalExpr = String(rawConv).replace(/\^/g,'**');
+              const val = Function('return (' + evalExpr + ')')();
+              if(typeof val === 'number' && isFinite(val)){
+                h.value = String(val);
+                return;
+              }
+            }catch(_e){}
+          }
+          h.value = rawConv;
+        });
+      }
+
+      const previewText = form.querySelector('#newton-preview-text');
+      const previewOk = form.querySelector('#newton-preview-ok');
+      const previewErr = form.querySelector('#newton-preview-err');
+      const previewErrTxt = form.querySelector('#newton-preview-err-txt');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      function showError(msg){ if(previewErrTxt) previewErrTxt.textContent = msg; if(previewErr) previewErr.style.display = ''; if(previewOk) previewOk.style.display = 'none'; if(submitBtn) submitBtn.disabled = true; }
+      function showPreview(text){ if(previewText) previewText.textContent = text; if(previewOk) previewOk.style.display = ''; if(previewErr) previewErr.style.display = 'none'; if(submitBtn) submitBtn.disabled = false; }
+
+      function doValidateAndPreview(){
+        const mf = form.querySelector('#mf-function');
+        const hid = form.querySelector('#hid-function');
+        if(!mf || !previewText) return true;
+        const raw = String(mf.value || '');
+        if(/\\placeholder(\[[^\]]*\])?\{[^}]*\}/.test(raw)){
+          showError('Completa los campos de la raíz (índice/radicando) antes de graficar.');
+          if(hid) hid.value = '';
+          return false;
+        }
+        const plain = latexToPlain(raw);
+        try{
+          if(plain.includes('=')){
+            const parts = plain.split('=');
+            const left = parts.slice(0,1).join('=').trim();
+            const right = parts.slice(1).join('=').trim();
+            if(!left || !right){ throw new Error('Ambos lados de la ecuación deben existir.'); }
+            const lnorm = latexToFunction(left);
+            const rnorm = latexToFunction(right);
+            const expr = `${lnorm} - (${rnorm})`;
+            if(hid) hid.value = expr;
+            showPreview(expr);
+            return true;
+          } else {
+            const exprNorm = latexToFunction(plain);
+            if(/\bplaceholder\b/.test(exprNorm)){
+              showError('Completa los campos de la raíz (índice/radicando) antes de graficar.');
+              if(hid) hid.value = '';
+              return false;
+            }
+            if(!exprNorm || String(exprNorm).trim()==='') throw new Error('Expresión vacía.');
+            if(hid) hid.value = exprNorm;
+            showPreview(exprNorm);
+            return true;
+          }
+        }catch(e){
+          showError('No se pudo normalizar la ecuación/expresión: ' + (e && e.message ? e.message : String(e)));
+          return false;
+        }
+      }
+
+      map.forEach(({mf,hid,conv})=>{
+        const m = form.querySelector(mf);
+        const h = form.querySelector(hid);
+        if(!m || !h) return;
+        try{ h.value = conv(m.value||''); }catch(_e){}
+        m.addEventListener('input', ()=>{ try{ h.value = conv(m.value||''); }catch(_e){} });
+      });
+
+      form.addEventListener('submit', (e)=>{
+        const ok = doValidateAndPreview();
+        if(!ok){ e.preventDefault(); e.stopPropagation(); return false; }
+        syncAll();
+      });
+
+      (function(){
+        const btn = form.querySelector('[data-action="plot-func"]');
+        const panel = document.getElementById('newtonPreviewPanel');
+        const plotEl = document.getElementById('plotNewtonPreview');
+        if(!btn || !panel || !plotEl) return;
+
+        function safeEvalFunc(exprJS, x){
+          const forbidden = /(constructor|prototype|__proto__|=>|new\s+Function|Function\s*\()/;
+          if(forbidden.test(exprJS)) throw new Error('Expresión inválida.');
+          let evalExpr = exprJS
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*\(([^()]*)\)/g, 'Math.pow($1, ($2))')
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*(-?\d+(?:\.\d+)?)/g, 'Math.pow($1, $2)')
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*([A-Za-z_]\w*)/g, 'Math.pow($1, $2)');
+          const fn = new Function('Math','x', 'return ( function(){\n' +
+            '  function sgnRoot(v,n){ var N=Math.abs(n|0); if(N%2===1){ var s=v<0?-1:(v>0?1:0); return s*Math.pow(Math.abs(v),1/N);} return Math.pow(v,1/N);}\n' +
+            '  return ( ' + evalExpr + ' );\n' +
+            '})()');
+          const y = fn(Math, x);
+          if(typeof y !== 'number' || !isFinite(y)) return null; return y;
+        }
+
+        async function plotPreview(){
+          const ok = doValidateAndPreview();
+          if(!ok){ panel.style.display = 'none'; return; }
+          const hid = form.querySelector('#hid-function');
+          const expr = (hid?.value || '').trim();
+          if(!expr){ panel.style.display = 'none'; return; }
+          const exprJS = toJSExpr(expr);
+          try{ await ensurePlotly(); }catch(err){ showError('No se pudo cargar la librería de gráficos (Plotly).'); panel.style.display = 'none'; return; }
+
+          const X_MIN=-10, X_MAX=10, N=2000; const Y_HARD_LIMIT=1e8; const T_MIN=0.1, T_MAX=10; const P_NEAR=0.30; const P_Y_LOW=0.05, P_Y_HIGH=0.95; const MIN_NEAR_POINTS=50;
+          const dxEst = (X_MAX - X_MIN) / (N - 1);
+          const xsAll = new Array(N); const ysAll = new Array(N);
+          for(let i=0;i<N;i++){
+            const x = X_MIN + (X_MAX - X_MIN) * (i/(N-1)); xsAll[i] = +x.toFixed(6);
+            let y=null; try{ y = safeEvalFunc(exprJS, x); }catch(_e){ y = null; }
+            if(y==null || !isFinite(y) || Math.abs(y) > Y_HARD_LIMIT){ ysAll[i]=null; } else { ysAll[i]= +y.toFixed(12); }
+          }
+          let xs=[], ys=[]; for(let i=0;i<N;i++){ const yv=ysAll[i]; if(typeof yv==='number' && isFinite(yv)){ xs.push(xsAll[i]); ys.push(yv);} }
+          if(!ys.length){
+            const candidates=[[0,10],[1e-6,10],[-10,-1e-6]]; let recovered=false;
+            for(const [A,B] of candidates){
+              const xsAll2=new Array(N), ysAll2=new Array(N);
+              for(let i=0;i<N;i++){ const x=A+(B-A)*(i/(N-1)); xsAll2[i]=+x.toFixed(6); let y=null; try{ y=safeEvalFunc(exprJS,x);}catch(_e){y=null;} ysAll2[i]=(y==null||!isFinite(y)||Math.abs(y)>Y_HARD_LIMIT)?null:+y.toFixed(12); }
+              const xs2=[], ys2=[]; for(let i=0;i<N;i++){ const yv=ysAll2[i]; if(typeof yv==='number' && isFinite(yv)){ xs2.push(xsAll2[i]); ys2.push(yv); } }
+              if(ys2.length){ xs=xs2; ys=ys2; recovered=true; break; }
+            }
+            if(!recovered){ showError('No se encontraron valores finitos de f(x) en el rango global.'); panel.style.display='none'; return; }
+          }
+          function percentile(arr,p){ if(!arr.length) return NaN; const a=arr.slice().sort((u,v)=>u-v); const idx=Math.max(0, Math.min(a.length-1, Math.floor(p*(a.length-1)))); return a[idx]; }
+          const absY=ys.map(v=>Math.abs(v)); let T=percentile(absY,P_NEAR); if(!isFinite(T)) T=1; T=Math.min(T,T_MAX); T=Math.max(T,T_MIN);
+          const nearIdx=[]; for(let i=0;i<ys.length;i++) if(Math.abs(ys[i])<=T) nearIdx.push(i);
+          let x0=X_MIN, x1=X_MAX; if(nearIdx.length>=MIN_NEAR_POINTS){ let xminLocal=Infinity, xmaxLocal=-Infinity; for(const k of nearIdx){ const xv=xs[k]; if(xv<xminLocal)xminLocal=xv; if(xv>xmaxLocal)xmaxLocal=xv; } const w=Math.max(1e-9,(xmaxLocal-xminLocal)); const margin=0.1*w; x0=Math.max(X_MIN, xminLocal - margin); x1=Math.min(X_MAX, xmaxLocal + margin); }
+          const xsPlot=[], ysPlot=[]; for(let i=0;i<xs.length;i++){ const xv=xs[i]; if(xv>=x0 && xv<=x1){ xsPlot.push(xv); ysPlot.push(ys[i]); } }
+          if(!ysPlot.length){ showError('No hay suficientes puntos para graficar en la banda seleccionada.'); panel.style.display='none'; return; }
+          let ylow=percentile(ysPlot,P_Y_LOW), yhigh=percentile(ysPlot,P_Y_HIGH); if(!isFinite(ylow)||!isFinite(yhigh)||ylow===yhigh){ ylow=(ylow||0)-1; yhigh=(yhigh||0)+1; }
+          const ypad=0.1*(yhigh-ylow); let ymin=ylow-ypad, ymax=yhigh+ypad; const styles=getComputedStyle(document.documentElement);
+          const primary=(styles.getPropertyValue('--primary')||'#7E57C2').trim(); const muted=(styles.getPropertyValue('--muted')||'#6b7280').trim(); const border=(styles.getPropertyValue('--border')||'#e3e5f0').trim(); const card=(styles.getPropertyValue('--card')||'#ffffff').trim();
+          const xmin=x0, xmax=x1; const pad=(xmax-xmin)*0.04; const traces=[]; let segX=[], segY=[];
+          const dxEst2 = (x1 - x0) / Math.max(1,(xsPlot.length-1));
+          for(let i=0;i<xsPlot.length;i++){
+            if(i>0 && Math.abs(xsPlot[i]-xsPlot[i-1]) > dxEst2*1.5){ if(segX.length){ traces.push({ x:segX, y:segY, mode:'lines', name: traces.length? `f(x) seg ${traces.length+1}`:'f(x)', line:{ color:primary, width:2.2 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' }); segX=[]; segY=[]; } }
+            segX.push(xsPlot[i]); segY.push(ysPlot[i]);
+          }
+          if(segX.length){ traces.push({ x:segX, y:segY, mode:'lines', name: traces.length? `f(x) seg ${traces.length+1}`:'f(x)', line:{ color:primary, width:2.2 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' }); }
+          const traceAxis={ x:[xmin,xmax], y:[0,0], mode:'lines', name:'y = 0', line:{ color:muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
+          const traceAxisY={ x:[0,0], y:[ymin-ypad, ymax+ypad], mode:'lines', name:'x = 0', line:{ color:muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
+          const layout={ margin:{l:50,r:20,t:10,b:40}, paper_bgcolor:card, plot_bgcolor:card, hovermode:'closest', showlegend:true, dragmode:'pan', title:{text:'Vista previa de f(x)'}, xaxis:{ title:'x', gridcolor:border, zerolinecolor:border, showgrid:true, dtick:1, tick0:0, range:[xmin - pad, xmax + pad], zeroline:true }, yaxis:{ title:'f(x)', gridcolor:border, zerolinecolor:border, showgrid:true, dtick:1, tick0:0, scaleanchor:'x', scaleratio:1, range:[ymin - ypad, ymax + ypad], zeroline:true }, legend:{ orientation:'h', x:0, y:1.1 } };
+          panel.style.display=''; window.Plotly.newPlot(plotEl, [...traces, traceAxis, traceAxisY], layout, { displayModeBar:true, responsive:true, scrollZoom:true });
+        }
+
+        btn.addEventListener('click', ()=>{ plotPreview(); });
+      })();
+
+      // Clear button for Newton
+      const clr = form.querySelector('[data-action="clear"]');
+      clr?.addEventListener('click', ()=>{
+        map.forEach(({mf,hid})=>{ const m=form.querySelector(mf); const h=form.querySelector(hid); if(m) m.value=''; if(h) h.value=''; });
+        if(previewText) previewText.textContent=''; if(previewOk) previewOk.style.display='none'; if(previewErr) previewErr.style.display='none'; if(submitBtn) submitBtn.disabled=false;
+        const panel = document.getElementById('newtonPreviewPanel'); if(panel) panel.style.display='none';
+      });
+    });
   });
 })();
 
@@ -1759,6 +2197,33 @@ document.addEventListener('DOMContentLoaded', ()=>{
       }catch(e){
         console.warn('Pre-submit normalization failed:', e);
       }
+    });
+  });
+  // Pre-submit normalization for the Newton-Raphson form: normalize function and numeric fields
+  document.querySelectorAll('form.matrix-form[data-page="newton"]').forEach(form=>{
+    form.addEventListener('submit', (ev)=>{
+      try{
+        const mfFn = document.getElementById('mf-function');
+        const hidFn = document.getElementById('hid-function');
+        if(mfFn && hidFn){
+          const fnText = (mfFn.value || mfFn.getAttribute('data-value') || '').toString().trim();
+          hidFn.value = latexToFunction(fnText) || latexToPlain(fnText) || hidFn.value || '';
+        }
+        // Numeric fields: x0, tol, maxit
+        ['x0','tol','maxit'].forEach(name=>{
+          const mf = document.getElementById('mf-' + name);
+          const hid = document.getElementById('hid-' + name);
+          if(!mf || !hid) return;
+          const raw = (mf.value || mf.getAttribute('data-value') || '').toString().trim();
+          if(!raw) return;
+          const v = tryEvalNumeric(raw);
+          if(v !== null){
+            if(name === 'maxit') hid.value = String(Math.round(v)); else hid.value = String(v);
+          }else{
+            hid.value = latexToPlain(raw) || hid.value || raw;
+          }
+        });
+      }catch(e){ console.warn('Pre-submit normalization (newton) failed:', e); }
     });
   });
 });

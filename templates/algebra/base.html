@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'algebra/styles.css' %}?v=20251103">
+  <link rel="stylesheet" href="{% static 'algebra/styles.css' %}?v=20251116">
   <!-- MathLive (math-field) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/dist/mathlive-static.css" />
   <!-- SweetAlert2 -->
@@ -68,13 +68,18 @@
         </div>
       </div>
 
-  <div class="menu-item has-dropdown {% if url_name == 'metodos_index' or url_name == 'metodos_cerrados' or url_name == 'biseccion' %}active{% endif %}">
+  <div class="menu-item has-dropdown {% if url_name == 'metodos_index' or url_name == 'metodos_cerrados' or url_name == 'biseccion' or url_name == 'regula_falsi' or url_name == 'metodos_abiertos' or url_name == 'newton_raphson' %}active{% endif %}">
         <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Métodos numéricos</button>
         <div class="dropdown" role="menu">
           <div class="menu-subgroup">
             <strong class="dropdown-title">Métodos cerrados</strong>
             <a href="{% url 'biseccion' %}" role="menuitem" class="{% if url_name == 'biseccion' %}current{% endif %}">Método de bisección</a>
             <a href="{% url 'regula_falsi' %}" role="menuitem" class="{% if url_name == 'regula_falsi' %}current{% endif %}">Regla Falsa (Regula Falsi)</a>
+          </div>
+          <hr />
+          <div class="menu-subgroup">
+            <strong class="dropdown-title">Métodos abiertos</strong>
+            <a href="{% url 'newton_raphson' %}" role="menuitem" class="{% if url_name == 'newton_raphson' %}current{% endif %}">Newton–Raphson</a>
           </div>
         </div>
       </div>
@@ -108,7 +113,7 @@
   </footer>
   <!-- Floating button to toggle MathLive virtual keyboard -->
   <button id="vkToggle" class="kb-fab" aria-label="Teclado matemático" title="Teclado matemático">⌨</button>
-  <script src="{% static 'algebra/app.js' %}?v=20251103"></script>
+  <script src="{% static 'algebra/app.js' %}?v=20251117"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

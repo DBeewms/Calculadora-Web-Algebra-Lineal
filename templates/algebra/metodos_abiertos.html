@@ -1,0 +1,13 @@
+{% extends "algebra/base.html" %}
+{% block title %}Métodos abiertos — KiwiSolve{% endblock %}
+{% block content %}
+<section class="section">
+  <h2>Métodos abiertos</h2>
+  <div class="panel" style="padding:12px;">
+    <p>Selecciona un método:</p>
+    <ul>
+      <li><a href="{% url 'newton_raphson' %}">Newton–Raphson</a></li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

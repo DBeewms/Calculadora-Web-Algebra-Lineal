@@ -12,6 +12,7 @@ Importaciones:
 """
 import math
 from typing import Callable
+from .derivadas import derivar_funcion as _derivar_funcion
 
 class ErrorBiseccion(ValueError):
     """Excepción específica para errores durante el proceso de bisección."""
@@ -75,23 +76,49 @@ def _crear_evaluador(texto_funcion):
             x_sym = sp.symbols('x')
             # Aceptar alias comunes y funciones adicionales
             sym_locals = {
+                # funciones y alias
                 'ln': sp.log,
-                'e': sp.E,
-                'E': sp.E,
+                'sen': sp.sin,
+                'tg': sp.tan,
+                'ctg': sp.cot,
                 'sqrt': sp.sqrt,
                 'abs': sp.Abs,
-                # Bases de logaritmo comunes
+                'exp': sp.exp,
+                # logaritmos con base específica
+                'lg': lambda z: sp.log(z, 10),
                 'log10': lambda z: sp.log(z, 10),
                 'log2': lambda z: sp.log(z, 2),
+                # constantes
+                'e': sp.E,
+                'E': sp.E,
+                'pi': sp.pi,
             }
             expresion = sp.sympify(texto_normalizado, locals=sym_locals, evaluate=True)
+
+            # Reescritura: potencias racionales con denominador impar como raíz real con signo.
+            # Ej.: x**(1/3) -> copysign(abs(x)**(1/3), x)
+            # General: x**(p/q), q impar -> (copysign(abs(x)**(1/q), x))**p
+            def _rewrite_real_rational_powers(expr):
+                def cond(e):
+                    return isinstance(e, sp.Pow) and isinstance(e.exp, sp.Rational)
+                def repl(e):
+                    p = int(e.exp.p)
+                    q = int(e.exp.q)
+                    if q % 2 == 1:
+                        inner = sp.Function('copysign')(sp.Abs(e.base)**sp.Rational(1, q), e.base)
+                        return inner if p == 1 else inner**p
+                    return e
+                return expr.replace(cond, repl)
+
+            expresion = _rewrite_real_rational_powers(expresion)
         except Exception as e:
             raise ErrorBiseccion(f"Expresión inválida (sympy): {e}")
 
         # Crear una función numérica eficiente usando lambdify. Usamos el módulo 'math'
         # para que devuelva valores numéricos con funciones estándar.
         try:
-            f_lamb = sp.lambdify(x_sym, expresion, modules=["math"])
+            # Mapear 'copysign' a math.copysign para nuestras reescrituras
+            f_lamb = sp.lambdify(x_sym, expresion, modules=[{'copysign': math.copysign}, "math"])
         except Exception:
             # En caso de que lambdify falle por alguna razón usamos una conversión a
             # objeto sympy que luego evaluaremos numéricamente.
@@ -372,4 +399,78 @@ def regula_falsi(texto_funcion, a, b, tol=1e-6, maxit=100):
         'raiz': raiz_final,
         'estimacion_error': intervalo_final / 2.0,
         'f_en_raiz': evaluar(raiz_final)
+    }
+
+
+def newton_raphson(texto_funcion, x0, tol=1e-6, maxit=100):
+    """Método de Newton–Raphson para encontrar raíces a partir de una aproximación inicial x0.
+
+    Retorna un diccionario con claves:
+      - 'iteraciones': lista de dicts con i, x, fx, dfx, x_next, actualizacion
+      - 'convergio': bool
+      - 'conteo_iter': int
+      - 'raiz': float
+      - 'estimacion_error': float (|x_{n+1} - x_n|)
+      - 'f_en_raiz': float
+    """
+    if tol <= 0:
+        raise ErrorBiseccion("La tolerancia debe ser un número positivo.")
+    if maxit <= 0:
+        raise ErrorBiseccion("El número máximo de iteraciones debe ser mayor que 0.")
+
+    # Evaluadores para f y f'
+    try:
+        info = _derivar_funcion(texto_funcion, orden=1, simplificar=True)
+        f = info['original']['evaluador']
+        df = info['derivada']['evaluador']
+    except Exception as e:
+        raise ErrorBiseccion(f"No se pudo preparar f y su derivada: {e}")
+
+    x = float(x0)
+    iteraciones = []
+    convergio = False
+    maxit = min(int(maxit), 10000)
+    last_err = None
+    warnings = []
+
+    for i in range(1, maxit+1):
+        fx = f(x)
+        dfx = df(x)
+        # Umbral para detectar derivadas cercanas a cero y evitar dividir por valores ínfimos
+        if abs(dfx) < 1e-14:
+            iteraciones.append({
+                'i': i,
+                'x': x,
+                'fx': fx,
+                'dfx': dfx,
+                'x_next': None,
+                'err': None,
+            })
+            warnings.append(f"Advertencia: f'(x)≈0 en x={x:.8g}. El método se detuvo para evitar división por cero.")
+            break
+        x_next = x - fx/dfx
+        err = abs(x_next - x)
+        iteraciones.append({
+            'i': i,
+            'x': x,
+            'fx': fx,
+            'dfx': dfx,
+            'x_next': x_next,
+            'err': err,
+        })
+        last_err = err
+        x = x_next
+        if err < tol or abs(fx) < tol:
+            convergio = True
+            break
+
+    raiz = float(x)
+    return {
+        'iteraciones': iteraciones,
+        'convergio': convergio,
+        'conteo_iter': iteraciones[-1]['i'] if iteraciones else 0,
+        'raiz': raiz,
+        'estimacion_error': float(last_err if last_err is not None else 0.0),
+        'f_en_raiz': f(raiz),
+        'warnings': warnings
     }

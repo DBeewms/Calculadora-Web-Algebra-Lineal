@@ -78,11 +78,16 @@ def _parse_sympy_expr(texto: str):
     sym_locals = {
         # alias funciones
         'ln': sp.log,
-        'sen': sp.sin,
-        'tg': sp.tan,
-        'ctg': sp.cot,
-        'lg': sp.log10,
+        'sen': sp.sin,   # español -> sin
+        'tg': sp.tan,    # español -> tan
+        'ctg': sp.cot,   # español -> cot
+        'sqrt': sp.sqrt,
         'abs': sp.Abs,
+        'exp': sp.exp,
+        # logaritmos base 10 y 2 (SymPy no siempre expone sp.log10/sp.log2 según versión)
+        'lg': (lambda z: sp.log(z, 10)),
+        'log10': (lambda z: sp.log(z, 10)),
+        'log2': (lambda z: sp.log(z, 2)),
         # alias constantes
         'e': sp.E,
         'E': sp.E,
@@ -93,6 +98,27 @@ def _parse_sympy_expr(texto: str):
         expr = sp.sympify(t, locals=sym_locals, evaluate=True)
     except Exception as e:
         raise ErrorDerivada(f"Expresión inválida: {e}")
+
+    # Reescritura para potencias racionales con denominador impar como raíces reales con signo.
+    # x**(p/q), q impar -> (sign(x) * Abs(x)**(1/q))**p
+    # Esto permite evaluar en bases negativas manteniendo resultados reales para q impar
+    def _rewrite_real_rational_powers(e):
+        def cond(node):
+            return isinstance(node, sp.Pow) and isinstance(node.exp, sp.Rational)
+        def repl(node):
+            p = int(node.exp.p)
+            q = int(node.exp.q)
+            if q % 2 == 1:
+                inner = sp.sign(node.base) * sp.Abs(node.base)**sp.Rational(1, q)
+                return inner if p == 1 else inner**p
+            return node
+        return e.replace(cond, repl)
+
+    try:
+        expr = _rewrite_real_rational_powers(expr)
+    except Exception:
+        # Si la reescritura falla, continuar con la expresión original
+        pass
 
     # Asegurar que la variable independiente 'x' aparezca o que sea una constante
     # Si no hay x, sympy trata expr como constante; permitimos derivadas (dan 0)
@@ -182,13 +208,33 @@ def derivar_funcion(texto_funcion: str, orden: int = 1, simplificar: bool = True
 
     # Evaluadores numéricos
     try:
-        f_eval = sp.lambdify(x, expr, modules=['math'])
+        f_eval = sp.lambdify(
+            x,
+            expr,
+            modules=[
+                {
+                    'sign': (lambda v: (-1 if v < 0 else (1 if v > 0 else 0))),
+                    'Abs': abs,
+                },
+                'math'
+            ]
+        )
     except Exception:
         def f_eval(_x):
             return float(expr.evalf(subs={x: _x}))
 
     try:
-        df_eval = sp.lambdify(x, d, modules=['math'])
+        df_eval = sp.lambdify(
+            x,
+            d,
+            modules=[
+                {
+                    'sign': (lambda v: (-1 if v < 0 else (1 if v > 0 else 0))),
+                    'Abs': abs,
+                },
+                'math'
+            ]
+        )
     except Exception:
         def df_eval(_x):
             return float(d.evalf(subs={x: _x}))
