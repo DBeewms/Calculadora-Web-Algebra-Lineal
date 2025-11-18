@@ -68,7 +68,7 @@
         </div>
       </div>
 
-  <div class="menu-item has-dropdown {% if url_name == 'metodos_index' or url_name == 'metodos_cerrados' or url_name == 'biseccion' or url_name == 'regula_falsi' or url_name == 'metodos_abiertos' or url_name == 'newton_raphson' %}active{% endif %}">
+  <div class="menu-item has-dropdown {% if url_name == 'metodos_index' or url_name == 'metodos_cerrados' or url_name == 'biseccion' or url_name == 'regula_falsi' or url_name == 'metodos_abiertos' or url_name == 'newton_raphson' or url_name == 'secante' %}active{% endif %}">
         <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Métodos numéricos</button>
         <div class="dropdown" role="menu">
           <div class="menu-subgroup">
@@ -80,6 +80,7 @@
           <div class="menu-subgroup">
             <strong class="dropdown-title">Métodos abiertos</strong>
             <a href="{% url 'newton_raphson' %}" role="menuitem" class="{% if url_name == 'newton_raphson' %}current{% endif %}">Newton–Raphson</a>
+            <a href="{% url 'secante' %}" role="menuitem" class="{% if url_name == 'secante' %}current{% endif %}">Secante</a>
           </div>
         </div>
       </div>
@@ -113,7 +114,7 @@
   </footer>
   <!-- Floating button to toggle MathLive virtual keyboard -->
   <button id="vkToggle" class="kb-fab" aria-label="Teclado matemático" title="Teclado matemático">⌨</button>
-  <script src="{% static 'algebra/app.js' %}?v=20251117"></script>
+  <script src="{% static 'algebra/app.js' %}?v=20251118"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

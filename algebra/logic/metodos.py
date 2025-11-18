@@ -474,3 +474,85 @@ def newton_raphson(texto_funcion, x0, tol=1e-6, maxit=100):
         'f_en_raiz': f(raiz),
         'warnings': warnings
     }
+
+
+def secante(texto_funcion, x0, x1, tol=1e-6, maxit=100):
+    """Método de la secante para encontrar una raíz de f(x).
+
+    Parámetros:
+      - texto_funcion: cadena de la función f(x) igualada a 0 (solo el lado f(x)).
+      - x0, x1: valores iniciales.
+      - tol: tolerancia para |x_{n+1} - x_n| o |f(x_n)|.
+      - maxit: tope de iteraciones.
+
+    Retorna dict con:
+      - 'iteraciones': lista de dicts con i, x_prev, x, f_prev, f, x_next, err
+      - 'convergio', 'conteo_iter', 'raiz', 'estimacion_error', 'f_en_raiz', 'warnings'
+    """
+    if tol <= 0:
+        raise ErrorBiseccion("La tolerancia debe ser un número positivo.")
+    if maxit <= 0:
+        raise ErrorBiseccion("El número máximo de iteraciones debe ser mayor que 0.")
+
+    f = _crear_evaluador(texto_funcion)
+
+    x_prev = float(x0)
+    x = float(x1)
+    f_prev = f(x_prev)
+    f_curr = f(x)
+
+    iteraciones = []
+    convergio = False
+    maxit = min(int(maxit), 10000)
+    last_err = None
+    warnings = []
+
+    for i in range(1, maxit + 1):
+        denom = (f_curr - f_prev)
+        if abs(denom) < 1e-14:
+            # Evitar división entre cero
+            iteraciones.append({
+                'i': i,
+                'x_prev': x_prev,
+                'x': x,
+                'f_prev': f_prev,
+                'f': f_curr,
+                'x_next': None,
+                'err': None,
+            })
+            warnings.append("Advertencia: f(x_n) - f(x_{n-1}) ≈ 0. Proceso detenido para evitar división por cero.")
+            break
+
+        x_next = x - f_curr * ( (x - x_prev) / denom )
+        err = abs(x_next - x)
+        iteraciones.append({
+            'i': i,
+            'x_prev': x_prev,
+            'x': x,
+            'f_prev': f_prev,
+            'f': f_curr,
+            'x_next': x_next,
+            'err': err,
+        })
+        last_err = err
+
+        # Verificar criterios de parada con el valor actual
+        if err < tol or abs(f_curr) < tol:
+            convergio = True
+            x = x_next
+            break
+
+        # Actualizar para siguiente paso
+        x_prev, x = x, x_next
+        f_prev, f_curr = f_curr, f(x)
+
+    raiz = float(x)
+    return {
+        'iteraciones': iteraciones,
+        'convergio': convergio,
+        'conteo_iter': iteraciones[-1]['i'] if iteraciones else 0,
+        'raiz': raiz,
+        'estimacion_error': float(last_err if last_err is not None else 0.0),
+        'f_en_raiz': f(raiz),
+        'warnings': warnings
+    }

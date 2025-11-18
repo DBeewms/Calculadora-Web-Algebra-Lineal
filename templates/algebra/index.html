@@ -161,11 +161,11 @@
 
 <hr class="section-divider" aria-hidden="true" />
 
-<!-- Métodos numéricos: división y acceso rápido -->
-<section class="section" aria-labelledby="metodos-title">
+<!-- Métodos numéricos: accesos rápidos -->
+<section class="section" aria-labelledby="metodos-cerrados-title">
   <div class="section-header">
-    <h3 id="metodos-title">Métodos cerrados</h3>
-    <span class="badge">1 módulo</span>
+    <h3 id="metodos-cerrados-title">Métodos cerrados</h3>
+    <span class="badge">2 métodos</span>
   </div>
   <div class="cards cards-2x2">
     <a class="card media is-mul" href="{% url 'biseccion' %}">
@@ -175,8 +175,50 @@
         </svg>
       </div>
       <div class="media-body">
-        <h3>Método de bisección</h3>
-        <p>Encontrar raíces por bisección (espacio reservado, lógica pendiente).</p>
+        <h3>Bisección</h3>
+        <p>Raíz en intervalo [a,b] con cambio de signo garantizado.</p>
+      </div>
+    </a>
+    <a class="card media is-mul" href="{% url 'regula_falsi' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 12h16M4 6h8M4 18h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Regla Falsa</h3>
+        <p>Interpolación lineal conservando el extremo con cambio de signo.</p>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="metodos-abiertos-title">
+  <div class="section-header">
+    <h3 id="metodos-abiertos-title">Métodos abiertos</h3>
+    <span class="badge">2 métodos</span>
+  </div>
+  <div class="cards cards-2x2">
+    <a class="card media is-mul" href="{% url 'newton_raphson' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 20l16-16M4 8h8M12 16h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Newton–Raphson</h3>
+        <p>Iteración x - f(x)/f'(x) con derivada simbólica y control de error.</p>
+      </div>
+    </a>
+    <a class="card media is-mul" href="{% url 'secante' %}">
+      <div class="media-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 19l16-10M4 9l8 0M12 15l8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="media-body">
+        <h3>Secante</h3>
+        <p>Itera sin derivada: x - f(x)·(x-x₋₁)/(f(x)-f(x₋₁)).</p>
       </div>
     </a>
   </div>

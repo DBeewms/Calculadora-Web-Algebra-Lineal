@@ -1145,6 +1145,28 @@
         }catch(_e){}
       });
     });
+    
+    // Insert helpers for roots in Secant form
+    document.querySelectorAll('form.matrix-form[data-page="secante"]').forEach(form=>{
+      form.addEventListener('click', (e)=>{
+        const t = e.target.closest('[data-action="insert-sqrt"], [data-action="insert-nthroot"]');
+        if(!t) return;
+        e.preventDefault();
+        const mf = document.getElementById('mf-function');
+        if(!mf) return;
+        const isNth = t.matches('[data-action="insert-nthroot"]');
+        const latex = isNth ? '\\sqrt[\\placeholder{}]{\\placeholder{}}' : '\\sqrt{\\placeholder{}}';
+        try{
+          if(typeof mf.executeCommand === 'function'){
+            mf.executeCommand([ 'insert', latex ]);
+            if(isNth) mf.executeCommand('moveToPreviousPlaceholder');
+          } else if('value' in mf){
+            mf.value = (mf.value||'') + (isNth ? '\\sqrt[]{}' : '\\sqrt{}');
+          }
+          if(typeof mf.focus === 'function') mf.focus();
+        }catch(_e){}
+      });
+    });
     // Toggle visual de mostrar/ocultar pasos sin recargar
     document.querySelectorAll('label.toggle input[name="show_steps"]').forEach(chk=>{
       chk.addEventListener('change', ()=>{
@@ -2163,6 +2185,183 @@
         const panel = document.getElementById('newtonPreviewPanel'); if(panel) panel.style.display='none';
       });
     });
+
+    // Secante: hook math-field inputs and quick preview/plot
+    document.querySelectorAll('form[data-page="secante"]').forEach(form=>{
+      const map = [
+        { mf:'#mf-function', hid:'#hid-function', conv: latexToFunction },
+        { mf:'#mf-x0', hid:'#hid-x0', conv: latexToFunction },
+        { mf:'#mf-x1', hid:'#hid-x1', conv: latexToFunction },
+        { mf:'#mf-tol', hid:'#hid-tol', conv: latexToFunction },
+        { mf:'#mf-maxit', hid:'#hid-maxit', conv: latexToFunction },
+      ];
+      function syncAll(){
+        map.forEach(({mf,hid,conv})=>{
+          const m = form.querySelector(mf);
+          const h = form.querySelector(hid);
+          if(!m || !h) return;
+          const rawConv = conv(m.value||'');
+          const numericHids = ['#hid-x0','#hid-x1','#hid-tol','#hid-maxit'];
+          if(numericHids.includes(hid)){
+            try{
+              const evalExpr = String(rawConv).replace(/\^/g,'**');
+              const val = Function('return (' + evalExpr + ')')();
+              if(typeof val === 'number' && isFinite(val)){
+                h.value = String(val);
+                return;
+              }
+            }catch(_e){}
+          }
+          h.value = rawConv;
+        });
+      }
+
+      const previewText = form.querySelector('#secante-preview-text');
+      const previewOk = form.querySelector('#secante-preview-ok');
+      const previewErr = form.querySelector('#secante-preview-err');
+      const previewErrTxt = form.querySelector('#secante-preview-err-txt');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      function showError(msg){ if(previewErrTxt) previewErrTxt.textContent = msg; if(previewErr) previewErr.style.display = ''; if(previewOk) previewOk.style.display = 'none'; if(submitBtn) submitBtn.disabled = true; }
+      function showPreview(text){ if(previewText) previewText.textContent = text; if(previewOk) previewOk.style.display = ''; if(previewErr) previewErr.style.display = 'none'; if(submitBtn) submitBtn.disabled = false; }
+
+      function doValidateAndPreview(){
+        const mf = form.querySelector('#mf-function');
+        const hid = form.querySelector('#hid-function');
+        if(!mf) return true;
+        const raw = String(mf.value || '');
+        if(/\\placeholder(\[[^\]]*\])?\{[^}]*\}/.test(raw)){
+          showError('Completa los campos de la raíz (índice/radicando) antes de graficar.');
+          if(hid) hid.value = '';
+          return false;
+        }
+        const plain = latexToPlain(raw);
+        try{
+          if(plain.includes('=')){
+            const parts = plain.split('=');
+            const left = parts.slice(0,1).join('=').trim();
+            const right = parts.slice(1).join('=').trim();
+            if(!left || !right){ throw new Error('Ambos lados de la ecuación deben existir.'); }
+            const lnorm = latexToFunction(left);
+            const rnorm = latexToFunction(right);
+            const expr = `${lnorm} - (${rnorm})`;
+            if(hid) hid.value = expr;
+            showPreview(expr);
+            return true;
+          } else {
+            const exprNorm = latexToFunction(plain);
+            if(/\bplaceholder\b/.test(exprNorm)){
+              showError('Completa los campos de la raíz (índice/radicando) antes de graficar.');
+              if(hid) hid.value = '';
+              return false;
+            }
+            if(!exprNorm || String(exprNorm).trim()==='') throw new Error('Expresión vacía.');
+            if(hid) hid.value = exprNorm;
+            showPreview(exprNorm);
+            return true;
+          }
+        }catch(e){
+          showError('No se pudo normalizar la ecuación/expresión: ' + (e && e.message ? e.message : String(e)));
+          return false;
+        }
+      }
+
+      map.forEach(({mf,hid,conv})=>{
+        const m = form.querySelector(mf);
+        const h = form.querySelector(hid);
+        if(!m || !h) return;
+        try{ h.value = conv(m.value||''); }catch(_e){}
+        m.addEventListener('input', ()=>{ try{ h.value = conv(m.value||''); }catch(_e){} });
+      });
+
+      form.addEventListener('submit', (e)=>{
+        const ok = doValidateAndPreview();
+        if(!ok){ e.preventDefault(); e.stopPropagation(); return false; }
+        syncAll();
+      });
+
+      (function(){
+        const btn = form.querySelector('[data-action="plot-func"]');
+        const panel = document.getElementById('secantePreviewPanel');
+        const plotEl = document.getElementById('plotSecantePreview');
+        if(!btn || !panel || !plotEl) return;
+
+        function safeEvalFunc(exprJS, x){
+          const forbidden = /(constructor|prototype|__proto__|=>|new\s+Function|Function\s*\()/;
+          if(forbidden.test(exprJS)) throw new Error('Expresión inválida.');
+          let evalExpr = exprJS
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*\(([^()]*)\)/g, 'Math.pow($1, ($2))')
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*(-?\d+(?:\.\d+)?)/g, 'Math.pow($1, $2)')
+            .replace(/([A-Za-z0-9_\.\)]+)\s*\*\*\s*([A-Za-z_]\w*)/g, 'Math.pow($1, $2)');
+          const fn = new Function('Math','x', 'return ( function(){\n' +
+            '  function sgnRoot(v,n){ var N=Math.abs(n|0); if(N%2===1){ var s=v<0?-1:(v>0?1:0); return s*Math.pow(Math.abs(v),1/N);} return Math.pow(v,1/N);}\n' +
+            '  return ( ' + evalExpr + ' );\n' +
+            '})()');
+          const y = fn(Math, x);
+          if(typeof y !== 'number' || !isFinite(y)) return null; return y;
+        }
+
+        async function plotPreview(){
+          const ok = doValidateAndPreview();
+          if(!ok){ panel.style.display = 'none'; return; }
+          const hid = form.querySelector('#hid-function');
+          const expr = (hid?.value || '').trim();
+          if(!expr){ panel.style.display = 'none'; return; }
+          const exprJS = toJSExpr(expr);
+          try{ await ensurePlotly(); }catch(err){ showError('No se pudo cargar la librería de gráficos (Plotly).'); panel.style.display = 'none'; return; }
+
+          const X_MIN=-10, X_MAX=10, N=2000; const Y_HARD_LIMIT=1e8; const T_MIN=0.1, T_MAX=10; const P_NEAR=0.30; const P_Y_LOW=0.05, P_Y_HIGH=0.95; const MIN_NEAR_POINTS=50;
+          const dxEst = (X_MAX - X_MIN) / (N - 1);
+          const xsAll = new Array(N); const ysAll = new Array(N);
+          for(let i=0;i<N;i++){
+            const x = X_MIN + (X_MAX - X_MIN) * (i/(N-1)); xsAll[i] = +x.toFixed(6);
+            let y=null; try{ y = safeEvalFunc(exprJS, x); }catch(_e){ y = null; }
+            if(y==null || !isFinite(y) || Math.abs(y) > Y_HARD_LIMIT){ ysAll[i]=null; } else { ysAll[i]= +y.toFixed(12); }
+          }
+          let xs=[], ys=[]; for(let i=0;i<N;i++){ const yv=ysAll[i]; if(typeof yv==='number' && isFinite(yv)){ xs.push(xsAll[i]); ys.push(yv);} }
+          if(!ys.length){
+            const candidates=[[0,10],[1e-6,10],[-10,-1e-6]]; let recovered=false;
+            for(const [A,B] of candidates){
+              const xsAll2=new Array(N), ysAll2=new Array(N);
+              for(let i=0;i<N;i++){ const x=A+(B-A)*(i/(N-1)); xsAll2[i]=+x.toFixed(6); let y=null; try{ y=safeEvalFunc(exprJS,x);}catch(_e){y=null;} ysAll2[i]=(y==null||!isFinite(y)||Math.abs(y)>Y_HARD_LIMIT)?null:+y.toFixed(12); }
+              const xs2=[], ys2=[]; for(let i=0;i<N;i++){ const yv=ysAll2[i]; if(typeof yv==='number' && isFinite(yv)){ xs2.push(xsAll2[i]); ys2.push(yv); } }
+              if(ys2.length){ xs=xs2; ys=ys2; recovered=true; break; }
+            }
+            if(!recovered){ showError('No se encontraron valores finitos de f(x) en el rango global.'); panel.style.display='none'; return; }
+          }
+          function percentile(arr,p){ if(!arr.length) return NaN; const a=arr.slice().sort((u,v)=>u-v); const idx=Math.max(0, Math.min(a.length-1, Math.floor(p*(a.length-1)))); return a[idx]; }
+          const absY=ys.map(v=>Math.abs(v)); let T=percentile(absY,P_NEAR); if(!isFinite(T)) T=1; T=Math.min(T,T_MAX); T=Math.max(T,T_MIN);
+          const nearIdx=[]; for(let i=0;i<ys.length;i++) if(Math.abs(ys[i])<=T) nearIdx.push(i);
+          let x0=X_MIN, x1=X_MAX; if(nearIdx.length>=MIN_NEAR_POINTS){ let xminLocal=Infinity, xmaxLocal=-Infinity; for(const k of nearIdx){ const xv=xs[k]; if(xv<xminLocal)xminLocal=xv; if(xv>xmaxLocal)xmaxLocal=xv; } const w=Math.max(1e-9,(xmaxLocal-xminLocal)); const margin=0.1*w; x0=Math.max(X_MIN, xminLocal - margin); x1=Math.min(X_MAX, xmaxLocal + margin); }
+          const xsPlot=[], ysPlot=[]; for(let i=0;i<xs.length;i++){ const xv=xs[i]; if(xv>=x0 && xv<=x1){ xsPlot.push(xv); ysPlot.push(ys[i]); } }
+          if(!ysPlot.length){ showError('No hay suficientes puntos para graficar en la banda seleccionada.'); panel.style.display='none'; return; }
+          let ylow=percentile(ysPlot,P_Y_LOW), yhigh=percentile(ysPlot,P_Y_HIGH); if(!isFinite(ylow)||!isFinite(yhigh)||ylow===yhigh){ ylow=(ylow||0)-1; yhigh=(yhigh||0)+1; }
+          const ypad=0.1*(yhigh-ylow); let ymin=ylow-ypad, ymax=yhigh+ypad; const styles=getComputedStyle(document.documentElement);
+          const primary=(styles.getPropertyValue('--primary')||'#7E57C2').trim(); const muted=(styles.getPropertyValue('--muted')||'#6b7280').trim(); const border=(styles.getPropertyValue('--border')||'#e3e5f0').trim(); const card=(styles.getPropertyValue('--card')||'#ffffff').trim();
+          const xmin=x0, xmax=x1; const pad=(xmax-xmin)*0.04; const traces=[]; let segX=[], segY=[];
+          const dxEst2 = (x1 - x0) / Math.max(1,(xsPlot.length-1));
+          for(let i=0;i<xsPlot.length;i++){
+            if(i>0 && Math.abs(xsPlot[i]-xsPlot[i-1]) > dxEst2*1.5){ if(segX.length){ traces.push({ x:segX, y:segY, mode:'lines', name: traces.length? `f(x) seg ${traces.length+1}`:'f(x)', line:{ color:primary, width:2.2 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' }); segX=[]; segY=[]; } }
+            segX.push(xsPlot[i]); segY.push(ysPlot[i]);
+          }
+          if(segX.length){ traces.push({ x:segX, y:segY, mode:'lines', name: traces.length? `f(x) seg ${traces.length+1}`:'f(x)', line:{ color:primary, width:2.2 }, hovertemplate:'x=%{x:.6f}<br>f(x)=%{y:.6f}<extra></extra>' }); }
+          const traceAxis={ x:[xmin,xmax], y:[0,0], mode:'lines', name:'y = 0', line:{ color:muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
+          const traceAxisY={ x:[0,0], y:[ymin-ypad, ymax+ypad], mode:'lines', name:'x = 0', line:{ color:muted, dash:'dot', width:1.2 }, hoverinfo:'skip' };
+          const layout={ margin:{l:50,r:20,t:10,b:40}, paper_bgcolor:card, plot_bgcolor:card, hovermode:'closest', showlegend:true, dragmode:'pan', title:{text:'Vista previa de f(x)'}, xaxis:{ title:'x', gridcolor:border, zerolinecolor:border, showgrid:true, dtick:1, tick0:0, range:[xmin - pad, xmax + pad], zeroline:true }, yaxis:{ title:'f(x)', gridcolor:border, zerolinecolor:border, showgrid:true, dtick:1, tick0:0, scaleanchor:'x', scaleratio:1, range:[ymin - ypad, ymax + ypad], zeroline:true }, legend:{ orientation:'h', x:0, y:1.1 } };
+          panel.style.display=''; window.Plotly.newPlot(plotEl, [...traces, traceAxis, traceAxisY], layout, { displayModeBar:true, responsive:true, scrollZoom:true });
+        }
+
+        btn.addEventListener('click', ()=>{ plotPreview(); });
+      })();
+
+      // Clear button for Secant
+      const clr = form.querySelector('[data-action="clear"]');
+      clr?.addEventListener('click', ()=>{
+        map.forEach(({mf,hid})=>{ const m=form.querySelector(mf); const h=form.querySelector(hid); if(m) m.value=''; if(h) h.value=''; });
+        if(previewText) previewText.textContent=''; if(previewOk) previewOk.style.display='none'; if(previewErr) previewErr.style.display='none'; if(submitBtn) submitBtn.disabled=false;
+        const panel = document.getElementById('secantePreviewPanel'); if(panel) panel.style.display='none';
+      });
+    });
   });
 })();
 
@@ -2224,6 +2423,33 @@ document.addEventListener('DOMContentLoaded', ()=>{
           }
         });
       }catch(e){ console.warn('Pre-submit normalization (newton) failed:', e); }
+    });
+  });
+  // Pre-submit normalization for the Secant form: normalize function and numeric fields
+  document.querySelectorAll('form.matrix-form[data-page="secante"]').forEach(form=>{
+    form.addEventListener('submit', (ev)=>{
+      try{
+        const mfFn = document.getElementById('mf-function');
+        const hidFn = document.getElementById('hid-function');
+        if(mfFn && hidFn){
+          const fnText = (mfFn.value || mfFn.getAttribute('data-value') || '').toString().trim();
+          hidFn.value = latexToFunction(fnText) || latexToPlain(fnText) || hidFn.value || '';
+        }
+        // Numeric fields: x0, x1, tol, maxit
+        ['x0','x1','tol','maxit'].forEach(name=>{
+          const mf = document.getElementById('mf-' + name);
+          const hid = document.getElementById('hid-' + name);
+          if(!mf || !hid) return;
+          const raw = (mf.value || mf.getAttribute('data-value') || '').toString().trim();
+          if(!raw) return;
+          const v = tryEvalNumeric(raw);
+          if(v !== null){
+            if(name === 'maxit') hid.value = String(Math.round(v)); else hid.value = String(v);
+          }else{
+            hid.value = latexToPlain(raw) || hid.value || raw;
+          }
+        });
+      }catch(e){ console.warn('Pre-submit normalization (secante) failed:', e); }
     });
   });
 });

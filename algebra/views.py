@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
-from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, newton_raphson as newton_raphson_algo, ErrorBiseccion, _crear_evaluador
+from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, newton_raphson as newton_raphson_algo, secante as secante_algo, ErrorBiseccion, _crear_evaluador
 import json
 
 def index(request: HttpRequest):
@@ -710,6 +710,7 @@ def metodos_abiertos(request: HttpRequest):
         "subclass": "Métodos abiertos",
         "methods": [
             {"name": "Newton–Raphson", "url_name": "newton_raphson", "slug": "newton_raphson"},
+            {"name": "Método de la secante", "url_name": "secante", "slug": "secante"},
         ]
     }
     return render(request, "algebra/metodos_abiertos.html", ctx)
@@ -1345,3 +1346,189 @@ def newton_raphson(request: HttpRequest):
         return render(request, 'algebra/newton_raphson.html', ctx)
 
     return render(request, 'algebra/newton_raphson.html', ctx)
+
+
+def secante(request: HttpRequest):
+    """Vista para el método de la secante (métodos abiertos)."""
+    ctx = {"title": "Método de la secante"}
+    if request.method == 'POST':
+        func_txt = (request.POST.get('function') or '').strip()
+        x0_txt = (request.POST.get('x0') or '').strip()
+        x1_txt = (request.POST.get('x1') or '').strip()
+        tol_txt = (request.POST.get('tol') or '').strip()
+        maxit_txt = (request.POST.get('maxit') or '').strip()
+
+        from fractions import Fraction
+        def _replace_vulgar_fraction_chars(s: str) -> str:
+            vf_map = {
+                '\u00BC': '1/4', '\u00BD': '1/2', '\u00BE': '3/4',
+                '\u2150': '1/7', '\u2151': '1/9', '\u2152': '1/10',
+                '\u2153': '1/3', '\u2154': '2/3', '\u2155': '1/5', '\u2156': '2/5', '\u2157': '3/5', '\u2158': '4/5',
+                '\u2159': '1/6', '\u215A': '5/6', '\u215B': '1/8', '\u215C': '3/8', '\u215D': '5/8', '\u215E': '7/8'
+            }
+            return ''.join(vf_map.get(ch, ch) for ch in s)
+
+        def parse_number(txt, default=None):
+            if txt is None or str(txt).strip() == '':
+                return default
+            s = str(txt).strip()
+            s = s.replace('\u2212', '-')
+            s = s.replace('\u2060', '')
+            s = s.replace('\u2009', '')
+            s = s.replace('\u00A0', '')
+            s = _replace_vulgar_fraction_chars(s)
+            try:
+                return float(s)
+            except Exception:
+                try:
+                    return float(Fraction(s))
+                except Exception:
+                    try:
+                        s2 = s.replace('^', '**')
+                        return float(eval(s2, {'__builtins__': None}, {}))
+                    except Exception:
+                        raise
+
+        # Parse inputs
+        try:
+            x0 = parse_number(x0_txt)
+            x1 = parse_number(x1_txt)
+            if x0 is None or x1 is None:
+                raise ValueError('x0/x1 vacíos')
+        except Exception:
+            ctx['error'] = 'Parámetros numéricos inválidos: x0 y x1 deben ser números (aceptamos 0.5 o 1/2).'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['x1_input'] = x1_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/secante.html', ctx)
+
+        try:
+            tol = parse_number(tol_txt, default=1e-6)
+            if tol is None or tol <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Tolerancia inválida; debe ser un número positivo.'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['x1_input'] = x1_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/secante.html', ctx)
+
+        try:
+            maxit = int(maxit_txt) if maxit_txt != '' else 100
+            if maxit <= 0:
+                raise ValueError()
+        except Exception:
+            ctx['error'] = 'Max iteraciones inválido; debe ser entero y mayor que 0.'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['x1_input'] = x1_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/secante.html', ctx)
+
+        # Ejecutar algoritmo
+        try:
+            resultado = secante_algo(func_txt, x0, x1, tol=tol, maxit=maxit)
+        except ErrorBiseccion as be:
+            ctx['error'] = str(be)
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['x1_input'] = x1_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/secante.html', ctx)
+        except Exception as e:
+            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            ctx['function'] = func_txt
+            ctx['x0_input'] = x0_txt
+            ctx['x1_input'] = x1_txt
+            ctx['tol_input'] = tol_txt
+            ctx['maxit_input'] = maxit_txt
+            return render(request, 'algebra/secante.html', ctx)
+
+        # Formatear iteraciones
+        it_out = []
+        for it in (resultado.get('iteraciones') or []):
+            def _fmt(v, nd='8'):
+                try:
+                    return format(float(v), f'.{nd}f')
+                except Exception:
+                    return ''
+            it_out.append({
+                'i': it.get('i', 0),
+                'x_prev': _fmt(it.get('x_prev', 0.0), '8'),
+                'x': _fmt(it.get('x', 0.0), '8'),
+                'x_next': _fmt(it.get('x_next', 0.0), '8') if it.get('x_next') is not None else '',
+                'f_prev': _fmt(it.get('f_prev', 0.0), '8'),
+                'f': _fmt(it.get('f', 0.0), '8'),
+                'err': _fmt(it.get('err', None), '8') if it.get('err') is not None else ''
+            })
+        ctx['iteraciones'] = it_out
+
+        ctx['convergio'] = resultado.get('convergio', False)
+        ctx['conteo_iter'] = resultado.get('conteo_iter', 0)
+        raiz_val = resultado.get('raiz')
+        err_val = resultado.get('estimacion_error')
+        f_en_raiz_val = resultado.get('f_en_raiz')
+        ctx['raiz'] = format(float(raiz_val), '.8f') if raiz_val is not None else ''
+        ctx['estimacion_error'] = format(float(err_val), '.8f') if err_val is not None else ''
+        ctx['f_en_raiz'] = format(float(f_en_raiz_val), '.10f') if f_en_raiz_val is not None else ''
+        try:
+            warns = resultado.get('warnings') or []
+            if isinstance(warns, list) and len(warns) > 0:
+                ctx['message'] = ' '.join(str(w) for w in warns)
+        except Exception:
+            pass
+        ctx['function'] = func_txt
+        ctx['x0_input'] = x0_txt
+        ctx['x1_input'] = x1_txt
+        ctx['tol_input'] = tol_txt
+        ctx['maxit_input'] = maxit_txt
+
+        # Gráfica con los dos puntos iniciales y la función alrededor
+        try:
+            f = _crear_evaluador(func_txt)
+            N = 401
+            xs = []
+            ys = []
+            aa = float(min(x0, x1))
+            bb = float(max(x0, x1))
+            span = bb - aa
+            if span <= 0:
+                span = 2.0
+                aa -= 1.0
+                bb += 1.0
+            center = (aa + bb) / 2.0
+            scale = 2.5
+            x1s = center - span * scale
+            x2s = center + span * scale
+            x1s = min(x1s, 0.0)
+            x2s = max(x2s, 0.0)
+            for i in range(N):
+                t = i / (N - 1)
+                xv = x1s + (x2s - x1s) * t
+                try:
+                    yv = float(f(xv))
+                except Exception:
+                    yv = None
+                xs.append(xv)
+                ys.append(yv)
+            f0 = None; f1 = None
+            try: f0 = float(f(float(x0)))
+            except Exception: f0 = None
+            try: f1 = float(f(float(x1)))
+            except Exception: f1 = None
+            import json as _json
+            ctx['plot'] = _json.dumps({
+                'xs': xs, 'ys': ys, 'x0': float(x0), 'x1': float(x1), 'f0': f0, 'f1': f1
+            })
+        except Exception:
+            pass
+
+        return render(request, 'algebra/secante.html', ctx)
+
+    return render(request, 'algebra/secante.html', ctx)
