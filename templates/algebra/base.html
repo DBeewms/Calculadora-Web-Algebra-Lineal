@@ -108,6 +108,30 @@
   <main class="container container-narrow">
     {% block content %}{% endblock %}
   </main>
+  {% if error %}
+  <script>
+    (function(){
+      const msg = `{{ error|escapejs }}`.replace(/\n/g,'<br>');
+      Swal.fire({icon:'error', title:'Error', html: msg});
+    })();
+  </script>
+  {% endif %}
+  {% if message %}
+  <script>
+    (function(){
+      const msg = `{{ message|escapejs }}`.replace(/\n/g,'<br>');
+      Swal.fire({icon:'info', title:'Aviso', html: msg});
+    })();
+  </script>
+  {% endif %}
+  {% if success %}
+  <script>
+    (function(){
+      const msg = `{{ success|escapejs }}`.replace(/\n/g,'<br>');
+      Swal.fire({icon:'success', title:'Éxito', html: msg, timer:3500, showConfirmButton:false});
+    })();
+  </script>
+  {% endif %}
   {# Teclado propio eliminado: se usa el teclado virtual de MathLive #}
   <footer class="container" style="margin-top:18px; padding:18px 24px; border-top:1px solid var(--border); text-align:center; color:var(--muted);">
     KiwiSolve - Calculadora web para todos, versión 1.1.

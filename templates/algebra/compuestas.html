@@ -89,7 +89,7 @@
     </div>
   </form>
 
-  {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+  {# Panel de error eliminado: SweetAlert maneja la notificación en base.html #}
 
   {% if resultado %}
   <section class="panel">
@@ -133,9 +133,7 @@
 </section>
 
 {% block extra_js %}
-{% if error %}
-<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
-{% elif resultado %}
+{% if resultado %}
 <script>Swal.fire({icon:'success', title:'Operación compuesta lista', timer:1800, showConfirmButton:false});</script>
 {% endif %}
 {% endblock %}

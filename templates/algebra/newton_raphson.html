@@ -61,13 +61,7 @@
     Nota: si f'(x) = 0 en algún paso, el método de Newton–Raphson puede fallar o detenerse para evitar una división por cero. Considere cambiar x₀ o usar otro método si esto ocurre.
   </div>
 
-  {% if error %}
-    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #f5c2c7; background:#fff0f0; color:#811;">{{ error }}</div>
-  {% endif %}
-
-  {% if message %}
-    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #cde; background:#f0f8ff;">{{ message }}</div>
-  {% endif %}
+  {# Paneles de error/mensaje eliminados: se usan SweetAlert en base.html #}
 
   {% if plot %}
   <section class="panel" style="margin-top:12px;">

@@ -39,7 +39,7 @@
   </div>
 </form>
 
-{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+{# Panel de error eliminado: SweetAlert maneja la notificación en base.html #}
 
 {% if det_str %}
 <section class="panel">
@@ -76,9 +76,7 @@
 </details>
 {% endif %}
 {% block extra_js %}
-{% if error %}
-<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
-{% elif det_str %}
+{% if det_str %}
 <script>Swal.fire({icon:'success', title:'Determinante calculado', timer:1600, showConfirmButton:false});</script>
 {% endif %}
 {% endblock %}

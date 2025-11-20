@@ -46,7 +46,7 @@
   {% if prefill %}<script id="prefillData" type="application/json">{{ prefill|safe }}</script>{% endif %}
 </form>
 
-{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+{# Panel de error eliminado: SweetAlert maneja la notificación en base.html #}
 
 {% if resultado and analisis %}
 <section class="panel highlight">
@@ -111,9 +111,7 @@
 </details>
 {% endif %}
 {% block extra_js %}
-{% if error %}
-<script>Swal.fire({icon:'error', title:'Error', text:'{{ error|escapejs }}'});</script>
-{% elif resultado %}
+{% if resultado %}
 <script>Swal.fire({icon:'success', title:'Gauss completado', timer:1800, showConfirmButton:false});</script>
 {% endif %}
 {% endblock %}

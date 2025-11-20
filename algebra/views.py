@@ -4,6 +4,39 @@ from .logic import utilidades as u
 from .logic import operaciones as op
 from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, newton_raphson as newton_raphson_algo, secante as secante_algo, ErrorBiseccion, _crear_evaluador
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+def friendly_error(exc: Exception) -> str:
+    """Devuelve un mensaje comprensible para el usuario final sin detalles internos.
+
+    Las excepciones específicas mantienen su mensaje si ya es claro (ValueError con texto en español).
+    """
+    # Si ya es un ValueError con mensaje explícito lo devolvemos tal cual
+    if isinstance(exc, ValueError):
+        msg = str(exc).strip()
+        if msg:
+            return msg
+    txt = str(exc).lower()
+    # División por cero
+    if isinstance(exc, ZeroDivisionError) or 'division by zero' in txt or 'divide by zero' in txt:
+        return 'Se produjo una división por cero durante el cálculo. Revisa si la expresión tiene denominadores que se anulan.'
+    # Dominio matemático
+    if 'math domain error' in txt or 'domain error' in txt or 'sqrt' in txt and ('- ' in txt or 'negativo' in txt):
+        return 'La función intentó evaluar una operación fuera de su dominio (por ejemplo raíz de número negativo o log de valor no permitido). Ajusta la función o el intervalo.'
+    # Overflow
+    if isinstance(exc, OverflowError) or 'overflow' in txt:
+        return 'El cálculo produjo números demasiado grandes para manejar. Prueba con otro intervalo o modifica la función.'
+    # Sintaxis / nombre desconocido
+    if isinstance(exc, SyntaxError) or 'syntax' in txt:
+        return 'La expresión de la función tiene un formato inválido. Revisa paréntesis y operadores.'
+    if isinstance(exc, NameError) or 'is not defined' in txt or 'name' in txt and 'not defined' in txt:
+        return 'La función contiene símbolos desconocidos. Usa solo x y funciones estándar (sin, cos, exp, log, etc.).'
+    if isinstance(exc, TypeError):
+        return 'La expresión o los parámetros tienen tipos incompatibles. Revisa la escritura de la función y los valores ingresados.'
+    # Fallback genérico
+    return 'No fue posible completar el cálculo. Verifica los valores ingresados o ajusta la función.'
 
 def index(request: HttpRequest):
     return render(request, "algebra/index.html")
@@ -106,7 +139,8 @@ def suma(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista suma")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/suma.html", ctx)
 
 def multiplicacion(request: HttpRequest):
@@ -178,7 +212,8 @@ def multiplicacion(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista multiplicacion")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/multiplicacion.html", ctx)
 
 def escalar(request: HttpRequest):
@@ -206,7 +241,8 @@ def escalar(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista escalar")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/escalar.html", ctx)
 
 def gauss(request: HttpRequest):
@@ -260,7 +296,8 @@ def gauss(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista gauss")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/gauss.html", ctx)
 
 def gauss_jordan(request: HttpRequest):
@@ -314,7 +351,8 @@ def gauss_jordan(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista gauss_jordan")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/gauss_jordan.html", ctx)
 
 def homogeneo(request: HttpRequest):
@@ -367,7 +405,8 @@ def homogeneo(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista homogeneo")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/homogeneo.html", ctx)
 
 def transposicion(request: HttpRequest):
@@ -395,7 +434,8 @@ def transposicion(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista transposicion")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/transposicion.html", ctx)
 
 def inversa(request: HttpRequest):
@@ -444,7 +484,8 @@ def inversa(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista inversa")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/inversa.html", ctx)
 
 def determinante(request: HttpRequest):
@@ -479,7 +520,8 @@ def determinante(request: HttpRequest):
                     for p in pasos
                 ]
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista determinante")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/determinante.html", ctx)
 
 def cramer(request: HttpRequest):
@@ -562,7 +604,8 @@ def cramer(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista cramer")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/cramer.html", ctx)
 
 def compuestas(request: HttpRequest):
@@ -683,7 +726,8 @@ def compuestas(request: HttpRequest):
             ctx["result_format"] = (fmt or 'frac')
             ctx["precision"] = int(prec)
         except Exception as e:
-            ctx["error"] = str(e)
+            logger.exception("Error en vista compuestas")
+            ctx["error"] = friendly_error(e)
     return render(request, "algebra/compuestas.html", ctx)
 
 
@@ -829,7 +873,8 @@ def biseccion(request: HttpRequest):
             ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
         except Exception as e:
-            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            logger.exception("Error inesperado en método biseccion")
+            ctx['error'] = friendly_error(e)
             ctx['function'] = func_txt
             ctx['a_input'] = a_txt
             ctx['b_input'] = b_txt
@@ -1059,7 +1104,8 @@ def regula_falsi(request: HttpRequest):
             ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/biseccion.html', ctx)
         except Exception as e:
-            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            logger.exception("Error inesperado en método regula_falsi")
+            ctx['error'] = friendly_error(e)
             ctx['function'] = func_txt
             ctx['a_input'] = a_txt
             ctx['b_input'] = b_txt
@@ -1263,7 +1309,8 @@ def newton_raphson(request: HttpRequest):
             ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/newton_raphson.html', ctx)
         except Exception as e:
-            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            logger.exception("Error inesperado en método newton_raphson")
+            ctx['error'] = friendly_error(e)
             ctx['function'] = func_txt
             ctx['x0_input'] = x0_txt
             ctx['tol_input'] = tol_txt
@@ -1442,7 +1489,8 @@ def secante(request: HttpRequest):
             ctx['maxit_input'] = maxit_txt
             return render(request, 'algebra/secante.html', ctx)
         except Exception as e:
-            ctx['error'] = f'Error inesperado al ejecutar el método: {e}'
+            logger.exception("Error inesperado en método secante")
+            ctx['error'] = friendly_error(e)
             ctx['function'] = func_txt
             ctx['x0_input'] = x0_txt
             ctx['x1_input'] = x1_txt

@@ -58,13 +58,7 @@
     <div id="plotSecantePreview" style="width:100%; height:360px;"></div>
   </section>
 
-  {% if error %}
-    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #f5c2c7; background:#fff0f0; color:#811;">{{ error }}</div>
-  {% endif %}
-
-  {% if message %}
-    <div class="panel" style="margin-top:12px; padding:12px; border:1px solid #cde; background:#f0f8ff;">{{ message }}</div>
-  {% endif %}
+  {# Paneles de error/mensaje eliminados: se usan SweetAlert en base.html #}
 
   {% if plot %}
   <section class="panel" style="margin-top:12px;">
