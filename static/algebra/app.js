@@ -1413,7 +1413,7 @@
       function currentSrc(){ return (srcSel?.value === 'B') ? 'B' : 'A'; }
       function typeToLabel(type, src){
         const t = (type||'').toLowerCase();
-        if(t === 'transpose') return `Transpuesta (${src}^T)`;
+        if(t === 'transpose') return `Transpuesta de matriz (${src})`;
         if(t === 'scale') return `Escalar (c·${src})`;
         if(t === 'lincomb' || t === 'combinacion') return `Combinación lineal (a·A + b·B)`;
         if(t === 'abcomb') return `a·A + b·B`;

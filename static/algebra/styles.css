@@ -1,3 +1,44 @@
+/* Hero (branding) */
+.hero{ position:relative; min-height:280px; padding:50px 28px 90px; display:flex; align-items:center; }
+/* Logo pegado al borde con radio sólo en la esquina inferior izquierda */
+.hero-logo{ position:absolute; bottom:0; left:0; padding:0; border-radius:0 0 0 18px; overflow:hidden; }
+.hero-logo img{ display:block; width:440px; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.22)); border-radius:0 0 0 18px; }
+.hero-content{ margin-left:470px; max-width:720px; }
+.hero-title{ font-family:Poppins, Inter, sans-serif; font-size:clamp(2.8rem,6.2vw,3.6rem); font-weight:800; line-height:1.05; margin:0 0 6px; letter-spacing:.5px; }
+.hero-tagline{ font-size:clamp(1.05rem,2.5vw,1.35rem); font-weight:600; margin:0; color:var(--violet); letter-spacing:.3px; }
+/* Visual wrapper (breadcrumb-like) around hero to restore gradient box */
+.hero-box{ background:linear-gradient(135deg, rgba(106,27,154,.06), rgba(126,87,194,.06)); border:1px solid var(--border); border-radius:18px; padding:4px 12px 0 0; margin:68px 0 26px; position:relative; }
+/* Inner hero con menor padding vertical para reducir altura total, logo se mantiene igual */
+.hero-box .hero{ padding:34px 0 50px; }
+@media (max-width:1080px){ .hero-box .hero{ padding:32px 0 46px } }
+@media (max-width:880px){ .hero-box .hero{ padding:28px 0 42px } }
+@media (max-width:620px){ .hero-box{ padding:4px 10px 0 0 } .hero-box .hero{ padding:24px 0 34px } }
+@media (max-width:460px){ .hero-box .hero{ padding:20px 0 28px } }
+@media (max-width:1080px){
+  .hero{ min-height:300px; padding:46px 24px 80px; }
+  .hero-logo img{ width:380px; }
+  .hero-content{ margin-left:400px; }
+  .hero-title{ font-size:clamp(2.6rem,6.2vw,3.2rem); }
+}
+@media (max-width:880px){
+  .hero{ min-height:260px; padding:38px 20px 70px; }
+  .hero-logo img{ width:300px; }
+  .hero-content{ margin-left:320px; }
+  .hero-title{ font-size:clamp(2.4rem,7vw,3rem); }
+}
+@media (max-width:620px){
+  .hero{ flex-direction:column; align-items:flex-start; min-height:unset; padding:30px 18px 42px; }
+  .hero-logo{ position:static; margin-bottom:14px; }
+  .hero-logo img{ width:220px; }
+  .hero-content{ margin-left:0; }
+  .hero-title{ font-size:2.6rem; }
+  .hero-tagline{ font-size:1.15rem; }
+}
+@media (max-width:460px){
+  .hero-logo img{ width:180px; }
+  .hero-title{ font-size:2.3rem; }
+  .hero-tagline{ font-size:1.05rem; }
+}
 /* Palette: 7BBBC4 (sky), 6A1B9A (grape), 7E57C2 (royal purple), 3949AB (violet blue), 5C6BC0 (savoy) */
 :root{
   --sky:#7BBBC4; --grape:#6A1B9A; --royal:#7E57C2; --violet:#3949AB; --savoy:#5C6BC0;
@@ -155,14 +196,18 @@ button:hover{ opacity:.9 }
 .matrix{ overflow:auto; max-width:100% }
 .alert-error{ margin-top:12px; padding:10px; border:1px solid #e88; border-radius:8px; background:#fee; color:#900 }
 
-/* Cards on index */
-.hero{ display:flex; gap:16px; align-items:center; background:linear-gradient(135deg, rgba(106,27,154,.06), rgba(126,87,194,.06)); border:1px solid var(--border); border-radius:14px; padding:18px; margin:4px 0 32px }
-.hero .hero-logo{ width:104px; height:auto; border-radius:0; overflow:visible; display:flex; align-items:center; justify-content:center; background:transparent }
-.hero .hero-logo img{ width:100%; height:auto; object-fit:contain }
-.hero .lead{ color:var(--muted); margin:6px 0 0 0 }
+/* Cards on index (old hero styles removed to avoid overriding new branding hero) */
 .section-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0 }
 .cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:16px 0 }
 .cards.cards-2x2{ grid-template-columns:repeat(2,1fr) }
+.cards.cards-3col{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+.card.vertical{ display:flex; flex-direction:column; gap:12px; padding:26px 30px; }
+/* Nuevo header horizontal: icono + título en una línea */
+.card.vertical .card-header{ display:flex; align-items:center; gap:10px; }
+.card.vertical .card-header h3{ margin:0; font-size:17px; display:flex; align-items:center; gap:10px; }
+.card.vertical .card-desc{ margin:6px 0 0 0; color:var(--muted); line-height:1.38; }
+/* Ajuste visual para svg dentro del icono cuando se usa nuevo header */
+.card.vertical .media-icon{ width:44px; height:44px; }
 .card{ display:block; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:inherit; text-decoration:none; transition:transform .12s ease, box-shadow .12s ease }
 .card:hover{ transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.08) }
 .card h3{ margin:0 0 6px 0 }
@@ -173,6 +218,24 @@ button:hover{ opacity:.9 }
 .howto-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px }
 .section-divider{ border:0; border-top:1px solid var(--border); margin:32px 0 22px }
 @media (max-width: 640px){ .section-divider{ margin:24px 0 16px } }
+/* Bloque de transición hacia guía y ayuda */
+.guide-transition{ position:relative; margin:46px 0 18px; padding:0; display:flex; align-items:center; justify-content:center }
+.guide-transition:before{ content:""; position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--grape), var(--violet)); opacity:.30; border-radius:3px }
+.guide-transition .gt-label{ position:relative; background:var(--card); padding:10px 22px; font-weight:700; font-size:18px; letter-spacing:.5px; color:var(--violet); border:1px solid var(--border); border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,.06); font-family:Poppins, Inter, sans-serif }
+@media (max-width:640px){ .guide-transition .gt-label{ font-size:16px; padding:8px 18px } }
+/* Center the guide separator */
+.guide-transition{ display:flex; justify-content:center; align-items:center; position:relative; }
+.guide-transition:before{ width:60%; left:50%; right:auto; transform:translateX(-50%); }
+/* Section tool count below separators */
+.section-count{ margin-top:8px; margin-bottom:20px; text-align:center; }
+.section-count .badge{ position:static; display:inline-block; }
+@media (max-width:640px){ .section-count{ font-size:12px; margin-bottom:16px } }
+@media (max-width:640px){ .guide-transition{ margin:38px 0 14px } }
+.guide-group{ background:linear-gradient(135deg, rgba(57,73,171,.06), rgba(106,27,154,.06)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 10px; box-shadow:var(--shadow-2); margin:0 0 28px }
+.guide-group .panel{ background:transparent; border:none; box-shadow:none; padding:0; margin:0 0 22px }
+.guide-group .panel:last-child{ margin-bottom:0 }
+.guide-group h3.panel-title{ color:var(--violet) }
+.guide-group .howto-grid{ margin-top:10px }
 .howto-item{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--card) }
 .howto-item strong{ display:block; margin-bottom:4px }
 .howto-item p{ margin:0; color:var(--muted) }
@@ -204,7 +267,9 @@ button:hover{ opacity:.9 }
   .topbar.nav-open .menu .menu-item{ width:100% }
   .topbar.nav-open .menu .menu-link{ width:100%; justify-content:space-between }
   .hero{ flex-direction:column; align-items:flex-start; gap:12px }
-  .cards.cards-2x2{ grid-template-columns:1fr }
+  .cards.cards-2x2, .cards.cards-3col{ grid-template-columns:1fr }
+  /* Reducir padding en móvil para no estrechar demasiado el contenido */
+  .card.vertical{ padding:20px 22px; gap:10px }
   .howto-grid{ grid-template-columns:1fr }
   .hero .hero-logo{ width:84px }
   .menu{ flex-wrap:wrap; gap:8px }
@@ -257,6 +322,11 @@ button:hover{ opacity:.9 }
 .tag.success{ background:rgba(34,197,94,.15); color:#15803d }
 .tag.info{ background:rgba(59,130,246,.15); color:#1d4ed8 }
 .tag.danger{ background:rgba(239,68,68,.15); color:#b91c1c }
+.tag.cerrado{ background:rgba(106,27,154,.15); color:var(--grape); border:1px solid rgba(106,27,154,.28) }
+.tag.abierto{ background:rgba(57,73,171,.15); color:var(--violet); border:1px solid rgba(57,73,171,.25) }
+/* Posicionamiento superior derecho de badges de método */
+.card.vertical{ position:relative }
+.tag.method-badge{ position:absolute; top:10px; right:12px; z-index:2; }
 
 /* Equations input styling */
 .eq-meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }

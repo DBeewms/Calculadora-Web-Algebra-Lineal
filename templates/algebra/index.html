@@ -1,230 +1,210 @@
 {% extends "algebra/base.html" %}
 {% block title %}Inicio — KiwiSolve{% endblock %}
 {% block content %}
-<section class="hero">
+<div class="hero-box">
+<section class="hero" aria-labelledby="hero-title">
   {% load static %}
-  <div class="hero-logo">
-    <img src="{% static 'algebra/KiwiSolveLogo.png' %}" alt="KiwiSolve" />
+  <div class="hero-logo" aria-hidden="true">
+    <img src="{% static 'algebra/wiwi-logo-actualizado-esquina' %}" alt="Logo KiwiSolve" />
   </div>
-  <div>
-    <h2>KiwiSolve</h2>
-    <p class="lead">Calculadora web con fracciones exactas; trabaja con enteros, fracciones y decimales.</p>
+  <div class="hero-content">
+    <h2 id="hero-title" class="hero-title">KiwiSolve</h2>
+    <p class="hero-tagline">Calculadora web al alcance</p>
   </div>
-  
 </section>
+</div>
 
-<!-- Matrices -->
+<!-- Operaciones con matrices -->
 <section class="section" aria-labelledby="matrices-title">
-  <div class="section-header">
-    <h3 id="matrices-title">Matrices</h3>
-    <span class="badge">4 herramientas</span>
-  </div>
-  <div class="cards cards-2x2">
-    <a class="card media is-suma" href="{% url 'suma' %}">
-      <div class="media-icon" aria-hidden="true">
+  <div class="guide-transition"><span class="gt-label" id="matrices-title">Operaciones con matrices</span></div>
+  <div class="section-count"><span class="badge">6 herramientas</span></div>
+  <div class="cards cards-3col">
+    <a class="card vertical media is-suma" href="{% url 'suma' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Suma de matrices</h3>
-        <p>Calcula A + B con dimensiones compatibles.</p>
       </div>
+      <p class="card-desc">Suma dos matrices del mismo tamaño mostrando cada operación paso a paso.</p>
     </a>
-    <a class="card media is-mul" href="{% url 'multiplicacion' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'multiplicacion' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      </div>
-      <div class="media-body">
+        </svg>
+        </div>
         <h3>Multiplicación</h3>
-        <p>Calcula A · B y, si quieres, muestra el procedimiento.</p>
       </div>
+      <p class="card-desc">Multiplica matrices compatibles mostrando cómo se forma cada entrada.</p>
     </a>
-    <a class="card media is-mul" href="{% url 'escalar' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'escalar' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           <path d="M5 7h6M5 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Escalar</h3>
-        <p>Calcula c · A y muestra el procedimiento.</p>
       </div>
+      <p class="card-desc">Multiplica cada elemento por un número conservando signos y formato.</p>
     </a>
-  <a class="card media is-mul" href="{% url 'transposicion' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'transposicion' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2"/>
           <path d="M9 9h6v6H9z" fill="currentColor"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Transpuesta</h3>
-        <p>Calcula A^T (intercambia filas y columnas).</p>
       </div>
+      <p class="card-desc">Intercambia filas y columnas resaltando patrones y simetrías.</p>
     </a>
-  </div>
-</section>
-
-<!-- Propiedades -->
-<section class="section" aria-labelledby="propiedades-title">
-  <div class="section-header">
-    <h3 id="propiedades-title">Propiedades</h3>
-    <span class="badge">2 herramientas</span>
-  </div>
-  <div class="cards cards-2x2">
-    <a class="card media is-mul" href="{% url 'determinante' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'determinante' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="2"/>
           <path d="M8 4v16M16 4v16" stroke="currentColor" stroke-width="2"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Determinante</h3>
-        <p>Calcula |A| con atajos para matrices triangulares y reducción por filas.</p>
       </div>
+      <p class="card-desc">Calcula el determinante e interpreta invertibilidad y escala.</p>
     </a>
-    <a class="card media is-mul" href="{% url 'inversa' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'inversa' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M6 6h12v12H6z" stroke="currentColor" stroke-width="2"/>
           <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Inversa</h3>
-        <p>Detecta si A es invertible y calcula A^{-1}.</p>
       </div>
+      <p class="card-desc">Obtiene la inversa si existe usando operaciones y pivotes.</p>
     </a>
   </div>
 </section>
 
 <!-- Sistemas de ecuaciones -->
 <section class="section" aria-labelledby="sistemas-title">
-  <div class="section-header">
-    <h3 id="sistemas-title">Sistemas de ecuaciones</h3>
-    <span class="badge">4 herramientas</span>
-  </div>
+  <div class="guide-transition"><span class="gt-label" id="sistemas-title">Sistemas de ecuaciones</span></div>
+  <div class="section-count"><span class="badge">4 herramientas</span></div>
   <div class="cards cards-2x2">
-    <a class="card media is-gauss" href="{% url 'gauss' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-gauss" href="{% url 'gauss' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 16h4v4H4v-4zM10 12h4v8h-4v-8zM16 6h4v14h-4V6z" fill="currentColor"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Eliminación de Gauss</h3>
-        <p>Convierte A|b a forma escalonada y analiza el sistema.</p>
       </div>
+      <p class="card-desc">Lleva el sistema a escalonada y te dice si tiene una solución, varias o ninguna.</p>
     </a>
-    <a class="card media is-gj" href="{% url 'gauss_jordan' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-gj" href="{% url 'gauss_jordan' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 18h16M4 12h10M4 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Gauss‑Jordan</h3>
-        <p>Obtén la forma reducida por filas y solución.</p>
       </div>
+      <p class="card-desc">Reduce totalmente el sistema y muestra la solución final clara.</p>
     </a>
-    <a class="card media is-mul" href="{% url 'cramer' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'cramer' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2"/>
           <path d="M4 12h16" stroke="currentColor" stroke-width="2"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Regla de Cramer</h3>
-        <p>Resuelve Ax = b con |A| y |A_i(b)| para cada i.</p>
       </div>
+      <p class="card-desc">Usa determinantes para cada incógnita (solo si |A| ≠ 0) y muestra cada valor de x.</p>
     </a>
-    <a class="card media is-hom" href="{% url 'homogeneo' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-hom" href="{% url 'homogeneo' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M5 4h4v4H5zM5 14h4v4H5zM15 9h4v4h-4z" fill="currentColor" />
           <path d="M9 6h6M9 16h6M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Sistema homogéneo</h3>
-        <p>Analiza Ax = 0 y detecta independencia lineal.</p>
       </div>
+      <p class="card-desc">Encuentra todas las soluciones de Ax = 0 y te indica si los vectores son independientes.</p>
     </a>
   </div>
 </section>
 
-<hr class="section-divider" aria-hidden="true" />
-
-<!-- Métodos numéricos: accesos rápidos -->
-<section class="section" aria-labelledby="metodos-cerrados-title">
-  <div class="section-header">
-    <h3 id="metodos-cerrados-title">Métodos cerrados</h3>
-    <span class="badge">2 métodos</span>
-  </div>
+<!-- Métodos numéricos -->
+<section class="section" aria-labelledby="metodos-title">
+  <div class="guide-transition"><span class="gt-label" id="metodos-title">Métodos numéricos</span></div>
+  <div class="section-count"><span class="badge">4 métodos</span></div>
   <div class="cards cards-2x2">
-    <a class="card media is-mul" href="{% url 'biseccion' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'biseccion' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M3 12h18M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Bisección</h3>
-        <p>Raíz en intervalo [a,b] con cambio de signo garantizado.</p>
+        <span class="tag method-badge cerrado">Cerrado</span>
       </div>
+      <p class="card-desc">Encuentra una raíz en [a,b], divide el intervalo, controla cambio de signo y muestra error en cada paso.</p>
     </a>
-    <a class="card media is-mul" href="{% url 'regula_falsi' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'regula_falsi' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 12h16M4 6h8M4 18h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Regla Falsa</h3>
-        <p>Interpolación lineal conservando el extremo con cambio de signo.</p>
+        <span class="tag method-badge cerrado">Cerrado</span>
       </div>
+      <p class="card-desc">Aproxima la raíz con una recta entre extremos, conserva el cambio de signo y muestra evolución del error.</p>
     </a>
-  </div>
-</section>
-
-<section class="section" aria-labelledby="metodos-abiertos-title">
-  <div class="section-header">
-    <h3 id="metodos-abiertos-title">Métodos abiertos</h3>
-    <span class="badge">2 métodos</span>
-  </div>
-  <div class="cards cards-2x2">
-    <a class="card media is-mul" href="{% url 'newton_raphson' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'newton_raphson' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 20l16-16M4 8h8M12 16h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Newton–Raphson</h3>
-        <p>Iteración x - f(x)/f'(x) con derivada simbólica y control de error.</p>
+        <span class="tag method-badge abierto">Abierto</span>
       </div>
+      <p class="card-desc">Refina la raíz usando la derivada para convergencia rápida y controla el error por iteración.</p>
     </a>
-    <a class="card media is-mul" href="{% url 'secante' %}">
-      <div class="media-icon" aria-hidden="true">
+    <a class="card vertical media is-mul" href="{% url 'secante' %}">
+      <div class="card-header">
+        <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 19l16-10M4 9l8 0M12 15l8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>
-      <div class="media-body">
+        </div>
         <h3>Secante</h3>
-        <p>Itera sin derivada: x - f(x)·(x-x₋₁)/(f(x)-f(x₋₁)).</p>
+        <span class="tag method-badge abierto">Abierto</span>
       </div>
+      <p class="card-desc">Refina la raíz sin derivada usando dos puntos y compara su velocidad frente a Newton.</p>
     </a>
   </div>
 </section>
 
-<!-- Guía rápida / Atajos / Sobre -->
+<!-- Transición visual hacia sección de guía y ayuda -->
+<div class="guide-transition" aria-hidden="true"><span class="gt-label">Guía y ayuda</span></div>
+<div class="guide-group" aria-labelledby="howto-title">
 <section id="guia" class="section panel" aria-labelledby="howto-title">
   <div class="panel-header">
     <h3 id="howto-title" class="panel-title">Guía rápida: ¿Cómo introducir datos?</h3>
@@ -240,8 +220,8 @@
         </svg>
       </div>
       <div class="media-body">
-        <strong>Genera la matriz</strong>
-        <p>Elige filas y columnas, luego escribe en cada celda.</p>
+        <strong>Crea la matriz</strong>
+        <p>Elige filas y columnas y escribe cada número en su lugar.</p>
       </div>
     </div>
     <div class="howto-item media is-ok">
@@ -252,7 +232,7 @@
       </div>
       <div class="media-body">
         <strong>Formatos válidos</strong>
-        <p><code>7</code>, <code>-2</code>, <code>3/5</code>, <code>-4/7</code>, <code>1.25</code>.</p>
+        <p>Números enteros (<code>7</code>), negativos (<code>-2</code>), fracciones (<code>3/5</code>) o decimales (<code>1.25</code>).</p>
       </div>
     </div>
     <div class="howto-item media is-sys">
@@ -264,12 +244,11 @@
       </div>
       <div class="media-body">
         <strong>Sistemas lineales</strong>
-        <p>Completa la matriz A y el vector <em>b</em> (última columna).</p>
+        <p>Llena la matriz de coeficientes y usa la última columna para el vector <em>b</em>.</p>
       </div>
     </div>
   </div>
 </section>
-
 <section id="atajos" class="section panel" aria-labelledby="atajos-title">
   <div class="panel-header">
     <h3 id="atajos-title" class="panel-title">Atajos y procedimiento</h3>
@@ -282,11 +261,11 @@
     </ul>
   </div>
 </section>
-
 <section id="sobre" class="section panel" aria-labelledby="sobre-title">
   <div class="panel-header">
     <h3 id="sobre-title" class="panel-title">Sobre la app</h3>
   </div>
-  <p class="lead">KiwiSolve procesa con aritmética exacta de fracciones y muestra procedimientos paso a paso para aprendizaje.</p>
-</section>
+  <p class="lead">KiwiSolve usa fracciones exactas y explica cada procedimiento paso a paso para facilitar el aprendizaje.</p>
+ </section>
+</div>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "algebra/base.html" %}
-{% block title %}Transpuesta{% endblock %}
+{% block title %}Transpuesta de una matriz{% endblock %}
 {% block content %}
-<h2>Transpuesta (A^T)</h2>
+<h2>Transpuesta de una matriz (A → A<sup>T</sup>)</h2>
 <form method="post" class="matrix-form" data-mode="simple">{% csrf_token %}
   <div class="controls">
     <div class="control"><label>Filas</label><input type="number" min="1" value="2" data-target="rows"/></div>
@@ -47,7 +47,7 @@
     <h3 class="panel-title">Resultado</h3>
     <div class="panel-actions">
       <span class="badge">A {{ dims.A }}</span>
-      <span class="badge">A^T {{ dims.AT }}</span>
+      <span class="badge">A<sup>T</sup> {{ dims.AT }}</span>
     </div>
   </div>
   <div class="matrix-result">
