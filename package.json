@@ -1,0 +1,14 @@
+{
+  "name": "kiwisolve-django",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:tw": "tailwindcss -c tailwind.config.cjs -i ./static/algebra/tw.css -o ./static/algebra/tw-dist.css --minify",
+    "watch:tw": "tailwindcss -c tailwind.config.cjs -i ./static/algebra/tw.css -o ./static/algebra/tw-dist.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.13",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.31"
+  }
+}

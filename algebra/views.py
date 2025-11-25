@@ -39,7 +39,54 @@ def friendly_error(exc: Exception) -> str:
     return 'No fue posible completar el cálculo. Verifica los valores ingresados o ajusta la función.'
 
 def index(request: HttpRequest):
-    return render(request, "algebra/index.html")
+    # Definición estructurada de operaciones con matrices para la cuadrícula
+    operations_matrices = [
+        {
+            "name": "suma",
+            "title": "Suma de matrices",
+            "desc": "Suma dos matrices del mismo tamaño mostrando cada operación paso a paso.",
+            "icon": "plus",
+            "style": "suma",
+        },
+        {
+            "name": "multiplicacion",
+            "title": "Multiplicación",
+            "desc": "Multiplica matrices compatibles mostrando cómo se forma cada entrada.",
+            "icon": "times",
+            "style": "mul",
+        },
+        {
+            "name": "escalar",
+            "title": "Escalar",
+            "desc": "Multiplica cada elemento por un número conservando signos y formato.",
+            "icon": "scalar",
+            "style": "mul",
+        },
+        {
+            "name": "transposicion",
+            "title": "Transpuesta",
+            "desc": "Intercambia filas y columnas resaltando patrones y simetrías.",
+            "icon": "transpose",
+            "style": "mul",
+        },
+        {
+            "name": "determinante",
+            "title": "Determinante",
+            "desc": "Calcula el determinante e interpreta invertibilidad y escala.",
+            "icon": "det",
+            "style": "mul",
+        },
+        {
+            "name": "inversa",
+            "title": "Inversa",
+            "desc": "Obtiene la inversa si existe usando operaciones y pivotes.",
+            "icon": "inv",
+            "style": "mul",
+        },
+    ]
+    # Se usan directamente en una sola cuadrícula 3×2 (orden preservado)
+    ctx = {"operations_matrices": operations_matrices}
+    return render(request, "algebra/index.html", ctx)
 
 def _parse_matriz_simple(texto: str):
     matriz = []

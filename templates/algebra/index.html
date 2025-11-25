@@ -1,15 +1,16 @@
 {% extends "algebra/base.html" %}
 {% block title %}Inicio — KiwiSolve{% endblock %}
 {% block content %}
-<div class="hero-box">
-<section class="hero" aria-labelledby="hero-title">
+<!-- Tailwind-enhanced hero (migración parcial) -->
+<div class="hero-box relative rounded-hero bg-gradient-to-br from-grape/10 to-violet/10 border border-[color:var(--border)] p-3 md:p-4">
+<section class="hero flex items-center relative min-h-[260px] md:min-h-[280px] px-5 md:px-7 py-10 md:py-12" aria-labelledby="hero-title">
   {% load static %}
   <div class="hero-logo" aria-hidden="true">
     <img src="{% static 'algebra/wiwi-logo-actualizado-esquina' %}" alt="Logo KiwiSolve" />
   </div>
-  <div class="hero-content">
-    <h2 id="hero-title" class="hero-title">KiwiSolve</h2>
-    <p class="hero-tagline">Calculadora web al alcance</p>
+  <div class="hero-content ml-[470px] max-w-[720px] md:ml-[400px] sm:ml-0">
+    <h2 id="hero-title" class="hero-title font-display font-extrabold tracking-wide">KiwiSolve</h2>
+    <p class="hero-tagline text-violet font-semibold">Calculadora web al alcance</p>
   </div>
 </section>
 </div>
@@ -18,77 +19,31 @@
 <section class="section" aria-labelledby="matrices-title">
   <div class="guide-transition"><span class="gt-label" id="matrices-title">Operaciones con matrices</span></div>
   <div class="section-count"><span class="badge">6 herramientas</span></div>
-  <div class="cards cards-3col">
-    <a class="card vertical media is-suma" href="{% url 'suma' %}">
+  <!-- Matriz visual fija 2x3: siempre 3 columnas y 2 filas (incluye mobile) -->
+  <div class="cards grid grid-3-fixed gap-6">
+    {% for op in operations_matrices %}
+    <a class="card vertical media is-{{ op.style }} transition hover:shadow-elev hover:-translate-y-0.5" href="{% url op.name %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        {% if op.icon == 'plus' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        {% elif op.icon == 'times' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        {% elif op.icon == 'scalar' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 7h6M5 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        {% elif op.icon == 'transpose' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2"/><path d="M9 9h6v6H9z" fill="currentColor"/></svg>
+        {% elif op.icon == 'det' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="2"/><path d="M8 4v16M16 4v16" stroke="currentColor" stroke-width="2"/></svg>
+        {% elif op.icon == 'inv' %}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6h12v12H6z" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2"/></svg>
+        {% endif %}
         </div>
-        <h3>Suma de matrices</h3>
+        <h3>{{ op.title }}</h3>
       </div>
-      <p class="card-desc">Suma dos matrices del mismo tamaño mostrando cada operación paso a paso.</p>
+      <p class="card-desc">{{ op.desc }}</p>
     </a>
-    <a class="card vertical media is-mul" href="{% url 'multiplicacion' %}">
-      <div class="card-header">
-        <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        </div>
-        <h3>Multiplicación</h3>
-      </div>
-      <p class="card-desc">Multiplica matrices compatibles mostrando cómo se forma cada entrada.</p>
-    </a>
-    <a class="card vertical media is-mul" href="{% url 'escalar' %}">
-      <div class="card-header">
-        <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M5 7h6M5 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        </div>
-        <h3>Escalar</h3>
-      </div>
-      <p class="card-desc">Multiplica cada elemento por un número conservando signos y formato.</p>
-    </a>
-    <a class="card vertical media is-mul" href="{% url 'transposicion' %}">
-      <div class="card-header">
-        <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2"/>
-          <path d="M9 9h6v6H9z" fill="currentColor"/>
-        </svg>
-        </div>
-        <h3>Transpuesta</h3>
-      </div>
-      <p class="card-desc">Intercambia filas y columnas resaltando patrones y simetrías.</p>
-    </a>
-    <a class="card vertical media is-mul" href="{% url 'determinante' %}">
-      <div class="card-header">
-        <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="2"/>
-          <path d="M8 4v16M16 4v16" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        </div>
-        <h3>Determinante</h3>
-      </div>
-      <p class="card-desc">Calcula el determinante e interpreta invertibilidad y escala.</p>
-    </a>
-    <a class="card vertical media is-mul" href="{% url 'inversa' %}">
-      <div class="card-header">
-        <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 6h12v12H6z" stroke="currentColor" stroke-width="2"/>
-          <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        </div>
-        <h3>Inversa</h3>
-      </div>
-      <p class="card-desc">Obtiene la inversa si existe usando operaciones y pivotes.</p>
-    </a>
+    {% endfor %}
   </div>
 </section>
 
@@ -96,8 +51,8 @@
 <section class="section" aria-labelledby="sistemas-title">
   <div class="guide-transition"><span class="gt-label" id="sistemas-title">Sistemas de ecuaciones</span></div>
   <div class="section-count"><span class="badge">4 herramientas</span></div>
-  <div class="cards cards-2x2">
-    <a class="card vertical media is-gauss" href="{% url 'gauss' %}">
+  <div class="cards cards-2x2 grid gap-4 md:grid-cols-2">
+    <a class="card vertical media is-gauss transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'gauss' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -108,7 +63,7 @@
       </div>
       <p class="card-desc">Lleva el sistema a escalonada y te dice si tiene una solución, varias o ninguna.</p>
     </a>
-    <a class="card vertical media is-gj" href="{% url 'gauss_jordan' %}">
+    <a class="card vertical media is-gj transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'gauss_jordan' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -119,7 +74,7 @@
       </div>
       <p class="card-desc">Reduce totalmente el sistema y muestra la solución final clara.</p>
     </a>
-    <a class="card vertical media is-mul" href="{% url 'cramer' %}">
+    <a class="card vertical media is-mul transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'cramer' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -131,7 +86,7 @@
       </div>
       <p class="card-desc">Usa determinantes para cada incógnita (solo si |A| ≠ 0) y muestra cada valor de x.</p>
     </a>
-    <a class="card vertical media is-hom" href="{% url 'homogeneo' %}">
+    <a class="card vertical media is-hom transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'homogeneo' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -150,8 +105,8 @@
 <section class="section" aria-labelledby="metodos-title">
   <div class="guide-transition"><span class="gt-label" id="metodos-title">Métodos numéricos</span></div>
   <div class="section-count"><span class="badge">4 métodos</span></div>
-  <div class="cards cards-2x2">
-    <a class="card vertical media is-mul" href="{% url 'biseccion' %}">
+  <div class="cards cards-2x2 grid gap-4 md:grid-cols-2">
+    <a class="card vertical media is-mul transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'biseccion' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,7 +118,7 @@
       </div>
       <p class="card-desc">Encuentra una raíz en [a,b], divide el intervalo, controla cambio de signo y muestra error en cada paso.</p>
     </a>
-    <a class="card vertical media is-mul" href="{% url 'regula_falsi' %}">
+    <a class="card vertical media is-mul transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'regula_falsi' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -175,7 +130,7 @@
       </div>
       <p class="card-desc">Aproxima la raíz con una recta entre extremos, conserva el cambio de signo y muestra evolución del error.</p>
     </a>
-    <a class="card vertical media is-mul" href="{% url 'newton_raphson' %}">
+    <a class="card vertical media is-mul transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'newton_raphson' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -187,7 +142,7 @@
       </div>
       <p class="card-desc">Refina la raíz usando la derivada para convergencia rápida y controla el error por iteración.</p>
     </a>
-    <a class="card vertical media is-mul" href="{% url 'secante' %}">
+    <a class="card vertical media is-mul transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'secante' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -209,7 +164,7 @@
   <div class="panel-header">
     <h3 id="howto-title" class="panel-title">¿Cómo introducir datos?</h3>
   </div>
-  <div class="howto-grid">
+  <div class="howto-grid grid grid-3-fixed gap-6">
     <div class="howto-card is-gen" aria-labelledby="hc-title-matriz">
       <div class="hc-head">
         <div class="hc-icon" aria-hidden="true">
@@ -253,7 +208,7 @@
   <div class="panel-header">
     <h3 id="atajos-title" class="panel-title">Atajos y procedimientos</h3>
   </div>
-  <div class="howto-grid">
+  <div class="howto-grid grid grid-3-fixed gap-6">
     <div class="howto-card is-gen" aria-labelledby="hc-title-pasos">
       <div class="hc-head">
         <div class="hc-icon" aria-hidden="true">
@@ -293,7 +248,7 @@
 </div> <!-- cierre de guide-group independiente -->
 <div class="guide-transition" aria-hidden="true" style="margin-top:52px;"><span class="gt-label" id="acerca-title">Acerca de KiwiSolve</span></div>
 <div class="about-group" id="acerca" aria-labelledby="acerca-title">
-    <div class="howto-grid">
+    <div class="howto-grid grid grid-3-fixed gap-6">
         <div class="howto-card is-gen" aria-labelledby="ac-title-func">
           <div class="hc-head">
             <div class="hc-icon" aria-hidden="true">
@@ -330,7 +285,7 @@
         </div>
     </div>
     <div class="guide-transition" aria-hidden="true" style="margin:32px 0 18px;"><span class="gt-label">Conócenos</span></div>
-      <div class="team-grid" aria-label="Integrantes del equipo">
+      <div class="team-grid grid gap-3 md:grid-cols-2 mt-4" aria-label="Integrantes del equipo">
         <div class="howto-card is-gen" aria-labelledby="team-diego">
           <div class="hc-head">
             <div class="hc-icon" aria-hidden="true">

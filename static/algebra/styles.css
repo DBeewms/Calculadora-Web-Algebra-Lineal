@@ -198,9 +198,6 @@ button:hover{ opacity:.9 }
 
 /* Cards on index (old hero styles removed to avoid overriding new branding hero) */
 .section-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0 }
-.cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:16px 0 }
-.cards.cards-2x2{ grid-template-columns:repeat(2,1fr) }
-.cards.cards-3col{ grid-template-columns:repeat(3,minmax(0,1fr)); }
 .card.vertical{ display:flex; flex-direction:column; gap:12px; padding:26px 30px; }
 /* Nuevo header horizontal: icono + título en una línea */
 .card.vertical .card-header{ display:flex; align-items:center; gap:10px; }
@@ -215,7 +212,6 @@ button:hover{ opacity:.9 }
 .intro details.help{ margin-top:12px }
 
 /* How-to grid */
-.howto-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px }
 /* Nueva maqueta para tarjetas de guía (icono arriba, luego título y descripción) */
 .howto-card{ display:flex; flex-direction:column; gap:12px; padding:26px 30px; border:1px solid var(--border); border-radius:14px; background:var(--card); box-shadow:var(--shadow-1); position:relative; }
 .howto-card .hc-icon{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:16px; background:rgba(57,73,171,.10); color:var(--violet); }
@@ -251,8 +247,6 @@ button:hover{ opacity:.9 }
 .guide-group .howto-grid{ margin-top:10px }
 .about-group{ background:linear-gradient(135deg, rgba(57,73,171,.08), rgba(106,27,154,.10)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 14px; box-shadow:var(--shadow-2); margin:0 0 38px }
 .about-group .howto-grid{ margin-top:10px }
-.team-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:14px }
-@media (max-width:560px){ .team-grid{ grid-template-columns:1fr } }
 .howto-item{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--card) }
 .howto-item strong{ display:block; margin-bottom:4px }
 .howto-item p{ margin:0; color:var(--muted) }
@@ -293,7 +287,8 @@ button:hover{ opacity:.9 }
   .menu .dropdown{ position:static; width:100%; box-shadow:none; border-radius:10px; display:none; margin-top:6px }
   .menu .menu-item.open > .dropdown{ display:flex }
   /* Stack generic two-column grids on mobile (e.g., Cramer matrices) */
-  .grid{ grid-template-columns:1fr }
+  /* Colapsar grids normales a 1 columna en móvil excepto las fijas */
+  .grid:not(.grid-3-fixed){ grid-template-columns:1fr }
   /* Forms: stack controls and widen inputs */
   .controls{ flex-direction:column; align-items:stretch; gap:10px }
   .control input, .control select{ width:100% }
@@ -306,6 +301,12 @@ button:hover{ opacity:.9 }
   /* Actions buttons full width */
   .actions{ flex-wrap:wrap }
   .actions .btn{ flex:1 1 100% }
+}
+
+/* Fijar siempre 3 columnas para la matriz de operaciones (incluye móvil) */
+.grid-3-fixed{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media (max-width:640px){
+  .grid-3-fixed{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
 }
 
 /* Steps */
@@ -325,25 +326,7 @@ button:hover{ opacity:.9 }
 .steps.timeline.cramer-steps .step-title{ color:var(--savoy) }
 
 /* Panels & badges */
-.panel{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin:12px 0; box-shadow:var(--shadow-2) }
-.panel-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px }
-.panel-title{ font-size:18px; font-weight:700; margin:0 }
-.panel-actions{ display:flex; gap:8px }
-.badge{ display:inline-block; background:rgba(123,187,196,.15); color:var(--violet); border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600 }
-.actions{ display:flex; gap:8px; margin-top:12px }
-/* Highlighted analysis panel */
-.panel.highlight{ border:1px solid var(--primary); box-shadow:0 0 0 2px rgba(126,87,194,.15), var(--shadow-2) }
-.panel-body p{ margin:6px 0 }
-/* Tags */
-.tag{ display:inline-block; padding:4px 10px; font-size:12px; font-weight:600; border-radius:999px; background:var(--border); color:#222 }
-.tag.success{ background:rgba(34,197,94,.15); color:#15803d }
-.tag.info{ background:rgba(59,130,246,.15); color:#1d4ed8 }
-.tag.danger{ background:rgba(239,68,68,.15); color:#b91c1c }
-.tag.cerrado{ background:rgba(106,27,154,.15); color:var(--grape); border:1px solid rgba(106,27,154,.28) }
-.tag.abierto{ background:rgba(57,73,171,.15); color:var(--violet); border:1px solid rgba(57,73,171,.25) }
-/* Posicionamiento superior derecho de badges de método */
 .card.vertical{ position:relative }
-.tag.method-badge{ position:absolute; top:10px; right:12px; z-index:2; }
 
 /* Equations input styling */
 .eq-meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }

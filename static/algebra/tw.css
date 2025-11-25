@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Bridge existing CSS variables so Tailwind utilities can reference them */
+:root {
+  --sky:#7BBBC4; --grape:#6A1B9A; --royal:#7E57C2; --violet:#3949AB; --savoy:#5C6BC0;
+  --primary: var(--royal);
+  --primary-2: var(--grape);
+  --accent: var(--sky);
+  --muted:#6b7280; --bg:#f6f7fb; --border:#e3e5f0; --card:#ffffff;
+}
+:root[data-theme="dark"] {
+  --bg:#0f1220; --card:#14182a; --border:#1d2240; --muted:#9aa7c2; --primary:var(--violet);
+}
+
+/* Lightweight component examples (can expand gradually) */
+.card-base { @apply rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-soft transition; }
+.card-base:hover { @apply shadow-elev -translate-y-0.5; }
+.separator-label { @apply font-display font-semibold text-violet px-6 py-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-soft; }
+.badge-sky { @apply inline-block rounded-full px-3 py-1 text-xs font-semibold bg-sky/15 text-violet border border-[var(--border)]; }
+
+/* Utility shortcuts for matrix pages */
+.matrix-box { @apply overflow-auto max-w-full; }
+.steps-title { @apply font-semibold text-violet leading-tight; }
+
+/* Placeholder: gradually move custom rules from styles.css here and then prune. */
+
+@layer components {
+  /* Panels */
+  .panel { @apply bg-[var(--card)] border border-[var(--border)] rounded-[14px] p-4 my-3 shadow-soft; }
+  .panel-header { @apply flex items-center justify-between gap-2 mb-2; }
+  .panel-title { @apply text-[18px] font-bold m-0 font-display; }
+  .panel-actions { @apply flex gap-2; }
+  .actions { @apply flex gap-2 mt-3; }
+
+  /* Badges & Tags */
+  .badge { @apply inline-block bg-sky/15 text-violet border border-[var(--border)] rounded-full px-2.5 py-1 text-[12px] font-semibold; }
+  .tag { @apply inline-block px-2.5 py-1 text-[12px] font-semibold rounded-full bg-[var(--border)] text-[#222]; }
+  .tag.success { @apply bg-[#22c55e]/15 text-[#15803d]; }
+  .tag.info { @apply bg-[#3b82f6]/15 text-[#1d4ed8]; }
+  .tag.danger { @apply bg-[#ef4444]/15 text-[#b91c1c]; }
+  .tag.cerrado { @apply bg-grape/15 text-grape border border-grape/40; }
+  .tag.abierto { @apply bg-violet/15 text-violet border border-violet/40; }
+  .tag.method-badge { @apply absolute top-[10px] right-[12px] z-[2]; }
+}
