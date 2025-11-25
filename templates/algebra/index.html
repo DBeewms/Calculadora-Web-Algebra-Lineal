@@ -207,65 +207,179 @@
 <div class="guide-group" aria-labelledby="howto-title">
 <section id="guia" class="section panel" aria-labelledby="howto-title">
   <div class="panel-header">
-    <h3 id="howto-title" class="panel-title">Guía rápida: ¿Cómo introducir datos?</h3>
+    <h3 id="howto-title" class="panel-title">¿Cómo introducir datos?</h3>
   </div>
   <div class="howto-grid">
-    <div class="howto-item media is-gen">
-      <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="4" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="14" y="4" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="4" y="14" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="14" y="14" width="6" height="6" stroke="currentColor" stroke-width="1.8"/>
+    <div class="howto-card is-gen" aria-labelledby="hc-title-matriz">
+      <div class="hc-head">
+        <div class="hc-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="6" height="6" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="4" width="6" height="6" stroke="currentColor" stroke-width="2"/>
+          <rect x="4" y="14" width="6" height="6" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="14" width="6" height="6" stroke="currentColor" stroke-width="2"/>
         </svg>
+        </div>
+        <h3 class="hc-title" id="hc-title-matriz">Crea la matriz</h3>
       </div>
-      <div class="media-body">
-        <strong>Crea la matriz</strong>
-        <p>Elige filas y columnas y escribe cada número en su lugar.</p>
-      </div>
+      <p class="hc-desc">Elige filas y columnas. Escribe cada número en su casilla. Si falta, usa <code>0</code>.</p>
     </div>
-    <div class="howto-item media is-ok">
-      <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="howto-card is-ok" aria-labelledby="hc-title-formatos">
+      <div class="hc-head">
+        <div class="hc-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
+        </div>
+        <h3 class="hc-title" id="hc-title-formatos">Formatos</h3>
       </div>
-      <div class="media-body">
-        <strong>Formatos válidos</strong>
-        <p>Números enteros (<code>7</code>), negativos (<code>-2</code>), fracciones (<code>3/5</code>) o decimales (<code>1.25</code>).</p>
-      </div>
+      <p class="hc-desc">Formatos: <code>7</code>, <code>-2</code>, <code>3/5</code>, <code>1.25</code>. Sin espacios ni comas.</p>
     </div>
-    <div class="howto-item media is-sys">
-      <div class="media-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="howto-card is-sys" aria-labelledby="hc-title-sistemas">
+      <div class="hc-head">
+        <div class="hc-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 7h12M4 12h12M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           <path d="M19 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
+        </div>
+        <h3 class="hc-title" id="hc-title-sistemas">Sistemas Ax=b</h3>
       </div>
-      <div class="media-body">
-        <strong>Sistemas lineales</strong>
-        <p>Llena la matriz de coeficientes y usa la última columna para el vector <em>b</em>.</p>
-      </div>
+      <p class="hc-desc">Cada fila es una ecuación. Última columna = <em>b</em>. Término ausente: <code>0</code>. Ej: <code>2x+3y=5</code> → <code>2</code>, <code>3</code>, <code>5</code>.</p>
     </div>
   </div>
 </section>
 <section id="atajos" class="section panel" aria-labelledby="atajos-title">
   <div class="panel-header">
-    <h3 id="atajos-title" class="panel-title">Atajos y procedimiento</h3>
+    <h3 id="atajos-title" class="panel-title">Atajos y procedimientos</h3>
   </div>
-  <div>
-    <ul class="enum-inline">
-      <li>Activa “Mostrar pasos” para ver cada operación elemental aplicada.</li>
-      <li>Formato de resultado: fracciones exactas, decimales o automático (si el decimal es finito).</li>
-      <li>Los formularios recuerdan tus datos entre vistas; “Limpiar” borra también el guardado.</li>
-    </ul>
+  <div class="howto-grid">
+    <div class="howto-card is-gen" aria-labelledby="hc-title-pasos">
+      <div class="hc-head">
+        <div class="hc-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 7h10M7 12h6M7 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        </div>
+        <h3 class="hc-title" id="hc-title-pasos">Mostrar pasos</h3>
+      </div>
+      <p class="hc-desc">Activa “Mostrar pasos” para ver cada operación aplicada.</p>
+    </div>
+    <div class="howto-card is-ok" aria-labelledby="hc-title-formato">
+      <div class="hc-head">
+        <div class="hc-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        </div>
+        <h3 class="hc-title" id="hc-title-formato">Resultados</h3>
+      </div>
+      <p class="hc-desc">Resultado: fracciones, decimales o automático según convenga.</p>
+    </div>
+    <div class="howto-card is-sys" aria-labelledby="hc-title-memoria">
+      <div class="hc-head">
+        <div class="hc-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 8h16v8H4z" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 8v8M12 8v8M16 8v8" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        </div>
+        <h3 class="hc-title" id="hc-title-memoria">Recordar datos</h3>
+      </div>
+      <p class="hc-desc">Se guarda tu entrada. “Limpiar” borra pantalla y memoria.</p>
+    </div>
   </div>
-</section>
-<section id="sobre" class="section panel" aria-labelledby="sobre-title">
-  <div class="panel-header">
-    <h3 id="sobre-title" class="panel-title">Sobre la app</h3>
-  </div>
-  <p class="lead">KiwiSolve usa fracciones exactas y explica cada procedimiento paso a paso para facilitar el aprendizaje.</p>
  </section>
-</div>
+</div> <!-- cierre de guide-group independiente -->
+<div class="guide-transition" aria-hidden="true" style="margin-top:52px;"><span class="gt-label" id="acerca-title">Acerca de KiwiSolve</span></div>
+<div class="about-group" id="acerca" aria-labelledby="acerca-title">
+    <div class="howto-grid">
+        <div class="howto-card is-gen" aria-labelledby="ac-title-func">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" stroke-width="2" fill="none"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="ac-title-func">Funcionalidades</h3>
+          </div>
+          <p class="hc-desc">Operaciones con matrices, sus propiedades, resolución de sistemas lineales y métodos numéricos de raíces; pasos claros y resultados limpios.</p>
+        </div>
+        <div class="howto-card is-ok" aria-labelledby="ac-title-prop">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 5h14v14H5z" stroke="currentColor" stroke-width="2"/>
+              <path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="ac-title-prop">Propósito</h3>
+          </div>
+          <p class="hc-desc">Resultados limpios, pasos explicados y manejo exacto de fracciones o decimales.</p>
+        </div>
+        <div class="howto-card is-sys" aria-labelledby="ac-title-hist">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="ac-title-hist">Historia</h3>
+          </div>
+          <p class="hc-desc">Proyecto desarrollado en la clase de Álgebra Lineal por estudiantes de Ingeniería en Sistemas de Información.</p>
+        </div>
+    </div>
+    <div class="guide-transition" aria-hidden="true" style="margin:32px 0 18px;"><span class="gt-label">Conócenos</span></div>
+      <div class="team-grid" aria-label="Integrantes del equipo">
+        <div class="howto-card is-gen" aria-labelledby="team-diego">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M4 20c0-3.333 3.582-6 8-6s8 2.667 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="team-diego">Diego Mora</h3>
+          </div>
+          <p class="hc-desc">Estudiante Ingeniería en Sistemas.</p>
+        </div>
+        <div class="howto-card is-ok" aria-labelledby="team-andrea">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M4 20c0-3.333 3.582-6 8-6s8 2.667 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="team-andrea">Andrea de la Roca</h3>
+          </div>
+          <p class="hc-desc">Estudiante Ingeniería en Sistemas.</p>
+        </div>
+        <div class="howto-card is-sys" aria-labelledby="team-angie">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M4 20c0-3.333 3.582-6 8-6s8 2.667 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="team-angie">Angie Rodríguez</h3>
+          </div>
+          <p class="hc-desc">Estudiante Ingeniería en Sistemas.</p>
+        </div>
+        <div class="howto-card is-gen" aria-labelledby="team-kevin">
+          <div class="hc-head">
+            <div class="hc-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M4 20c0-3.333 3.582-6 8-6s8 2.667 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            </div>
+            <h3 class="hc-title" id="team-kevin">Kevin Browne</h3>
+          </div>
+          <p class="hc-desc">Estudiante Ingeniería en Sistemas.</p>
+        </div>
+      </div>
+      </div>
+    </div>
 {% endblock %}

@@ -216,6 +216,19 @@ button:hover{ opacity:.9 }
 
 /* How-to grid */
 .howto-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px }
+/* Nueva maqueta para tarjetas de guía (icono arriba, luego título y descripción) */
+.howto-card{ display:flex; flex-direction:column; gap:12px; padding:26px 30px; border:1px solid var(--border); border-radius:14px; background:var(--card); box-shadow:var(--shadow-1); position:relative; }
+.howto-card .hc-icon{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:16px; background:rgba(57,73,171,.10); color:var(--violet); }
+.howto-card .hc-title{ margin:0; font-size:17px; font-family:Poppins, Inter, sans-serif; font-weight:600; letter-spacing:.3px; }
+.howto-card .hc-desc{ margin:0; color:var(--muted); line-height:1.4; }
+.howto-card .hc-head{ display:flex; align-items:center; gap:14px; }
+@media (max-width:560px){ .howto-card .hc-head{ gap:12px } }
+@media (max-width:880px){ .howto-grid{ grid-template-columns:repeat(2, minmax(0,1fr)) } }
+@media (max-width:560px){ .howto-grid{ grid-template-columns:1fr } .howto-card{ padding:22px 24px } .howto-card .hc-icon{ width:48px; height:48px } }
+/* Variantes de color según tipo */
+.howto-card.is-gen .hc-icon{ background:rgba(123,187,196,.12); color:var(--sky); }
+.howto-card.is-ok .hc-icon{ background:rgba(34,197,94,.12); color:#22c55e; }
+.howto-card.is-sys .hc-icon{ background:rgba(57,73,171,.10); color:var(--violet); }
 .section-divider{ border:0; border-top:1px solid var(--border); margin:32px 0 22px }
 @media (max-width: 640px){ .section-divider{ margin:24px 0 16px } }
 /* Bloque de transición hacia guía y ayuda */
@@ -236,6 +249,10 @@ button:hover{ opacity:.9 }
 .guide-group .panel:last-child{ margin-bottom:0 }
 .guide-group h3.panel-title{ color:var(--violet) }
 .guide-group .howto-grid{ margin-top:10px }
+.about-group{ background:linear-gradient(135deg, rgba(57,73,171,.08), rgba(106,27,154,.10)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 14px; box-shadow:var(--shadow-2); margin:0 0 38px }
+.about-group .howto-grid{ margin-top:10px }
+.team-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:14px }
+@media (max-width:560px){ .team-grid{ grid-template-columns:1fr } }
 .howto-item{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--card) }
 .howto-item strong{ display:block; margin-bottom:4px }
 .howto-item p{ margin:0; color:var(--muted) }
