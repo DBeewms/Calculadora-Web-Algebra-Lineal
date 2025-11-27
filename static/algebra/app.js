@@ -2453,3 +2453,47 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
   });
 });
+
+// Sync equations popup counts (Ecuaciones / Variables) with current form controls per method
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('form.matrix-form').forEach(form=>{
+    const openBtn = form.querySelector('[data-action="open-eq"]');
+    if(!openBtn) return;
+    function geti(sel){ const el = form.querySelector(sel); if(!el) return null; const v = parseInt(el.value,10); return isNaN(v)? null : v; }
+    function setBadge(id, val){ const b = form.querySelector('#'+id+' strong'); if(b){ b.textContent = (val!=null? String(val) : '—'); } }
+    function computeCounts(){
+      const mode = form.dataset.mode || '';
+      let eqs = geti('[data-target="rows"]');
+      let vars = geti('[data-target="cols"]');
+      if(mode === 'mul'){
+        eqs = geti('[data-target="rowsA"]');
+        vars = geti('[data-target="colsArowsB"]');
+      } else if(mode === 'cramer'){
+        const n = geti('[data-target="rowsAcolsArowsB"]');
+        eqs = n; vars = n;
+      } else if(mode === 'compuestas'){
+        const srcSel = form.querySelector('select[name="source"]');
+        const src = (srcSel && srcSel.value) || 'A';
+        if(src === 'A'){
+          eqs = geti('[data-target="rows"][data-matrix="A"]');
+          vars = geti('[data-target="cols"][data-matrix="A"]');
+        } else {
+          eqs = geti('[data-target="rows"][data-matrix="B"]');
+          vars = geti('[data-target="cols"][data-matrix="B"]');
+        }
+      }
+      return {eqs, vars};
+    }
+    function updateEqBadges(){
+      const {eqs, vars} = computeCounts();
+      setBadge('eqCountBadge', eqs);
+      setBadge('varCountBadge', vars);
+    }
+    openBtn.addEventListener('click', updateEqBadges);
+    form.addEventListener('input', (ev)=>{
+      const t = ev.target;
+      if(!t) return;
+      if(t.matches('[data-target], select[name="source"]')) updateEqBadges();
+    });
+  });
+});

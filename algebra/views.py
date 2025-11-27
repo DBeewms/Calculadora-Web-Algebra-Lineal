@@ -912,6 +912,95 @@ def limite(request: HttpRequest):
     return render(request, 'algebra/limite.html', ctx)
 
 
+def derivadas(request: HttpRequest):
+    """Calcular la derivada simbólica respecto a x. Opcionalmente evaluar en un punto.
+
+    El formulario envía `expr` (cliente intenta normalizar LaTeX). Si se solicita
+    mostrar pasos, se construye una lista básica de transformaciones.
+    """
+    ctx = {}
+    if request.method == 'POST':
+        try:
+            raw = (request.POST.get('expr') or request.POST.get('latex') or '').strip()
+            point = (request.POST.get('point') or '').strip()
+            show_steps = bool(request.POST.get('show_steps'))
+
+            if not raw:
+                raise ValueError('Debes introducir una expresión.')
+
+            # mismos locales que en limite
+            local_dict = {
+                'sin': sin, 'cos': cos, 'tan': tan,
+                'asin': asin, 'acos': acos, 'atan': atan,
+                'exp': exp, 'log': log, 'sqrt': sqrt,
+                'abs': Abs, 'pi': sympify('pi'), 'e': sympify('E')
+            }
+
+            try:
+                expr_sym = sympify(raw, locals=local_dict)
+            except Exception:
+                fallback = raw.replace('\\', '').replace('^', '**')
+                expr_sym = sympify(fallback, locals=local_dict)
+
+            x = symbols('x')
+            pasos = []
+            if show_steps:
+                try:
+                    pasos.append({'operacion': 'Expresión simbólica', 'detalle': str(expr_sym)})
+                except Exception:
+                    pass
+
+            # derivada simbólica
+            deriv = expr_sym.diff(x)
+
+            if show_steps:
+                try:
+                    pasos.append({'operacion': 'Derivada simbólica', 'detalle': str(deriv)})
+                except Exception:
+                    pass
+                try:
+                    simp = deriv.simplify()
+                    if str(simp) != str(deriv):
+                        pasos.append({'operacion': 'Simplificación', 'detalle': str(simp)})
+                    deriv = simp
+                except Exception:
+                    pass
+
+            ctx['derivada'] = str(deriv)
+            ctx['expr_used'] = raw
+
+            # si se pide evaluar en un punto
+            if point:
+                try:
+                    if point.lower() in ('oo', 'infty', 'infinito', 'inf', '∞'):
+                        val = oo
+                    elif point.lower() in ('-oo', '-infty', '-inf'):
+                        val = -oo
+                    else:
+                        val = sympify(point)
+                    # evitar sustituir infinito en la evaluación directa
+                    if val in (oo, -oo):
+                        eval_result = deriv.limit(x, val)
+                    else:
+                        eval_result = deriv.subs(x, val)
+                    ctx['eval_point'] = point
+                    ctx['eval_result'] = str(eval_result)
+                    if show_steps:
+                        pasos.append({'operacion': f'Evaluación en x={point}', 'detalle': str(eval_result)})
+                except Exception:
+                    ctx['eval_point'] = point
+                    ctx['eval_result'] = 'No se pudo evaluar en el punto dado.'
+
+            if show_steps and pasos:
+                ctx['pasos'] = pasos
+
+        except Exception as e:
+            logger.exception('Error en vista derivadas')
+            ctx['error'] = friendly_error(e)
+
+    return render(request, 'algebra/derivadas.html', ctx)
+
+
 def biseccion(request: HttpRequest):
     """Página para el Método de bisección.
 
