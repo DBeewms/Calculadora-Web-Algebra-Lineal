@@ -15,12 +15,7 @@
         <div id="limite-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="limite-preview-text"></code></div>
         <div id="limite-preview-err" style="color:#b91c1c; display:none;">Error: <span id="limite-preview-err-txt"></span></div>
       </div>
-      <div class="mini-toolbar" style="margin-top:6px; display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted);">
-        <span>Ejemplos:</span>
-        <button type="button" class="btn ghost" data-action="example" data-ex="\\frac{\\sin(x)}{x}" style="padding:2px 6px; font-size:12px;">\frac{\sin(x)}{x}</button>
-        <button type="button" class="btn ghost" data-action="example" data-ex="(x^2-1)/(x-1)" style="padding:2px 6px; font-size:12px;">(x^2-1)/(x-1)</button>
-        <button type="button" class="btn ghost" data-action="example" data-ex="1/x" style="padding:2px 6px; font-size:12px;">1/x</button>
-      </div>
+      <!-- toolbar removed: examples are not shown here per request -->
     </div>
     <div class="control">
       <label for="point">Punto (lim x→a)</label>
@@ -31,7 +26,12 @@
         <option value="+" {% if direction_used == '+' %}selected{% endif %}>Derecha (+)</option>
         <option value="-" {% if direction_used == '-' %}selected{% endif %}>Izquierda (-)</option>
       </select>
-      <label style="margin-top:8px; display:block"><input type="checkbox" name="show_steps" id="show_steps" {% if pasos %}checked{% endif %}/> Mostrar pasos</label>
+      <label class="toggle" id="toggle-steps-limite" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" name="show_steps" id="show_steps" {% if pasos %}checked{% endif %}>
+        <span class="toggle-track"></span>
+        <span class="toggle-thumb"></span>
+        <span class="toggle-label">Mostrar pasos</span>
+      </label>
     </div>
   </div>
   <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
