@@ -1,0 +1,95 @@
+{% extends 'algebra/base.html' %}
+{% load static %}
+{% block title %}Derivadas — KiwiSolve{% endblock %}
+{% block content %}
+<h2>Derivadas</h2>
+<p>Introduce la expresión (usa la variable <strong>x</strong>). Puedes escribir en LaTeX o directamente.</p>
+<form method="post" class="panel matrix-form" id="derivadasForm" style="padding:16px;" data-page="derivadas">
+  {% csrf_token %}
+  <div class="grid">
+    <div class="control">
+      <label for="expr_field">Expresión</label>
+      <math-field class="mf" id="expr_field" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: \frac{d}{dx} or x^2*sin(x)">{% if expr_used %}{{ expr_used }}{% endif %}</math-field>
+      <input type="hidden" name="expr" id="expr_hidden" />
+      <div id="derivadas-preview" style="margin-top:6px; font-size:13px;">
+        <div id="derivadas-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="derivadas-preview-text"></code></div>
+        <div id="derivadas-preview-err" style="color:#b91c1c; display:none;">Error: <span id="derivadas-preview-err-txt"></span></div>
+      </div>
+    </div>
+    <div class="control">
+      <label for="point">Evaluar en (opcional)</label>
+      <input id="point" name="point" value="{% if eval_point %}{{ eval_point }}{% endif %}" placeholder="Ej: 0 o oo" />
+      <label class="toggle" id="toggle-steps-der" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" name="show_steps" id="show_steps" {% if pasos %}checked{% endif %}>
+        <span class="toggle-track"></span>
+        <span class="toggle-thumb"></span>
+        <span class="toggle-label">Mostrar pasos</span>
+      </label>
+    </div>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+    <button class="btn" type="submit">Calcular derivada</button>
+    <button type="button" class="btn ghost" id="limpiarBtn" data-action="clear">Limpiar</button>
+  </div>
+</form>
+
+{% if derivada %}
+  <h3>Resultado</h3>
+  <div class="card vertical">
+    <p><strong>Expresión normalizada:</strong> <code>{{ expr_used }}</code></p>
+    <p><strong>Derivada respecto a x:</strong></p>
+    <pre>{{ derivada }}</pre>
+    {% if eval_point is defined %}
+      <p><strong>Evaluación en x = {{ eval_point }}:</strong></p>
+      <pre>{{ eval_result }}</pre>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if pasos %}
+  <h3>Pasos</h3>
+  <div class="card vertical">
+    {% for p in pasos %}
+      <div style="margin-bottom:10px">
+        <strong>{{ p.operacion }}:</strong>
+        <pre style="white-space:pre-wrap">{{ p.detalle }}</pre>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const form = document.getElementById('derivadasForm');
+  const mf = document.getElementById('expr_field');
+  const hidden = document.getElementById('expr_hidden');
+  form.addEventListener('submit', function(ev){
+    try{
+      let raw = '';
+      if(mf && typeof mf.getValue === 'function') raw = mf.getValue();
+      else if(mf && mf.value) raw = mf.value;
+      else if(mf && mf.textContent) raw = mf.textContent;
+      if(window.latexToFunction) raw = window.latexToFunction(raw);
+      if(window.toJSExpr) raw = window.toJSExpr(raw);
+      if(hidden) hidden.value = raw;
+    }catch(e){ }
+  });
+
+  const limpiar = document.getElementById('limpiarBtn');
+  if(limpiar){
+    limpiar.addEventListener('click', ()=>{
+      try{
+        if(mf && typeof mf.setValue === 'function') mf.setValue('');
+        else if(mf) mf.textContent = '';
+        if(hidden) hidden.value = '';
+        document.getElementById('point').value = '';
+        const chk = document.getElementById('show_steps'); if(chk) chk.checked = false;
+      }catch(_e){}
+    });
+  }
+})();
+</script>
+{% endblock %}

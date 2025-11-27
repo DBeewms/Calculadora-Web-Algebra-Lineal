@@ -24,4 +24,5 @@ urlpatterns = [
     path("metodos/abiertos/secante/", views.secante, name="secante"),
     # Cálculo: límites
     path("calculo/limite/", views.limite, name="limite"),
+    path("calculo/derivadas/", views.derivadas, name="derivadas"),
 ]
