@@ -42,6 +42,7 @@
       </div>
 
       <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+      <button type="button" class="btn ghost" data-action="open-eq">Introducir ecuaciones</button>
     </div>
 
     <div class="grid matrices panel">
@@ -56,6 +57,7 @@
         <input type="hidden" name="matrizB"/>
       </div>
     </div>
+    {% include "algebra/_equations_toggle.html" %}
 
     <div class="panel">
       <div class="panel-header">

@@ -25,6 +25,7 @@
       <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
     </div>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+    <button type="button" class="btn ghost" data-action="open-eq">Introducir ecuaciones</button>
   </div>
   <div class="grid matrices panel">
     <div>
@@ -33,6 +34,7 @@
       <input type="hidden" name="matrizA"/>
     </div>
   </div>
+  {% include "algebra/_equations_toggle.html" %}
   <div class="actions">
     <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
     <button type="submit" class="btn primary">Calcular |A|</button>
