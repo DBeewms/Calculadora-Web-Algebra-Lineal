@@ -94,6 +94,16 @@
           <a href="{% url 'index' %}#sobre" role="menuitem">Sobre la app</a>
         </div>
       </div>
+      
+          <div class="menu-item has-dropdown {% if url_name == 'limite' %}active{% endif %}">
+            <a class="menu-link" href="{% url 'limite' %}">Cálculo</a>
+            <div class="dropdown" role="menu">
+              <div class="menu-subgroup">
+                <strong class="dropdown-title">Cálculo</strong>
+                <a href="{% url 'limite' %}" role="menuitem" class="{% if url_name == 'limite' %}current{% endif %}">Límite</a>
+              </div>
+            </div>
+          </div>
     </nav>
     {% endwith %}
     <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">

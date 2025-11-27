@@ -22,4 +22,6 @@ urlpatterns = [
     path("metodos/abiertos/", views.metodos_abiertos, name="metodos_abiertos"),
     path("metodos/abiertos/newton-raphson/", views.newton_raphson, name="newton_raphson"),
     path("metodos/abiertos/secante/", views.secante, name="secante"),
+    # Cálculo: límites
+    path("calculo/limite/", views.limite, name="limite"),
 ]

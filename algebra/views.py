@@ -3,6 +3,7 @@ from django.http import HttpRequest
 from .logic import utilidades as u
 from .logic import operaciones as op
 from .logic.metodos import biseccion as biseccion_algo, regula_falsi as regula_falsi_algo, newton_raphson as newton_raphson_algo, secante as secante_algo, ErrorBiseccion, _crear_evaluador
+from sympy import sympify, symbols, limit as sympy_limit, oo, sin, cos, tan, asin, acos, atan, exp, log, sqrt, Abs
 import json
 import logging
 
@@ -805,6 +806,78 @@ def metodos_abiertos(request: HttpRequest):
         ]
     }
     return render(request, "algebra/metodos_abiertos.html", ctx)
+
+
+def limite(request: HttpRequest):
+    """Calcular límite usando sympy.limit.
+
+    El formulario envía una expresión ya normalizada en `expr` (cliente intenta
+    convertir LaTeX mediante `latexToFunction` y `toJSExpr`). Si no está,
+    intentamos sympify del texto recibido.
+    """
+    ctx = {}
+    resultado = None
+    expr_used = None
+    point_used = None
+    direction_used = None
+    if request.method == 'POST':
+        try:
+            raw = (request.POST.get('expr') or request.POST.get('latex') or '').strip()
+            varname = (request.POST.get('var') or 'x').strip() or 'x'
+            point = (request.POST.get('point') or '0').strip()
+            direction = (request.POST.get('direction') or 'both')
+
+            expr_used = raw
+            point_used = point
+            direction_used = direction
+
+            # map point to sympy symbol/value
+            if point.lower() in ('oo', 'infty', 'infinito', 'inf', '∞'):
+                a = oo
+            elif point.lower() in ('-oo', '-infty', '-inf'):
+                a = -oo
+            else:
+                # try numeric
+                try:
+                    a = sympify(point)
+                except Exception:
+                    a = sympify('0')
+
+            # Prepare locals allowing common math functions
+            local_dict = {
+                'sin': sin, 'cos': cos, 'tan': tan,
+                'asin': asin, 'acos': acos, 'atan': atan,
+                'exp': exp, 'log': log, 'sqrt': sqrt,
+                'abs': Abs, 'pi': sympify('pi'), 'e': sympify('E')
+            }
+
+            if not raw:
+                raise ValueError('Debes introducir una expresión.')
+
+            # Sympify expression
+            try:
+                expr_sym = sympify(raw, locals=local_dict)
+            except Exception:
+                # try raw latex-ish fallback: remove LaTeX backslashes and try
+                fallback = raw.replace('\\', '').replace('^', '**')
+                expr_sym = sympify(fallback, locals=local_dict)
+
+            x = symbols(varname)
+
+            if direction in ('+', '-'):
+                res = sympy_limit(expr_sym, x, a, dir=direction)
+            else:
+                res = sympy_limit(expr_sym, x, a)
+
+            resultado = str(res)
+            ctx['resultado'] = resultado
+            ctx['expr_used'] = expr_used
+            ctx['point_used'] = point_used
+            ctx['direction_used'] = direction_used
+        except Exception as e:
+            logger.exception('Error en vista limite')
+            ctx['error'] = friendly_error(e)
+    return render(request, 'algebra/limite.html', ctx)
 
 
 def biseccion(request: HttpRequest):
