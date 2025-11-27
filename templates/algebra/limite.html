@@ -4,24 +4,40 @@
 {% block content %}
 <h2>Límite</h2>
 <p>Introduce la expresión (puedes usar LaTeX o escribirla directamente). Usa la variable <strong>x</strong> por defecto.</p>
-<form method="post" class="panel" id="limiteForm">
+<form method="post" class="panel matrix-form" id="limiteForm" style="padding:16px;" data-page="limite">
   {% csrf_token %}
-  <label for="expr_field">Expresión</label>
-  <math-field id="expr_field" virtual-keyboard-mode="onfocus" placeholder="e.g. \frac{\sin(x)}{x}">{% if expr_used %}{{ expr_used }}{% endif %}</math-field>
-  <input type="hidden" name="expr" id="expr_hidden" />
-  <label for="var">Variable</label>
-  <input id="var" name="var" value="{% if var %}{{ var }}{% else %}x{% endif %}" />
-  <label for="point">Punto (lim x→a): escribe número, 'oo' para infinito</label>
-  <input id="point" name="point" value="{% if point_used %}{{ point_used }}{% else %}0{% endif %}" />
-  <label for="direction">Dirección</label>
-  <select id="direction" name="direction">
-    <option value="both" {% if direction_used == 'both' or not direction_used %}selected{% endif %}>Ambos</option>
-    <option value="+" {% if direction_used == '+' %}selected{% endif %}>Derecha (+)</option>
-    <option value="-" {% if direction_used == '-' %}selected{% endif %}>Izquierda (-)</option>
-  </select>
-  <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
-    <button class="btn primary" type="submit">Calcular límite</button>
-    <button type="button" id="limpiarBtn" class="btn ghost">Limpiar</button>
+  <div class="grid">
+    <div class="control">
+      <label for="expr_field">Expresión</label>
+      <math-field class="mf" id="expr_field" virtualkeyboardmode="onfocus" virtualkeyboardtogglevisible="false" placeholder="Ej: \frac{\sin(x)}{x}">{% if expr_used %}{{ expr_used }}{% endif %}</math-field>
+      <input type="hidden" name="expr" id="expr_hidden" />
+      <div id="limite-preview" style="margin-top:6px; font-size:13px;">
+        <div id="limite-preview-ok" style="color:var(--muted); display:none;">Previsualización: f(x) = <code id="limite-preview-text"></code></div>
+        <div id="limite-preview-err" style="color:#b91c1c; display:none;">Error: <span id="limite-preview-err-txt"></span></div>
+      </div>
+      <div class="mini-toolbar" style="margin-top:6px; display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted);">
+        <span>Ejemplos:</span>
+        <button type="button" class="btn ghost" data-action="example" data-ex="\\frac{\\sin(x)}{x}" style="padding:2px 6px; font-size:12px;">\frac{\sin(x)}{x}</button>
+        <button type="button" class="btn ghost" data-action="example" data-ex="(x^2-1)/(x-1)" style="padding:2px 6px; font-size:12px;">(x^2-1)/(x-1)</button>
+        <button type="button" class="btn ghost" data-action="example" data-ex="1/x" style="padding:2px 6px; font-size:12px;">1/x</button>
+      </div>
+    </div>
+    <div class="control">
+      <label for="point">Punto (lim x→a)</label>
+      <input id="point" name="point" value="{% if point_used %}{{ point_used }}{% else %}0{% endif %}" />
+      <label for="direction" style="margin-top:8px; display:block">Dirección</label>
+      <select id="direction" name="direction">
+        <option value="both" {% if direction_used == 'both' or not direction_used %}selected{% endif %}>Ambos</option>
+        <option value="+" {% if direction_used == '+' %}selected{% endif %}>Derecha (+)</option>
+        <option value="-" {% if direction_used == '-' %}selected{% endif %}>Izquierda (-)</option>
+      </select>
+      <label style="margin-top:8px; display:block"><input type="checkbox" name="show_steps" id="show_steps" {% if pasos %}checked{% endif %}/> Mostrar pasos</label>
+    </div>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+    <button class="btn" type="submit">Calcular límite</button>
+    <button type="button" class="btn secondary" id="limite-plot" data-action="plot-func">Graficar</button>
+    <button type="button" class="btn ghost" id="limpiarBtn" data-action="clear">Limpiar</button>
   </div>
 </form>
 
@@ -31,6 +47,18 @@
     <p><strong>Expresión normalizada:</strong> <code>{{ expr_used }}</code></p>
     <p><strong>Límite en x → {{ point_used }}{% if direction_used and direction_used != 'both' %} (desde {{ direction_used }}){% endif %}:</strong></p>
     <pre>{{ resultado }}</pre>
+  </div>
+{% endif %}
+
+{% if pasos %}
+  <h3>Pasos</h3>
+  <div class="card vertical">
+    {% for p in pasos %}
+      <div style="margin-bottom:10px">
+        <strong>{{ p.operacion }}:</strong>
+        <pre style="white-space:pre-wrap">{{ p.detalle }}</pre>
+      </div>
+    {% endfor %}
   </div>
 {% endif %}
 
@@ -70,9 +98,9 @@
         if(mf && typeof mf.setValue === 'function') mf.setValue('');
         else if(mf) mf.textContent = '';
         if(hidden) hidden.value = '';
-        document.getElementById('var').value = 'x';
         document.getElementById('point').value = '0';
         document.getElementById('direction').value = 'both';
+        const chk = document.getElementById('show_steps'); if(chk) chk.checked = false;
       }catch(_e){}
     });
   }

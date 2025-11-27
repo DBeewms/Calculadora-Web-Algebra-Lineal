@@ -823,9 +823,11 @@ def limite(request: HttpRequest):
     if request.method == 'POST':
         try:
             raw = (request.POST.get('expr') or request.POST.get('latex') or '').strip()
-            varname = (request.POST.get('var') or 'x').strip() or 'x'
+            # Variable fija: 'x'
+            varname = 'x'
             point = (request.POST.get('point') or '0').strip()
             direction = (request.POST.get('direction') or 'both')
+            show_steps = bool(request.POST.get('show_steps'))
 
             expr_used = raw
             point_used = point
@@ -864,6 +866,34 @@ def limite(request: HttpRequest):
 
             x = symbols(varname)
 
+            pasos = []
+            if show_steps:
+                # Paso 1: expresión sympify
+                try:
+                    pasos.append({"operacion": "Expr. simbólica", "detalle": str(expr_sym)})
+                except Exception:
+                    pass
+                # Paso 2: intento de simplificar
+                try:
+                    simp = expr_sym.simplify()
+                    pasos.append({"operacion": "Simplificación", "detalle": str(simp)})
+                except Exception:
+                    simp = expr_sym
+                # Paso 3: factorización (si aplica)
+                try:
+                    fact = expr_sym.factor()
+                    if str(fact) != str(expr_sym):
+                        pasos.append({"operacion": "Factorización", "detalle": str(fact)})
+                except Exception:
+                    pass
+                # Paso 4: serie (si es punto finito y no infinito)
+                try:
+                    if a not in (oo, -oo):
+                        ser = expr_sym.series(x, a, 3)
+                        pasos.append({"operacion": "Expansión en serie (orden 3)", "detalle": str(ser)})
+                except Exception:
+                    pass
+
             if direction in ('+', '-'):
                 res = sympy_limit(expr_sym, x, a, dir=direction)
             else:
@@ -874,6 +904,8 @@ def limite(request: HttpRequest):
             ctx['expr_used'] = expr_used
             ctx['point_used'] = point_used
             ctx['direction_used'] = direction_used
+            if show_steps and pasos:
+                ctx['pasos'] = pasos
         except Exception as e:
             logger.exception('Error en vista limite')
             ctx['error'] = friendly_error(e)
