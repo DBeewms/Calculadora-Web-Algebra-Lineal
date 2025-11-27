@@ -67,10 +67,21 @@ body{ font-family:Inter, system-ui, Segoe UI, Arial, sans-serif; margin:0; color
 h2, h3{ font-family:Poppins, Inter, sans-serif }
 h2{ font-size:24px }
 h3{ font-size:18px }
-.topbar{ display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center; padding:14px 36px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
-.topbar-left{ justify-self:start; display:flex; align-items:center; gap:16px }
-.topbar-right{ justify-self:end; display:flex; align-items:center; gap:8px }
-.topbar > .menu{ grid-column:2; justify-self:center; align-self:stretch }
+.topbar{ display:flex; align-items:center; justify-content:space-between; padding:14px 36px; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
+.topbar-left{ display:flex; align-items:center; gap:16px; flex:0 0 auto }
+.topbar-right{ display:flex; align-items:center; gap:8px; flex:0 0 auto }
+.topbar > .menu{ flex:1; display:flex; justify-content:center }
+/* Ensure the main nav fills the header area and menu items are centered */
+/* Main nav: keep it vertically centered but avoid forcing 100% height (interferes with topbar padding) */
+/* Center the main nav horizontally within the topbar using absolute positioning
+  This prevents it from being pushed right by the left/right blocks. Disabled on small screens. */
+nav#mainMenu.menu{ display:flex; align-items:center; justify-content:center; height:auto; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:5; width:min(85%,1100px); padding:0 20px; }
+
+@media (max-width:880px){
+  /* Restore normal flow on smaller viewports (burger layout) */
+  nav#mainMenu.menu{ position:static; left:auto; top:auto; transform:none; z-index:auto; display:flex; justify-content:center; }
+}
+.topbar > .menu{ align-items:center; }
 .brand{ display:flex; align-items:center; gap:16px; color:inherit; text-decoration:none }
 .brand .logo-img{ width:64px; height:64px; object-fit:contain; border-radius:0 0 0 2px }
 .brand h1{ display:flex; flex-direction:column; justify-content:center; margin:0 }
@@ -79,20 +90,31 @@ h3{ font-size:18px }
 .brand:focus-visible{ outline:2px solid rgba(57,73,171,.18); outline-offset:4px; border-radius:6px }
 .topbar .menu{ align-items:center; }
 .burger{ display:none; position:relative; width:40px; height:34px; border:none; background:transparent; border-radius:8px; cursor:pointer; align-items:center; justify-content:center }
-.burger .b-line{ position:relative; display:block; width:22px; height:2px; background:#0f172a; margin:3px 0; transition:transform .25s ease, opacity .2s }
+.burger .b-line{ position:relative; display:block; width:22px; height:2px; background:var(--text, #0f172a); margin:3px 0; transition:transform .25s ease, opacity .2s }
 .topbar.nav-open .burger .b-line:nth-child(1){ transform:translateY(5px) rotate(45deg) }
 .topbar.nav-open .burger .b-line:nth-child(2){ opacity:0 }
 .topbar.nav-open .burger .b-line:nth-child(3){ transform:translateY(-5px) rotate(-45deg) }
 .pills{ display:flex; gap:8px }
-.pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:#0f172a; background:#fff }
+.pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:var(--text, #0f172a); background:var(--card) }
 .pills a:hover{ border-color:#cbd5e1 }
 .pills a.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
-.menu{ display:flex; gap:10px; align-items:center; height:100% }
-.menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; text-decoration:none; color:#0f172a; font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
+.menu{ display:flex; gap:10px; align-items:center }
+.menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:var(--card); text-decoration:none; color:var(--text, #0f172a); font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
+/* Align special home/menu-home links to match other menu items */
+/* removed align-self override so links and buttons share same vertical alignment */
 .menu-home:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
-.menu .menu-item{ position:relative; display:flex; align-items:center; justify-content:center; height:100%; }
+.menu .menu-item{ position:relative; display:flex; align-items:center; justify-content:center; }
 .menu { justify-content:center; }
 .menu .menu-link{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:6px 10px; border-radius:8px; background:transparent; color:var(--muted); font-weight:600; cursor:pointer; transition:color .18s ease, background .18s ease, transform .12s ease }
+
+/* Make top-level links fill their menu-item and stay vertically centered */
+/* Use min-height so items can grow if needed and remain vertically centered */
+nav#mainMenu.menu > .menu-item{ min-height:44px; display:flex; align-items:center; }
+nav#mainMenu.menu > .menu-item > .menu-link{ height:100%; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:6px 12px; }
+
+/* Ensure standalone links align with brand/logo */
+.menu .menu-link, .brand .logo-img{ vertical-align:middle }
+/* Removed force-align rule — menu items now vertically centered consistently */
 .menu .menu-link::after{ content:"▾"; font-size:12px; opacity:.5; margin-left:6px; transition:transform .18s ease, opacity .18s ease }
 .menu .menu-link:hover{ color:var(--primary); background:rgba(57,73,171,.06); transform:translateY(-1px) }
 .menu .menu-item:not(.has-dropdown) > .menu-link::after{ content:none }
@@ -119,7 +141,7 @@ h3{ font-size:18px }
 .has-hover .menu .menu-item.has-dropdown:hover > .dropdown { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; align-items:start; justify-items:start; transform-origin:top left }
 .menu .menu-item.has-dropdown > .dropdown .dropdown-title{ display:block; font-size:13px; color:var(--primary); margin-bottom:8px; font-weight:700 }
 .menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ min-width:160px; position:relative }
-.menu .menu-item.has-dropdown > .dropdown a{ color:#0f172a; display:block; padding:6px 0; border-radius:4px }
+.menu .menu-item.has-dropdown > .dropdown a{ color:var(--text, #0f172a); display:block; padding:6px 0; border-radius:4px }
 .menu .menu-item.has-dropdown > .dropdown hr{ display:none }
 
 /* Styling for 'Acerca de' improved submenu: brief descriptions and subtle look */
@@ -168,7 +190,37 @@ nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ padding:6p
 .container{ padding:24px }
 
 /* --- Strong overrides for mega-menu to ensure visual parity with reference --- */
-nav#mainMenu.menu > .menu-item > .menu-link{ padding:6px 10px !important; min-height:44px !important; display:inline-flex; align-items:center }
+/* Ensure menu links are vertically centered and consistent across items
+   Some items (buttons vs anchors, or items with hidden dropdowns) could
+   render with different inline/line-height behaviour. Force a stable
+   flex layout and explicit height so all menu items align identically. */
+nav#mainMenu.menu > .menu-item > .menu-link{
+  padding:6px 10px !important;
+  min-height:44px !important;
+  height:44px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+  vertical-align:middle !important;
+}
+
+/* Normalize the container (.menu-item) so every top-level item shares the
+   same box metrics regardless of whether it contains a .dropdown child. */
+nav#mainMenu.menu > .menu-item{
+  height:44px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* Make the clickable element fill the parent's height to avoid internal
+   baseline differences between buttons/anchors */
+nav#mainMenu.menu > .menu-item > .menu-link{
+  margin:0 !important;
+  height:100% !important;
+  box-sizing:border-box !important;
+}
 /* Dropdown panel */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ padding:14px !important; max-width:920px !important; box-sizing:border-box !important; background:var(--card) !important; z-index:10000 !important }
 /* Force grid and gap */
@@ -399,6 +451,17 @@ button:hover{ opacity:.9 }
 @media (max-width: 640px){
   .eq-popup .eq-panel{ width:100%; max-width:none }
 }
+
+/* DEBUG OUTLINES - temporary helpers to visualize header boxes during alignment QA
+   Remove these rules after verification. */
+.debug-header .topbar{ outline:2px dashed rgba(220,20,60,.18); }
+.debug-header .topbar-left{ outline:2px dashed rgba(34,197,94,.18); }
+.debug-header .topbar-right{ outline:2px dashed rgba(59,130,246,.18); }
+.debug-header nav#mainMenu.menu{ outline:2px dashed rgba(234,88,12,.18); }
+.debug-header nav#mainMenu.menu .menu-item{ outline:1px dashed rgba(99,102,241,.2); }
+.debug-header nav#mainMenu.menu .menu-link{ outline:1px solid rgba(16,185,129,.12); }
+
+/* Utility: add `debug-header` class to <body> in templates to enable visual debugging */
 .list-inline{ list-style:none; padding:0; margin:6px 0; display:flex; flex-wrap:wrap; gap:12px }
 .list-inline.mini{ gap:8px }
 /* Enumeraciones en línea */
