@@ -67,13 +67,17 @@ body{ font-family:Inter, system-ui, Segoe UI, Arial, sans-serif; margin:0; color
 h2, h3{ font-family:Poppins, Inter, sans-serif }
 h2{ font-size:24px }
 h3{ font-size:18px }
-.topbar{ display:flex; gap:16px; align-items:center; justify-content:flex-start; padding:14px 20px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
-.brand{ display:flex; align-items:center; gap:10px }
-.brand .logo-img{ width:44px; height:44px; object-fit:contain; border-radius:10px }
+.topbar{ display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center; padding:14px 36px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
+.topbar-left{ justify-self:start; display:flex; align-items:center; gap:16px }
+.topbar-right{ justify-self:end; display:flex; align-items:center; gap:8px }
+.topbar > .menu{ grid-column:2; justify-self:center; align-self:stretch }
+.brand{ display:flex; align-items:center; gap:16px; color:inherit; text-decoration:none }
+.brand .logo-img{ width:64px; height:64px; object-fit:contain; border-radius:0 0 0 2px }
+.brand h1{ display:flex; flex-direction:column; justify-content:center; margin:0 }
 .topbar h1{ font-family:Poppins, Inter, sans-serif; letter-spacing:.2px; font-size:18px; margin:0 }
-.topbar h1 small{ font-weight:600; font-size:12px; color:var(--muted); margin-left:8px }
-.topbar .menu{ flex:1 1 auto; align-items:center; }
-.topbar .theme-toggle{ margin-left:auto }
+.brand h1 small{ display:block; font-weight:600; font-size:12px; color:var(--muted); margin-left:0 }
+.brand:focus-visible{ outline:2px solid rgba(57,73,171,.18); outline-offset:4px; border-radius:6px }
+.topbar .menu{ align-items:center; }
 .burger{ display:none; position:relative; width:40px; height:34px; border:none; background:transparent; border-radius:8px; cursor:pointer; align-items:center; justify-content:center }
 .burger .b-line{ position:relative; display:block; width:22px; height:2px; background:#0f172a; margin:3px 0; transition:transform .25s ease, opacity .2s }
 .topbar.nav-open .burger .b-line:nth-child(1){ transform:translateY(5px) rotate(45deg) }
@@ -83,22 +87,28 @@ h3{ font-size:18px }
 .pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:#0f172a; background:#fff }
 .pills a:hover{ border-color:#cbd5e1 }
 .pills a.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
-.menu{ display:flex; gap:10px; align-items:center }
+.menu{ display:flex; gap:10px; align-items:center; height:100% }
 .menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; text-decoration:none; color:#0f172a; font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
 .menu-home:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
-.menu .menu-item{ position:relative; padding-bottom:8px }
-.menu .menu-link{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:#fff; color:#0f172a; font-weight:600; cursor:pointer; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
-.menu .menu-link::after{ content:"▾"; font-size:12px; opacity:.7; margin-left:4px; transition:transform .2s ease }
-.menu .menu-link:hover{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
+.menu .menu-item{ position:relative; display:flex; align-items:center; justify-content:center; height:100%; }
+.menu { justify-content:center; }
+.menu .menu-link{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:6px 10px; border-radius:8px; background:transparent; color:var(--muted); font-weight:600; cursor:pointer; transition:color .18s ease, background .18s ease, transform .12s ease }
+.menu .menu-link::after{ content:"▾"; font-size:12px; opacity:.5; margin-left:6px; transition:transform .18s ease, opacity .18s ease }
+.menu .menu-link:hover{ color:var(--primary); background:rgba(57,73,171,.06); transform:translateY(-1px) }
 .menu .menu-item:not(.has-dropdown) > .menu-link::after{ content:none }
 .menu .menu-item.active > .menu-link{ background:var(--primary); color:#fff; border-color:transparent }
 /* Evitar que el hover vuelva muy claro los botones activos */
 .menu .menu-item:hover:not(.active) > .menu-link{ border-color:#cbd5e1; background:rgba(57,73,171,.08) }
 /* Mantener énfasis al pasar el mouse sobre un item activo */
 .menu .menu-item.active > .menu-link:hover{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,.12) }
-.menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.35); outline-offset:2px }
+.menu .menu-link:focus-visible{ outline:2px solid rgba(57,73,171,.18); outline-offset:3px; border-radius:10px }
 .menu .menu-item.open > .menu-link::after, .has-hover .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
 .menu .dropdown{ position:absolute; top:100%; left:0; right:auto; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:9999 }
+
+/* Center dropdown panels under parent menu items */
+.menu .menu-item.has-dropdown > .dropdown{ left:50%; transform:translateX(-50%); }
+.menu .menu-item.has-dropdown.open > .dropdown,
+.has-hover .menu .menu-item.has-dropdown:hover > .dropdown { transform-origin:top center }
 
 /* Mega-menu for Álgebra lineal: when dropdown contains multiple .menu-subgroup blocks
    show as a multi-column panel on larger screens */
@@ -112,21 +122,53 @@ h3{ font-size:18px }
 .menu .menu-item.has-dropdown > .dropdown a{ color:#0f172a; display:block; padding:6px 0; border-radius:4px }
 .menu .menu-item.has-dropdown > .dropdown hr{ display:none }
 
+/* Styling for 'Acerca de' improved submenu: brief descriptions and subtle look */
+.about-submenu{ padding:10px 12px }
+.about-submenu .about-link{ display:block; padding:10px 12px; border-radius:8px; color:var(--muted); text-decoration:none }
+.about-submenu .about-link strong{ display:block; color:var(--violet); font-weight:700; margin-bottom:4px }
+.about-submenu .about-link small{ display:block; color:var(--muted); font-size:12px; line-height:1.2 }
+.about-submenu .about-link:hover{ background:rgba(57,73,171,.04); color:var(--primary) }
+
+/* Generic submenu link style used across dropdowns */
+.submenu-link{ display:block; padding:8px 10px; border-radius:8px; color:var(--muted); text-decoration:none }
+.submenu-link strong{ display:block; color:var(--violet); font-weight:700; margin-bottom:4px }
+.submenu-link small{ display:block; color:var(--muted); font-size:12px; line-height:1.18 }
+.submenu-link:hover{ background:rgba(57,73,171,.04); color:var(--primary) }
+.submenu-link.current{ color:var(--primary); }
+
+/* Improve dropdown typography & spacing for clearer navigation */
+.menu .dropdown{ font-size:14px; line-height:1.25 }
+.menu .menu-subgroup{ display:flex; flex-direction:column; gap:8px }
+.menu .menu-subgroup .dropdown-title{ font-size:13px; margin-bottom:6px }
+.menu .menu-subgroup .submenu-link{ padding:10px 12px }
+.menu .menu-subgroup .submenu-link strong{ font-size:14px }
+.menu .menu-subgroup .submenu-link small{ font-size:13px; color:var(--muted); opacity:.95 }
+
+/* Make mega-menu groups more separated and readable */
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ gap:14px }
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ padding:6px }
+
+/* Ensure consistent width and alignment for dropdowns */
+.menu .dropdown{ min-width:260px }
+@media (min-width:980px){
+  nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ min-width:420px }
+}
+
 @media (max-width: 640px){
   /* On mobile keep dropdowns stacked full-width */
   .menu .menu-item.has-dropdown > .dropdown{ display:none; position:static; border:none; box-shadow:none; padding:8px }
   .menu .menu-item.open > .dropdown{ display:flex; flex-direction:column }
   .menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ margin-bottom:8px }
 }
-.menu .dropdown a{ display:block; padding:8px 10px; text-decoration:none; color:#0f172a; border-radius:8px; transition:background .2s }
-.menu .dropdown a:hover{ background:rgba(57,73,171,.10) }
+.menu .dropdown a{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; text-decoration:none; color:var(--muted); border-radius:8px; transition:background .18s ease, color .18s ease; min-height:40px }
+.menu .dropdown a:hover{ background:rgba(57,73,171,.06); color:var(--primary) }
 .menu .dropdown a.current{ font-weight:700; color:var(--violet) }
 .menu .menu-item:not(.has-dropdown):hover > .dropdown{ display:flex }
 .menu .menu-item:not(.has-dropdown).open > .dropdown{ display:flex }
 .container{ padding:24px }
 
 /* --- Strong overrides for mega-menu to ensure visual parity with reference --- */
-nav#mainMenu.menu > .menu-item > .menu-link{ padding:8px 12px !important }
+nav#mainMenu.menu > .menu-item > .menu-link{ padding:6px 10px !important; min-height:44px !important; display:inline-flex; align-items:center }
 /* Dropdown panel */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ padding:14px !important; max-width:920px !important; box-sizing:border-box !important; background:var(--card) !important; z-index:10000 !important }
 /* Force grid and gap */
@@ -137,7 +179,7 @@ nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .dropdown-title{ font-size
 /* Menu subgroups: revert to original minimal rules */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ min-width:160px !important; position:relative !important }
 /* Links inside dropdown */
-nav#mainMenu.menu .menu-item.has-dropdown > .dropdown a{ padding:6px 6px !important; color:inherit !important; display:block !important }
+nav#mainMenu.menu .menu-item.has-dropdown > .dropdown a{ padding:8px 10px !important; color:var(--muted) !important; display:block !important; border-radius:6px !important }
 /* Hide HR inside mega-menu */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown hr{ display:none !important }
 
@@ -267,7 +309,7 @@ button:hover{ opacity:.9 }
 
 @media (max-width: 640px){
   .container{ padding:16px }
-  .brand .logo-img{ width:36px; height:36px }
+  .brand .logo-img{ width:48px; height:48px }
   .topbar h1{ font-size:16px }
   .topbar h1 small{ display:none }
   .burger{ display:inline-flex }
@@ -362,6 +404,27 @@ button:hover{ opacity:.9 }
 /* Enumeraciones en línea */
 .enum-inline{ counter-reset: item; list-style:none; padding:0; margin:6px 0; display:flex; flex-wrap:wrap; gap:14px }
 .enum-inline.mini{ gap:10px }
+
+/* Megamenu specific helpers: provide a 2-column grid for larger screens and stack on small screens */
+.dropdown.megamenu{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(200px,1fr));
+  gap:18px;
+  align-items:start;
+}
+.dropdown.megamenu .mega-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  align-content:start;
+}
+.dropdown.megamenu .submenu-link{ padding:10px 12px }
+
+@media (max-width:980px){
+  .dropdown.megamenu{ grid-template-columns:1fr }
+  .dropdown.megamenu .mega-grid{ grid-template-columns:1fr }
+}
+
 .enum-inline > li{ position:relative; padding-left:26px; font-size:14px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 12px 8px 34px; box-shadow:0 2px 4px rgba(0,0,0,.04) }
 .enum-inline > li:before{ counter-increment:item; content:counter(item) "."; position:absolute; left:10px; top:50%; transform:translateY(-50%); font-weight:700; color:var(--primary); }
 /* Inline cards (no numbers) used in analysis */

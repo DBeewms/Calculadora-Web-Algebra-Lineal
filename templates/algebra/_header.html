@@ -1,0 +1,160 @@
+{% load static %}
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand" href="{% url 'index' %}" aria-label="Ir al inicio">
+      <img class="logo-img" src="{% static 'algebra/wiwi-logo-actualizado-esquina' %}" alt="KiwiSolve"/>
+      <h1>KiwiSolve <small>Calculadora web al alcance</small></h1>
+    </a>
+    <button class="burger" id="navToggle" aria-label="Abrir menú" aria-controls="mainMenu" aria-expanded="false">
+      <span class="b-line"></span>
+      <span class="b-line"></span>
+      <span class="b-line"></span>
+    </button>
+  </div>
+  {% with request.resolver_match.url_name as url_name %}
+  <nav id="mainMenu" class="menu" role="navigation" aria-label="Navegación principal">
+    <div class="menu-item {% if url_name == 'index' %}active{% endif %}">
+      <a class="menu-link" href="{% url 'index' %}">Inicio</a>
+    </div>
+
+    
+      <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' or url_name == 'determinante' or url_name == 'inversa' or url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' %}active{% endif %}">
+        <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Matrices</button>
+        <div class="dropdown megamenu" role="menu">
+            <div class="menu-subgroup">
+              <strong class="dropdown-title">Operaciones</strong>
+              <a href="{% url 'suma' %}" role="menuitem" class="submenu-link {% if url_name == 'suma' %}current{% endif %}">
+                <strong>Suma de matrices</strong>
+                <small>Suma elemento a elemento de dos matrices</small>
+              </a>
+              <a href="{% url 'multiplicacion' %}" role="menuitem" class="submenu-link {% if url_name == 'multiplicacion' %}current{% endif %}">
+                <strong>Multiplicación</strong>
+                <small>Producto de matrices compatibles</small>
+              </a>
+              <a href="{% url 'escalar' %}" role="menuitem" class="submenu-link {% if url_name == 'escalar' %}current{% endif %}">
+                <strong>Escalar (c·A)</strong>
+                <small>Multiplica cada elemento por una constante</small>
+              </a>
+              <a href="{% url 'transposicion' %}" role="menuitem" class="submenu-link {% if url_name == 'transposicion' %}current{% endif %}">
+                <strong>Transpuesta</strong>
+                <small>Intercambia filas y columnas</small>
+              </a>
+            </div>
+            <hr />
+            <div class="menu-subgroup">
+              <strong class="dropdown-title">Propiedades</strong>
+              <a href="{% url 'determinante' %}" role="menuitem" class="submenu-link {% if url_name == 'determinante' %}current{% endif %}">
+                <strong>Determinante</strong>
+                <small>Calcula escala y invertibilidad</small>
+              </a>
+              <a href="{% url 'inversa' %}" role="menuitem" class="submenu-link {% if url_name == 'inversa' %}current{% endif %}">
+                <strong>Inversa</strong>
+                <small>Obtén la inversa si existe</small>
+              </a>
+            </div>
+          </div>
+      </div>
+
+    <div class="menu-item {% if url_name == 'compuestas' %}active{% endif %}">
+      <a class="menu-link" href="{% url 'compuestas' %}">Operaciones compuestas</a>
+    </div>
+
+    <div class="menu-item has-dropdown {% if url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' %}active{% endif %}">
+      <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Ecuaciones</button>
+      <div class="dropdown megamenu" role="menu">
+        <div class="menu-subgroup">
+          <strong class="dropdown-title">Sistemas de ecuaciones</strong>
+          <a href="{% url 'gauss' %}" role="menuitem" class="submenu-link {% if url_name == 'gauss' %}current{% endif %}">
+            <strong>Eliminación de Gauss</strong>
+            <small>Resolución por eliminación paso a paso</small>
+          </a>
+          <a href="{% url 'gauss_jordan' %}" role="menuitem" class="submenu-link {% if url_name == 'gauss_jordan' %}current{% endif %}">
+            <strong>Gauss–Jordan</strong>
+            <small>Forma reducida por filas para solución directa</small>
+          </a>
+        </div>
+        <hr />
+        <div class="menu-subgroup">
+          <strong class="dropdown-title">Métodos para sistemas</strong>
+          <a href="{% url 'cramer' %}" role="menuitem" class="submenu-link {% if url_name == 'cramer' %}current{% endif %}">
+            <strong>Regla de Cramer</strong>
+            <small>Solución mediante determinantes</small>
+          </a>
+          <a href="{% url 'homogeneo' %}" role="menuitem" class="submenu-link {% if url_name == 'homogeneo' %}current{% endif %}">
+            <strong>Sistema homogéneo</strong>
+            <small>Analiza soluciones triviales y no triviales</small>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item has-dropdown {% if url_name == 'metodos_index' or url_name == 'metodos_cerrados' or url_name == 'biseccion' or url_name == 'regula_falsi' or url_name == 'metodos_abiertos' or url_name == 'newton_raphson' or url_name == 'secante' %}active{% endif %}">
+      <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Métodos numéricos</button>
+      <div class="dropdown" role="menu">
+        <div class="menu-subgroup">
+          <strong class="dropdown-title">Métodos cerrados</strong>
+          <a href="{% url 'biseccion' %}" role="menuitem" class="submenu-link {% if url_name == 'biseccion' %}current{% endif %}">
+            <strong>Método de bisección</strong>
+            <small>Encuentra raíces por subdivisión de intervalos</small>
+          </a>
+          <a href="{% url 'regula_falsi' %}" role="menuitem" class="submenu-link {% if url_name == 'regula_falsi' %}current{% endif %}">
+            <strong>Regla Falsa</strong>
+            <small>Variación de bisección con interpolación</small>
+          </a>
+        </div>
+        <hr />
+        <div class="menu-subgroup">
+          <strong class="dropdown-title">Métodos abiertos</strong>
+          <a href="{% url 'newton_raphson' %}" role="menuitem" class="submenu-link {% if url_name == 'newton_raphson' %}current{% endif %}">
+            <strong>Newton–Raphson</strong>
+            <small>Método iterativo con derivada</small>
+          </a>
+          <a href="{% url 'secante' %}" role="menuitem" class="submenu-link {% if url_name == 'secante' %}current{% endif %}">
+            <strong>Secante</strong>
+            <small>Método sin derivadas usando diferencias</small>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item has-dropdown {% if url_name == 'limite' %}active{% endif %}">
+      <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Cálculo</button>
+      <div class="dropdown megamenu" role="menu">
+        <div class="menu-subgroup">
+          <strong class="dropdown-title">Cálculo</strong>
+          <a href="{% url 'limite' %}" role="menuitem" class="submenu-link {% if url_name == 'limite' %}current{% endif %}">
+            <strong>Límite</strong>
+            <small>Analiza el comportamiento y límites de funciones</small>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item has-dropdown">
+      <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Acerca de</button>
+      <div class="dropdown about-submenu" role="menu">
+        <a href="{% url 'index' %}#guia" role="menuitem" class="about-link">
+          <strong>Guía y ayuda</strong>
+          <small>Procedimiento, consejos y atajos rápidos</small>
+        </a>
+        <a href="{% url 'index' %}#sobre" role="menuitem" class="about-link">
+          <strong>Sobre la app</strong>
+          <small>Acerca de KiwiSolve: objetivo y notas de la implementación</small>
+        </a>
+      </div>
+    </div>
+  </nav>
+  {% endwith %}
+  <div class="topbar-right">
+    <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
+      <span class="tt-track"></span>
+      <span class="tt-icon sun" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l1.41-1.41M16.24 8.34l1.41-1.41"/></svg>
+      </span>
+      <span class="tt-icon moon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 21a9 9 0 0 0 9-8.21Z"/></svg>
+      </span>
+      <span class="tt-handle"></span>
+    </button>
+  </div>
+</header>
