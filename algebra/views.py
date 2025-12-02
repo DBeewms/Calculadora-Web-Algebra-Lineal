@@ -762,6 +762,38 @@ def compuestas(request: HttpRequest):
                     if not info.get("invertible"):
                         raise ValueError(info.get("razon", "La matriz no es invertible."))
                     M = info.get("inversa")
+                elif stype == "transposeother":
+                    # Operar sobre la matriz que NO es la fuente actual
+                    if src == "A":
+                        if not B:
+                            raise ValueError("No hay matriz B para transponer.")
+                        Bt = op.transponer_matriz(B)
+                        B = Bt
+                        pasos_viz.append({"operacion": "B ← Bᵀ", "matriz": _render_matriz(M, text_fn)})
+                    else:
+                        if not A:
+                            raise ValueError("No hay matriz A para transponer.")
+                        At = op.transponer_matriz(A)
+                        A = At
+                        pasos_viz.append({"operacion": "A ← Aᵀ", "matriz": _render_matriz(M, text_fn)})
+                elif stype == "inverseother":
+                    # Invertir la matriz que NO es la fuente actual (debe ser cuadrada e invertible)
+                    if src == "A":
+                        if not B:
+                            raise ValueError("No hay matriz B para invertir.")
+                        infoB = op.inversa_matriz(B, registrar_pasos=False, text_fn=text_fn)
+                        if not infoB.get("invertible"):
+                            raise ValueError(infoB.get("razon", "B no es invertible."))
+                        B = infoB.get("inversa")
+                        pasos_viz.append({"operacion": "B ← B^{-1}", "matriz": _render_matriz(M, text_fn)})
+                    else:
+                        if not A:
+                            raise ValueError("No hay matriz A para invertir.")
+                        infoA = op.inversa_matriz(A, registrar_pasos=False, text_fn=text_fn)
+                        if not infoA.get("invertible"):
+                            raise ValueError(infoA.get("razon", "A no es invertible."))
+                        A = infoA.get("inversa")
+                        pasos_viz.append({"operacion": "A ← A^{-1}", "matriz": _render_matriz(M, text_fn)})
                 elif stype == "sumi":
                     # Sumar con Identidad: requiere matriz cuadrada
                     if not M or len(M) == 0:
