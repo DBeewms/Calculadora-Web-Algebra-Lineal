@@ -267,6 +267,9 @@ nav#mainMenu.menu{ display:flex; align-items:center; justify-content:center; hei
   .pills a:hover{ border-color:var(--border-hover) }
 .pills a.active{ background:var(--primary); color:var(--on-primary); border-color:transparent; box-shadow:var(--shadow-1) }
 .menu{ display:flex; gap:10px; align-items:center }
+.site-footer{ width:100%; margin-top:22px; padding:20px 24px; border-top:1px solid var(--border); text-align:center; color:var(--text); font-weight:600; font-size:14.5px; display:flex; align-items:center; justify-content:center }
+:root[data-theme="dark"] .site-footer{ color:var(--text-strong) }
+.site-footer a{ color:inherit; text-decoration:underline }
 .menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:var(--card); text-decoration:none; color:var(--text, #0f172a); font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
 /* Align special home/menu-home links to match other menu items */
 /* removed align-self override so links and buttons share same vertical alignment */
