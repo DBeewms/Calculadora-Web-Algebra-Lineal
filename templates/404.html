@@ -1,0 +1,13 @@
+{% extends 'algebra/base.html' %}
+{% load static %}
+{% block title %}404 — Página no encontrada · KiwiSolve{% endblock %}
+{% block content %}
+<section class="container notfound">
+  <h1 class="nf-title">404 — Página no encontrada</h1>
+  <p class="nf-sub">La ruta que buscaste no existe. Volvamos al inicio.</p>
+  <img src="{% static 'algebra/kiwiperdidokiwisolve.png' %}" alt="KiwiSolve perdido" onerror="this.style.display='none'"/>
+  <p>
+    <a class="btn primary interactive" id="goHomeBtn" href="{% url 'index' %}">Ir al inicio</a>
+  </p>
+</section>
+{% endblock %}

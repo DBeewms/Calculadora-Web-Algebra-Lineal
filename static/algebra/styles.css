@@ -63,15 +63,22 @@
 }
 /* Dark theme */
 :root[data-theme="dark"]{
-  --bg:#0f1220; --card:#14182a; --border:#1d2240; --muted:#9aa7c2; --primary:var(--violet);
-  --text: #e6eef8;
-  --text-strong: #f8fbff;
-  --on-primary: #0f1220;
+  --bg:#0f1220; --card:#14182a; --border:#1d2240; --muted:#c7d7ee; --primary:var(--violet);
+  --text: #ffffff;
+  --text-strong: #ffffff;
+  --on-primary: #ffffff;
   --link: var(--primary);
-  --hover-bg: rgba(255,255,255,.04);
-  --focus: rgba(255,255,255,.12);
-  --border-hover: rgba(255,255,255,.06);
-  --icon-bg: rgba(255,255,255,.03);
+  /* High-contrast title color for dropdown section headings in dark mode */
+  --title-dark:#A5B4FC; /* indigo-200/300-ish for better contrast on dark */
+  /* hover / surface tints in dark mode */
+  --hover-bg: rgba(255,255,255,.08);
+  --toggle-bg: rgba(255,255,255,.08);
+  --toggle-handle-dark: #ffffff;
+  --focus: rgba(255,255,255,.18);
+  --border-hover: rgba(255,255,255,.10);
+  --icon-bg: rgba(255,255,255,.06);
+  --placeholder: rgba(255,255,255,.68);
+  --sep: rgba(255,255,255,.08);
   --hover: rgba(255,255,255,.04);
   --active: rgba(255,255,255,.08);
   --shadow-1: 0 1px 2px rgba(0,0,0,.3);
@@ -85,6 +92,130 @@ h2{ font-size:24px }
 h3{ font-size:18px }
 /* Headings should use the theme text color so dark mode displays light text */
 h1, h2, h3, .hero-title { color: var(--text, #1c2130); }
+/* Section titles, separators, labels and UI affordances for dark mode */
+hr{ border:none; height:1px; background:var(--sep, rgba(15,23,42,0.06)); margin:16px 0; }
+
+/* Subtitles / small labels */
+label, .subtitle, .section-subtitle, .dropdown-title{ color:var(--muted, #64748b); }
+/* Dropdown section titles: differentiate with brand purple in light mode */
+.dropdown-title{ color:var(--royal); font-weight:700; }
+/* Header context specificity to avoid utility overrides */
+header.topbar nav#mainMenu.menu .dropdown .menu-subgroup > .dropdown-title{ color:var(--royal) !important; }
+header.topbar nav#mainMenu.menu .dropdown.megamenu .menu-subgroup > .dropdown-title{ color:var(--royal) !important; }
+
+/* Submenu links and current state */
+.menu .submenu-link{ color:var(--muted, #64748b); padding:6px 10px; display:block; text-decoration:none; border-radius:8px }
+.menu .submenu-link.current{ color:var(--text-strong, #0f172a); font-weight:700; }
+.menu .submenu-link:hover{ color:var(--text, #1c2130); background:var(--hover-bg, rgba(57,73,171,0.04)); }
+/* Title/description hierarchy inside submenu links */
+.menu .submenu-link strong{ display:block; color:var(--text-strong); font-weight:700; line-height:1.25 }
+.menu .submenu-link small{ display:block; color:var(--muted); line-height:1.15; margin-top:2px; opacity:.95 }
+
+/* Improve submenu legibility in dark mode: use primary text color for all submenu states */
+:root[data-theme="dark"] .menu .submenu-link{ color:var(--text); font-weight:600 }
+:root[data-theme="dark"] .menu .submenu-link:hover,
+:root[data-theme="dark"] .menu .submenu-link.current{ color:var(--text-strong); background:rgba(255,255,255,0.08); }
+/* Dark: keep strong titles bright and descriptions slightly muted, brighten on hover/current */
+:root[data-theme="dark"] .menu .submenu-link strong{ color:var(--text-strong) }
+:root[data-theme="dark"] .menu .submenu-link small{ color:var(--muted); opacity:.92 }
+:root[data-theme="dark"] .menu .submenu-link:hover small,
+:root[data-theme="dark"] .menu .submenu-link.current small{ color:var(--text); opacity:1 }
+
+/* Dark-mode legibility for dropdown anchors (including megamenus and About links) */
+:root[data-theme="dark"] .dropdown a,
+:root[data-theme="dark"] .dropdown .submenu-link,
+:root[data-theme="dark"] .about-submenu .about-link{ color:var(--text) !important; }
+:root[data-theme="dark"] .dropdown a:hover,
+:root[data-theme="dark"] .dropdown .submenu-link:hover,
+:root[data-theme="dark"] .about-submenu .about-link:hover{ color:var(--text-strong) !important; background:rgba(255,255,255,0.10); }
+
+/* Extra-strong overrides for submenu items in dark mode within the main nav */
+:root[data-theme="dark"] nav.menu .dropdown a,
+:root[data-theme="dark"] nav.menu .dropdown .submenu-link{ color:var(--text-strong) !important; font-weight:600 }
+:root[data-theme="dark"] nav.menu .dropdown a:hover,
+:root[data-theme="dark"] nav.menu .dropdown .submenu-link:hover{ background:rgba(255,255,255,0.14) !important; }
+
+/* Ensure inner spans/smalls inherit legible color in submenus */
+.dropdown a *, .menu .submenu-link *{ color:inherit }
+
+/* Improve top-level menu links and icons in dark mode */
+:root[data-theme="dark"] .menu .menu-link{ color:var(--text) }
+.menu .menu-link:hover{ background:var(--hover-bg, rgba(57,73,171,0.04)); }
+:root[data-theme="dark"] .menu .menu-link:hover{ background:rgba(255,255,255,0.06) }
+.dropdown a svg, .submenu-link svg{ stroke:currentColor; fill:none; color:inherit }
+.dropdown a *{ color:inherit }
+
+/* Dark-mode container styling for dropdowns to ensure readable contrast */
+:root[data-theme="dark"] .dropdown,
+:root[data-theme="dark"] .dropdown.megamenu{ background:var(--card) !important; border-color:var(--border) !important; box-shadow:var(--shadow-2); }
+:root[data-theme="dark"] .dropdown hr{ background:var(--sep) }
+
+/* Dark mode: keep titles differentiated with brand purple while readable */
+:root[data-theme="dark"] .dropdown-title{ color:var(--title-dark) !important; }
+/* Extra specificity to beat utility classes inside main nav dropdowns */
+:root[data-theme="dark"] nav.menu .dropdown .dropdown-title{ color:var(--title-dark) !important; }
+/* Also cover megamenu variant explicitly */
+:root[data-theme="dark"] nav.menu .dropdown.megamenu .dropdown-title{ color:var(--title-dark) !important; }
+/* Ensure titles are purple even if parent subgroup sets muted text */
+nav.menu .dropdown .menu-subgroup > .dropdown-title{ color:var(--royal) !important; }
+/* Ultra-specific: header context to defeat any header-level utilities */
+header.topbar nav#mainMenu.menu .dropdown .menu-subgroup > .dropdown-title{ color:var(--royal) !important; }
+:root[data-theme="dark"] header.topbar nav#mainMenu.menu .dropdown .menu-subgroup > .dropdown-title{ color:var(--title-dark) !important; }
+
+/* Active/selected controls (menu, pills, buttons) */
+.menu .menu-link.active, .menu-item.active > .menu-link, .pills a.active{ background:var(--active-bg, var(--primary, #3949ab)); color:var(--active-fg, var(--on-primary, #fff)); border-color:transparent; box-shadow:var(--shadow-1); }
+
+/* General buttons */
+.btn, button{ background:var(--card); color:var(--text); border:1px solid var(--border); padding:8px 12px; border-radius:8px }
+.btn.primary{ background:var(--primary); color:var(--on-primary, #fff); border-color:transparent }
+/* Interactive primary button states for 404 CTA */
+.btn.primary.interactive{ transition:transform .15s ease, box-shadow .2s ease, filter .15s ease, background-color .15s ease }
+.btn.primary.interactive.is-hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.18) }
+.btn.primary.interactive.is-active{ transform:translateY(0); box-shadow:0 3px 10px rgba(0,0,0,.22) }
+/* Native hover/active/focus for interactive CTA (works without JS) */
+.btn.primary.interactive:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(126,87,194,.25), 0 6px 16px rgba(0,0,0,.18); filter:brightness(1.07) }
+.btn.primary.interactive:active{ transform:translateY(0); box-shadow:0 3px 10px rgba(0,0,0,.22) }
+.btn.primary.interactive:focus-visible{ outline:2px solid var(--focus, #7bbbc4); outline-offset:2px }
+
+/* Theme toggle consolidated (single authoritative block) */
+.theme-toggle{ position:relative; width:70px; height:32px; border:none; background:var(--toggle-bg, var(--border)); border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; padding:0 8px; gap:6px; font:inherit; color:var(--muted); transition:background .25s }
+.theme-toggle .tt-track{ position:absolute; inset:0; border-radius:inherit; background:var(--border) }
+.theme-toggle .tt-icon{ display:flex; align-items:center; justify-content:center; width:18px; height:18px; pointer-events:none; opacity:.6; transition:opacity .25s, transform .35s }
+.theme-toggle .sun{ position:absolute; left:10px }
+.theme-toggle .moon{ position:absolute; right:10px }
+.theme-toggle .tt-handle{ position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:var(--card); box-shadow:var(--shadow-1); transition:transform .35s cubic-bezier(.65,.05,.36,1) }
+:root[data-theme="dark"] .theme-toggle{ background:var(--toggle-bg-dark, #2b314a) }
+:root[data-theme="dark"] .theme-toggle .tt-handle{ transform:translateX(38px); background:var(--toggle-handle-dark) }
+:root[data-theme="dark"] .theme-toggle .moon{ opacity:1 }
+:root[data-theme="dark"] .theme-toggle .sun{ opacity:.15 }
+.theme-toggle:not([data-theme='dark']) .sun{ opacity:1 }
+.theme-toggle:not([data-theme='dark']) .moon{ opacity:.15 }
+
+/* Ensure brand subtitle is readable in dark mode (stronger selector to avoid accidental overrides) */
+:root[data-theme="dark"] .topbar .brand h1 small{ color:var(--text) !important; opacity:.95 }
+
+/* Final safety: ensure brand subtitle (small) is always readable in dark mode */
+:root[data-theme="dark"] header.topbar .brand h1 small,
+:root[data-theme="dark"] .brand h1 small{ color:var(--text-strong) !important; opacity:1; font-weight:600 }
+
+/* Hero breadcrumb subtitle: ensure readability in dark mode */
+:root[data-theme="dark"] .hero-tagline{ color:var(--text-strong); opacity:.95 }
+
+/* 404 page layout */
+.notfound{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:58vh; gap:14px; padding:24px }
+.notfound .nf-title{ font-family:Poppins, Inter, sans-serif; font-size:clamp(2.2rem,6vw,3rem); margin:0; color:var(--text-strong) }
+.notfound .nf-sub{ color:var(--muted) }
+.notfound img{ max-width:min(720px, 92%); height:auto; filter:drop-shadow(0 8px 24px rgba(0,0,0,.25)) }
+
+/* Form placeholders */
+input::placeholder, textarea::placeholder{ color:var(--placeholder, rgba(15,23,42,0.35)); }
+
+/* MathLive / math-field fallbacks */
+.math-field, .mf{ color:var(--text); background:transparent }
+.math-field::placeholder{ color:var(--placeholder, rgba(15,23,42,0.35)); }
+
+/* Improve divider-like elements and small helper text */
+.muted, .help-text, small{ color:var(--muted, #64748b); }
 .topbar{ display:flex; align-items:center; justify-content:space-between; padding:14px 36px; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
 .topbar-left{ display:flex; align-items:center; gap:16px; flex:0 0 auto }
 .topbar-right{ display:flex; align-items:center; gap:8px; flex:0 0 auto }
@@ -107,6 +238,8 @@ nav#mainMenu.menu{ display:flex; align-items:center; justify-content:center; hei
 .brand h1{ color: var(--text, #1c2130); }
 .topbar h1{ font-family:Poppins, Inter, sans-serif; letter-spacing:.2px; font-size:18px; margin:0 }
 .brand h1 small{ display:block; font-weight:600; font-size:12px; color:var(--muted); margin-left:0 }
+/* Make the small brand subtitle more legible in dark mode */
+:root[data-theme="dark"] .brand h1 small{ color:var(--text); opacity:.9 }
   .brand:focus-visible{ outline:2px solid var(--focus); outline-offset:4px; border-radius:6px }
 .topbar .menu{ align-items:center; }
 .burger{ display:none; position:relative; width:40px; height:34px; border:none; background:transparent; border-radius:8px; cursor:pointer; align-items:center; justify-content:center }
@@ -117,7 +250,7 @@ nav#mainMenu.menu{ display:flex; align-items:center; justify-content:center; hei
 .pills{ display:flex; gap:8px }
 .pills a{ padding:8px 12px; border-radius:999px; border:1px solid var(--border); text-decoration:none; color:var(--text, #0f172a); background:var(--card) }
   .pills a:hover{ border-color:var(--border-hover) }
-.pills a.active{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--shadow-1) }
+.pills a.active{ background:var(--primary); color:var(--on-primary); border-color:transparent; box-shadow:var(--shadow-1) }
 .menu{ display:flex; gap:10px; align-items:center }
 .menu-home{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:var(--card); text-decoration:none; color:var(--text, #0f172a); font-weight:600; transition:background .2s, color .2s, border-color .2s, box-shadow .2s }
 /* Align special home/menu-home links to match other menu items */
@@ -137,12 +270,18 @@ nav#mainMenu.menu > .menu-item > .menu-link{ height:100%; display:flex; align-it
 /* Removed force-align rule — menu items now vertically centered consistently */
 .menu .menu-link::after{ content:"▾"; font-size:12px; opacity:.5; margin-left:6px; transition:transform .18s ease, opacity .18s ease }
 .menu .menu-link:hover{ color:var(--link); background:var(--hover-bg); transform:translateY(-1px) }
+
+/* Top-level menu hover/active readability for dark theme */
+:root[data-theme="dark"] .menu .menu-link{ color:var(--text); }
+:root[data-theme="dark"] .menu .menu-link:hover{ color:var(--text); background:rgba(255,255,255,0.03); }
+:root[data-theme="dark"] .menu .menu-item:hover:not(.active) > .menu-link{ background:rgba(255,255,255,0.02); border-color:var(--border-hover); }
+:root[data-theme="dark"] .menu .menu-item.active > .menu-link{ background:var(--primary); color:var(--on-primary); }
 .menu .menu-item:not(.has-dropdown) > .menu-link::after{ content:none }
 .menu .menu-item.active > .menu-link{ background:var(--primary); color:var(--on-primary); border-color:transparent }
 /* Evitar que el hover vuelva muy claro los botones activos */
   .menu .menu-item:hover:not(.active) > .menu-link{ border-color:var(--border-hover); background:var(--hover-bg) }
 /* Mantener énfasis al pasar el mouse sobre un item activo */
-.menu .menu-item.active > .menu-link:hover{ background:var(--primary); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,.12) }
+.menu .menu-item.active > .menu-link:hover{ background:var(--primary); color:var(--on-primary); border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,.12) }
   .menu .menu-link:focus-visible{ outline:2px solid var(--focus); outline-offset:3px; border-radius:10px }
 .menu .menu-item.open > .menu-link::after, .has-hover .menu .menu-item:hover > .menu-link::after{ transform:rotate(180deg) }
 .menu .dropdown{ position:absolute; top:100%; left:0; right:auto; min-width:220px; display:none; flex-direction:column; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); z-index:9999 }
@@ -161,7 +300,10 @@ nav#mainMenu.menu > .menu-item > .menu-link{ height:100%; display:flex; align-it
 .has-hover .menu .menu-item.has-dropdown:hover > .dropdown { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; align-items:start; justify-items:start; transform-origin:top left }
 .menu .menu-item.has-dropdown > .dropdown .dropdown-title{ display:block; font-size:13px; color:var(--text-strong); margin-bottom:8px; font-weight:700 }
 .menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ min-width:160px; position:relative }
-.menu .menu-item.has-dropdown > .dropdown a{ color:var(--text, #0f172a); display:block; padding:6px 0; border-radius:4px }
+.menu .menu-item.has-dropdown > .dropdown a{ color:var(--text); display:block; padding:6px 0; border-radius:4px }
+.menu .menu-item.has-dropdown > .dropdown hr{ border:none; height:1px; background:var(--sep); margin:10px 0 }
+.menu .menu-item.has-dropdown > .dropdown .submenu-link{ color:var(--text); }
+:root[data-theme="dark"] .menu .menu-item.has-dropdown > .dropdown .dropdown-title{ color:var(--text); }
 .menu .menu-item.has-dropdown > .dropdown hr{ display:none }
 
 /* Styling for 'Acerca de' improved submenu: brief descriptions and subtle look */
@@ -169,14 +311,14 @@ nav#mainMenu.menu > .menu-item > .menu-link{ height:100%; display:flex; align-it
 .about-submenu .about-link{ display:block; padding:10px 12px; border-radius:8px; color:var(--muted); text-decoration:none }
 .about-submenu .about-link strong{ display:block; color:var(--violet); font-weight:700; margin-bottom:4px }
 .about-submenu .about-link small{ display:block; color:var(--muted); font-size:12px; line-height:1.2 }
-.about-submenu .about-link:hover{ background:rgba(57,73,171,.04); color:var(--primary) }
+.about-submenu .about-link:hover{ background:var(--hover-bg); color:var(--text) }
 
 /* Generic submenu link style used across dropdowns */
 .submenu-link{ display:block; padding:8px 10px; border-radius:8px; color:var(--text); text-decoration:none }
 .submenu-link strong{ display:block; color:var(--violet); font-weight:700; margin-bottom:4px }
 .submenu-link small{ display:block; color:var(--muted); font-size:12px; line-height:1.18 }
-.submenu-link:hover{ background:rgba(57,73,171,.04); color:var(--primary) }
-.submenu-link.current{ color:var(--primary); }
+.submenu-link:hover{ background:var(--hover-bg); color:var(--text) }
+.submenu-link.current{ color:var(--primary); font-weight:700 }
 
 /* Improve dropdown typography & spacing for clearer navigation */
 .menu .dropdown{ font-size:14px; line-height:1.25 }
@@ -184,7 +326,25 @@ nav#mainMenu.menu > .menu-item > .menu-link{ height:100%; display:flex; align-it
 .menu .menu-subgroup .dropdown-title{ font-size:13px; margin-bottom:6px }
 .menu .menu-subgroup .submenu-link{ padding:10px 12px }
 .menu .menu-subgroup .submenu-link strong{ font-size:14px }
+/* Dark-mode: make submenu hover/background explicitly readable */
+:root[data-theme="dark"] .submenu-link:hover{ background:rgba(255,255,255,0.03); color:var(--text) }
+:root[data-theme="dark"] .about-submenu .about-link:hover{ background:rgba(255,255,255,0.03); color:var(--text) }
+:root[data-theme="dark"] .submenu-link.current{ background:rgba(255,255,255,0.02); }
+/* Force readable color for 'current' submenu items in dark mode (override earlier rules) */
+:root[data-theme="dark"] .menu .submenu-link.current{ color:var(--text) !important; }
+/* Dropdown containers explicit dark-mode styles */
+:root[data-theme="dark"] .menu .dropdown{ background:var(--card); border:1px solid var(--border); color:var(--text); box-shadow:var(--shadow-2); }
+:root[data-theme="dark"] .menu .dropdown a, :root[data-theme="dark"] .menu .dropdown .submenu-link{ color:var(--text); }
+:root[data-theme="dark"] .menu .dropdown .submenu-link.current{ color:var(--text-strong) !important; background:rgba(255,255,255,0.02) }
+:root[data-theme="dark"] .menu .dropdown .submenu-link:hover{ color:var(--text-strong); background:rgba(255,255,255,0.03) }
+/* More specific for megamenu groups */
+:root[data-theme="dark"] .menu .dropdown.megamenu .menu-subgroup .submenu-link{ color:var(--text) }
+:root[data-theme="dark"] .menu .dropdown.megamenu .menu-subgroup .submenu-link:hover{ background:rgba(255,255,255,0.03); color:var(--text-strong) }
 .menu .menu-subgroup .submenu-link small{ font-size:13px; color:var(--muted); opacity:.95 }
+
+/* Dark-mode overrides for dropdown anchor hover/current states */
+:root[data-theme="dark"] .menu .dropdown a:hover{ background:rgba(255,255,255,0.03); color:var(--text) }
+:root[data-theme="dark"] .menu .dropdown a.current{ color:var(--text); background:rgba(255,255,255,0.02) }
 
 /* Make mega-menu groups more separated and readable */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ gap:14px }
@@ -203,8 +363,8 @@ nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ padding:6p
   .menu .menu-item.has-dropdown > .dropdown .menu-subgroup{ margin-bottom:8px }
 }
 .menu .dropdown a{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; text-decoration:none; color:var(--text); border-radius:8px; transition:background .18s ease, color .18s ease; min-height:40px }
-.menu .dropdown a:hover{ background:var(--hover-bg); color:var(--link) }
-.menu .dropdown a.current{ font-weight:700; color:var(--violet) }
+.menu .dropdown a:hover{ background:var(--hover-bg); color:var(--text-strong) }
+.menu .dropdown a.current{ font-weight:700; color:var(--text-strong) }
 .menu .menu-item:not(.has-dropdown):hover > .dropdown{ display:flex }
 .menu .menu-item:not(.has-dropdown).open > .dropdown{ display:flex }
 .container{ padding:24px }
@@ -287,7 +447,7 @@ button:hover{ opacity:.9 }
 
 /* Bisección: tabla y resumen visual */
 .biseccion-table{ width:100%; border-collapse:collapse; font-size:13px; }
-.biseccion-table thead th{ background:var(--primary); color:#fff; padding:10px; text-align:center; position:sticky; top:0 }
+.biseccion-table thead th{ background:var(--primary); color:var(--on-primary); padding:10px; text-align:center; position:sticky; top:0 }
 .biseccion-table td, .biseccion-table th{ border:1px solid var(--border); padding:8px }
 .biseccion-table tbody tr:nth-child(odd){ background:#fbfdff }
 .biseccion-table tbody tr:nth-child(even){ background:#f7f9fc }
@@ -347,21 +507,24 @@ button:hover{ opacity:.9 }
 .guide-transition{ position:relative; margin:46px 0 18px; padding:0; display:flex; align-items:center; justify-content:center }
 .guide-transition:before{ content:""; position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--grape), var(--violet)); opacity:.30; border-radius:3px }
 .guide-transition .gt-label{ position:relative; background:var(--card); padding:10px 22px; font-weight:700; font-size:18px; letter-spacing:.5px; color:var(--violet); border:1px solid var(--border); border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,.06); font-family:Poppins, Inter, sans-serif }
+/* Stronger label color in dark mode for section titles */
+:root[data-theme="dark"] .guide-transition .gt-label{ color:var(--text); background:var(--card); border-color:var(--border); box-shadow:0 2px 12px rgba(0,0,0,.45) }
 @media (max-width:640px){ .guide-transition .gt-label{ font-size:16px; padding:8px 18px } }
 /* Center the guide separator */
 .guide-transition{ display:flex; justify-content:center; align-items:center; position:relative; }
 .guide-transition:before{ width:60%; left:50%; right:auto; transform:translateX(-50%); }
 /* Section tool count below separators */
 .section-count{ margin-top:8px; margin-bottom:20px; text-align:center; }
-.section-count .badge{ position:static; display:inline-block; }
+.section-count .badge{ position:static; display:inline-block; padding:6px 10px; border-radius:999px; font-weight:700; background:var(--badge-bg, rgba(123,187,196,.12)); color:var(--badge-fg, var(--violet)); border:1px solid var(--border); }
+:root[data-theme="dark"] .section-count .badge{ background:var(--badge-bg-dark, rgba(255,255,255,.04)); color:var(--text); border-color:var(--border) }
 @media (max-width:640px){ .section-count{ font-size:12px; margin-bottom:16px } }
 @media (max-width:640px){ .guide-transition{ margin:38px 0 14px } }
-.guide-group{ background:linear-gradient(135deg, rgba(57,73,171,.06), rgba(106,27,154,.06)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 10px; box-shadow:var(--shadow-2); margin:0 0 28px }
+.guide-group{ background:linear-gradient(135deg, var(--hover-bg), rgba(106,27,154,.06)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 10px; box-shadow:var(--shadow-2); margin:0 0 28px }
 .guide-group .panel{ background:transparent; border:none; box-shadow:none; padding:0; margin:0 0 22px }
 .guide-group .panel:last-child{ margin-bottom:0 }
 .guide-group h3.panel-title{ color:var(--violet) }
 .guide-group .howto-grid{ margin-top:10px }
-.about-group{ background:linear-gradient(135deg, rgba(57,73,171,.08), rgba(106,27,154,.10)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 14px; box-shadow:var(--shadow-2); margin:0 0 38px }
+.about-group{ background:linear-gradient(135deg, var(--hover-bg), rgba(106,27,154,.08)); border:1px solid var(--border); border-radius:18px; padding:22px 22px 14px; box-shadow:var(--shadow-2); margin:0 0 38px }
 .about-group .howto-grid{ margin-top:10px }
 .howto-item{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--card) }
 .howto-item strong{ display:block; margin-bottom:4px }
@@ -373,12 +536,12 @@ button:hover{ opacity:.9 }
 .media .media-icon{ flex:0 0 auto; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--primary); background:rgba(126,87,194,.10) }
 .media .media-body{ flex:1 1 auto }
 .media.is-suma .media-icon{ color:var(--sky); background:rgba(123,187,196,.12) }
-.media.is-mul .media-icon{ color:var(--violet); background:rgba(57,73,171,.10) }
+.media.is-mul .media-icon{ color:var(--violet); background:var(--icon-bg) }
 .media.is-gauss .media-icon{ color:var(--grape); background:rgba(106,27,154,.10) }
 .media.is-gj .media-icon{ color:var(--savoy); background:rgba(92,107,192,.12) }
 .media.is-gen .media-icon{ color:var(--sky); background:rgba(123,187,196,.12) }
 .media.is-ok .media-icon{ color:#22c55e; background:rgba(34,197,94,.12) }
-.media.is-sys .media-icon{ color:var(--violet); background:rgba(57,73,171,.10) }
+.media.is-sys .media-icon{ color:var(--violet); background:var(--icon-bg) }
 .media.is-hom .media-icon{ color:var(--savoy); background:rgba(92,107,192,.12) }
 
 @media (max-width: 640px){
@@ -431,7 +594,7 @@ button:hover{ opacity:.9 }
 .steps.timeline:before{ content:""; position:absolute; left:4px; top:0; bottom:0; width:3px; background:linear-gradient(var(--border), var(--primary)) }
 .steps.timeline li{ position:relative; margin:0 0 22px 0; list-style:none; padding-left:38px; counter-increment:step }
 /* Número centrado verticalmente respecto al bloque del paso */
-.steps.timeline li:before{ content:counter(step); position:absolute; left:-14px; top:50%; transform:translateY(-50%); width:34px; height:34px; background:var(--primary); color:#fff; font-weight:700; font-size:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.14) }
+.steps.timeline li:before{ content:counter(step); position:absolute; left:-14px; top:50%; transform:translateY(-50%); width:34px; height:34px; background:var(--primary); color:var(--on-primary); font-weight:700; font-size:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.14) }
 .steps.timeline li:last-child{ margin-bottom:4px }
 .step-title{ font-weight:600; margin:0 0 6px 0; color:var(--violet); line-height:1.3 }
 .step-matrix{ overflow:auto; border:1px solid var(--border); border-radius:10px; padding:4px 6px; background:var(--card); box-shadow:0 2px 4px rgba(0,0,0,.04) }
@@ -519,7 +682,7 @@ button:hover{ opacity:.9 }
 /* secondary/ghost redefinidos arriba */
 
 /* Floating action button */
-.kb-fab{ position:fixed; right:18px; bottom:18px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg, var(--violet), var(--savoy)); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 20px rgba(0,0,0,.18); cursor:pointer; z-index:1200 }
+.kb-fab{ position:fixed; right:18px; bottom:18px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg, var(--violet), var(--savoy)); color:var(--on-primary); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 20px rgba(0,0,0,.18); cursor:pointer; z-index:1200 }
 .kb-fab:hover{ transform:translateY(-1px); box-shadow:0 12px 24px rgba(0,0,0,.22) }
 
 /* Popup keyboard */
@@ -563,19 +726,7 @@ button:hover{ opacity:.9 }
   .kb-popup{ bottom:74px }
 }
 
-/* Theme toggle */
-.theme-toggle{ position:relative; width:70px; height:32px; border:none; background:var(--border); border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; padding:0 8px; gap:6px; font:inherit; color:var(--muted); transition:background .25s }
-.theme-toggle .tt-track{ position:absolute; inset:0; border-radius:inherit; background:var(--border) }
-.theme-toggle .tt-icon{ display:flex; align-items:center; justify-content:center; width:18px; height:18px; pointer-events:none; opacity:.55; transition:opacity .25s, transform .35s }
-.theme-toggle .moon{ position:absolute; right:12px }
-.theme-toggle .sun{ position:absolute; left:12px }
-.theme-toggle .tt-handle{ position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:var(--card); box-shadow:0 2px 4px rgba(0,0,0,.15); transition:transform .35s cubic-bezier(.65,.05,.36,1) }
-[data-theme='dark'] .theme-toggle{ background:#2b314a }
-[data-theme='dark'] .theme-toggle .tt-handle{ transform:translateX(38px) }
-[data-theme='dark'] .theme-toggle .moon{ opacity:1 }
-[data-theme='dark'] .theme-toggle .sun{ opacity:.2 }
-.theme-toggle:not([data-theme='dark']) .sun{ opacity:1 }
-.theme-toggle:not([data-theme='dark']) .moon{ opacity:.2 }
+/* The theme-toggle block above is the single source of truth; the duplicate block below is removed. */
 
 /* Toggle switch for mostrar pasos */
 .toggle{ position:relative; display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-family:Inter,system-ui,sans-serif; font-size:14px }
@@ -593,10 +744,10 @@ button:hover{ opacity:.9 }
 .block:active{ cursor:grabbing }
 /* Sequence list styling for compuestas */
 .sequence-canvas{ min-height:54px; border:1px dashed var(--border); border-radius:12px; padding:10px; background:var(--card) }
-.sequence-canvas.drag-over{ background:rgba(126,87,194,.06) }
+.sequence-canvas.drag-over{ background:var(--hover-bg) }
 .sequence-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px }
 .seq-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:var(--shadow-1) }
-.seq-label{ font-weight:700; color:#111 }
+.seq-label{ font-weight:700; color:var(--text-strong) }
 .seq-params input{ width:120px; padding:6px 8px; border:1px solid var(--border); border-radius:8px }
 .seq-controls{ display:flex; gap:6px }
 .seq-controls .btn{ padding:6px 10px }
@@ -607,7 +758,7 @@ button:hover{ opacity:.9 }
 .seq-item .seq-controls{ margin-left:auto; display:flex; gap:6px }
 .seq-item .seq-controls button{ padding:6px 10px; border-radius:8px }
 .seq-item input[type="text"], .seq-item input[type="number"], .seq-item select{ padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--card); width:110px }
-.sequence-canvas.drag-over{ background:rgba(57,73,171,.06); border-color:var(--violet) }
+.sequence-canvas.drag-over{ background:var(--hover-bg); border-color:var(--violet) }
 
 /* Reordenamiento con asa */
 .seq-left{ display:flex; align-items:center; gap:.5rem }

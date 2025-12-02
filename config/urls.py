@@ -16,10 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from core.views import home
+from django.conf import settings
+from core.views import home, preview_404
+
+# Custom 404 handler
+handler404 = 'core.views.custom_404'
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("algebra.urls")),
     path("", home, name="home"),
 ]
+
+# Preview route to see the 404 template while DEBUG=True
+if settings.DEBUG:
+    urlpatterns += [
+        path("debug/404/", preview_404, name="debug_404"),
+    ]
