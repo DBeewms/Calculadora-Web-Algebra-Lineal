@@ -242,10 +242,11 @@ nav#mainMenu.menu > .menu-item > .menu-link{
   box-sizing:border-box !important;
 }
 /* Dropdown panel */
-nav#mainMenu.menu .menu-item.has-dropdown > .dropdown{ padding:14px !important; max-width:920px !important; box-sizing:border-box !important; background:var(--card) !important; z-index:10000 !important }
+nav#mainMenu.menu .menu-item.has-dropdown > 
+.dropdown{ padding:12px !important; min-width:260px !important; max-width:720px !important; width:max-content !important; box-sizing:border-box !important; background:var(--card) !important; z-index:10000 !important }
 /* Force grid and gap */
 nav#mainMenu.menu .menu-item.has-dropdown.open > .dropdown,
-.has-hover nav#mainMenu.menu .menu-item.has-dropdown:hover > .dropdown{ display:grid !important; grid-template-columns:repeat(2, minmax(200px,1fr)) !important; gap:24px !important; align-items:start !important }
+.has-hover nav#mainMenu.menu .menu-item.has-dropdown:hover > .dropdown{ display:grid !important; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)) !important; gap:12px !important; align-items:start !important }
 /* Titles use primary and original spacing */
 nav#mainMenu.menu .menu-item.has-dropdown > .dropdown .dropdown-title{ font-size:13px !important; font-weight:700 !important; color:var(--primary) !important; margin-bottom:8px !important }
 /* Menu subgroups: revert to original minimal rules */
