@@ -656,20 +656,15 @@
           const plain = String(latexToPlain(raw||''));
           const lhs = plain.includes('=') ? plain.split('=')[0].trim() : plain;
           const row = new Array(vars).fill(0);
-          // Normalize implicit multiplications
           const norm = latexToFunction(lhs);
-          // Extract terms for each variable
           names.forEach((name, idx)=>{
-            // Patterns: 3x, -x, + 5*x, (1/2)x
             const re = new RegExp(`([\+\-]?[^\+\-]*)${name}(?![A-Za-z0-9])`,'g');
             let m; let acc = 0;
             while((m = re.exec(norm))){
               let coeff = m[1].trim();
               if(coeff === '' || coeff === '+' ) coeff = '1';
               else if(coeff === '-') coeff = '-1';
-              // remove trailing '*' or parentheses around numeric
               coeff = coeff.replace(/\*\s*$/,'');
-              // evaluate numeric expression
               const val = tryEvalNumeric(coeff);
               acc += (val != null ? val : parseFloat(coeff)||0);
             }
@@ -678,6 +673,41 @@
           rows.push(row);
         }
         return rows;
+      }
+      function parseSystem(lines, vars, defaultRightZero){
+        const A = [];
+        const b = [];
+        const names = (vars <= 3) ? ['x','y','z'].slice(0, Math.max(1,vars)) : Array.from({length:vars}, (_,i)=> 'x'+(i+1));
+        for(const raw of lines){
+          const plain = String(latexToPlain(raw||''));
+          const hasEq = plain.includes('=');
+          const lhs = hasEq ? plain.split('=')[0].trim() : plain;
+          const rhs = hasEq ? plain.split('=').slice(1).join('=').trim() : (defaultRightZero ? '0' : '');
+          const row = new Array(vars).fill(0);
+          const norm = latexToFunction(lhs);
+          names.forEach((name, idx)=>{
+            const re = new RegExp(`([\+\-]?[^\+\-]*)${name}(?![A-Za-z0-9])`,'g');
+            let m; let acc = 0;
+            while((m = re.exec(norm))){
+              let coeff = m[1].trim();
+              if(coeff === '' || coeff === '+' ) coeff = '1';
+              else if(coeff === '-') coeff = '-1';
+              coeff = coeff.replace(/\*\s*$/,'');
+              const val = tryEvalNumeric(coeff);
+              acc += (val != null ? val : parseFloat(coeff)||0);
+            }
+            row[idx] = acc;
+          });
+          A.push(row);
+          // parse RHS constant
+          let bv = 0;
+          if(rhs && rhs.trim()!==''){
+            const val = tryEvalNumeric(rhs);
+            bv = (val != null) ? val : (parseFloat(rhs)||0);
+          }
+          b.push(bv);
+        }
+        return { A, b };
       }
       function fillMatrix(boxSelector, rows){
         const box = form.querySelector(boxSelector);
@@ -706,6 +736,30 @@
         }
         if(linesA.length && cA>0){ const matA = parseCoeffMatrix(linesA, cA); fillMatrix('.matrix[data-name="matrizA"]', matA); }
         if(linesB.length && cB>0){ const matB = parseCoeffMatrix(linesB, cB); fillMatrix('.matrix[data-name="matrizB"], .matrix[data-name="vectorB"]', matB); }
+      } else {
+        // Single equations list: apply to A (and b where applicable)
+        const eqLines = (form.querySelector('input[name="equations"]')?.value || '').split('\n').filter(s=> s.trim()!=='');
+        const rCtl = form.querySelector('[data-target="rows"]');
+        const cCtl = form.querySelector('[data-target="cols"]');
+        const rows = +rCtl?.value || 0;
+        const cols = +cCtl?.value || 0;
+        if(eqLines.length && cols>0){
+          const defaultRightZero = (mode === 'simple');
+          const sys = parseSystem(eqLines, cols, defaultRightZero);
+          if(sys.A.length){ fillMatrix('.matrix[data-name="matrizA"]', sys.A); }
+          // Fill vector b when present in the form (augmented/cramer-like)
+          if(!defaultRightZero){
+            const boxB = form.querySelector('.matrix[data-name="vectorB"], .matrix[data-name="vectorb"]');
+            if(boxB && sys.b.length){
+              const table = boxB.querySelector('table');
+              const trs = table?.querySelectorAll('tr')||[];
+              for(let i=0;i<Math.min(sys.b.length, trs.length); i++){
+                const inp = trs[i]?.querySelector('math-field, input');
+                if(inp) inp.value = String(sys.b[i]);
+              }
+            }
+          }
+        }
       }
     })();
   }
