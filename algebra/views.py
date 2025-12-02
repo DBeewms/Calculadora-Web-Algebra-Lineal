@@ -762,6 +762,45 @@ def compuestas(request: HttpRequest):
                     if not info.get("invertible"):
                         raise ValueError(info.get("razon", "La matriz no es invertible."))
                     M = info.get("inversa")
+                elif stype == "sumi":
+                    # Sumar con Identidad: requiere matriz cuadrada
+                    if not M or len(M) == 0:
+                        raise ValueError("La matriz fuente está vacía.")
+                    n_rows = len(M); n_cols = len(M[0])
+                    if n_rows != n_cols:
+                        raise ValueError("Para sumar con I, la matriz debe ser cuadrada (n×n).")
+                    # Construir I y sumar
+                    I = []
+                    i = 0
+                    while i < n_rows:
+                        fila = []
+                        j = 0
+                        while j < n_cols:
+                            fila.append([1,1] if i == j else [0,1])
+                            j += 1
+                        I.append(fila)
+                        i += 1
+                    M = op.sumar_matrices(M, I)
+                    if show_steps:
+                        pasos_viz.append({
+                            "operacion": "Sumamos la identidad: M ← M + I",
+                            "matriz": _render_matriz(M, text_fn)
+                        })
+                elif stype == "checkli":
+                    # Verificar independencia lineal de columnas de M usando sistema homogéneo M x = 0
+                    if not M or len(M) == 0:
+                        raise ValueError("La matriz fuente está vacía.")
+                    try:
+                        infoLI = op.gauss_jordan_homogeneo_info(M, registrar_pasos=False, text_fn=text_fn)
+                        anal = infoLI.get("analisis", {})
+                        esLI = bool(anal.get("independencia", False))
+                        detalle = "Vectores columna LI (independientes)" if esLI else "Vectores columna LD (dependientes)"
+                        pasos_viz.append({
+                            "operacion": f"Verificación de independencia lineal: {detalle}",
+                            "matriz": _render_matriz(infoLI.get("matriz"), text_fn)
+                        })
+                    except Exception as _e:
+                        raise ValueError("No se pudo verificar independencia lineal para la matriz dada.")
                 else:
                     # Ignorar tipos desconocidos (por ahora)
                     continue

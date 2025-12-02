@@ -1595,6 +1595,8 @@
     if(t === 'sumbesc') return `Sumar b·B (${src} + b·B)`;
         if(t === 'mulb') return `Multiplicar por B (${src}·B)`;
         if(t === 'inverse') return `Inversa (${src}^{-1})`;
+        if(t === 'sumi') return `Sumar con Identidad (${src}+I)`;
+        if(t === 'checkli') return `Verificar independencia lineal (${src})`;
         return type;
       }
       function refreshBlockLabels(){
@@ -1606,6 +1608,8 @@
   const pSum = palette?.querySelector('[data-type="sumB"]'); if(pSum) pSum.textContent = typeToLabel('sumB', src);
   const pM = palette?.querySelector('[data-type="mulB"]'); if(pM) pM.textContent = typeToLabel('mulB', src);
         const pI = palette?.querySelector('[data-type="inverse"]'); if(pI) pI.textContent = typeToLabel('inverse', src);
+      const pSumI = palette?.querySelector('[data-type="sumI"]'); if(pSumI) pSumI.textContent = typeToLabel('sumI', src);
+      const pChk = palette?.querySelector('[data-type="checkLI"]'); if(pChk) pChk.textContent = typeToLabel('checkLI', src);
         // Actualiza etiquetas de ítems ya añadidos
         list?.querySelectorAll('.seq-item').forEach(item=>{
           const type = item.getAttribute('data-type');
@@ -1668,6 +1672,10 @@
           label.textContent = typeToLabel('mulB', currentSrc());
         } else if(type === 'inverse'){
           label.textContent = typeToLabel('inverse', currentSrc());
+        } else if(type === 'sumI'){
+          label.textContent = typeToLabel('sumI', currentSrc());
+        } else if(type === 'checkLI'){
+          label.textContent = typeToLabel('checkLI', currentSrc());
         } else {
           label.textContent = type;
         }
