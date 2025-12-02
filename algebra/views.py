@@ -762,6 +762,28 @@ def compuestas(request: HttpRequest):
                     if not info.get("invertible"):
                         raise ValueError(info.get("razon", "La matriz no es invertible."))
                     M = info.get("inversa")
+                elif stype == "scaleother":
+                    # Escalar la matriz que NO es la fuente actual
+                    c_txt = (params.get("c") or "0").strip()
+                    c = u.crear_fraccion_desde_cadena(c_txt)
+                    if src == "A":
+                        if not B:
+                            raise ValueError("No hay matriz B para escalar.")
+                        if show_steps:
+                            B, pB = op.multiplicar_escalar_matriz(c, B, registrar_pasos=True, text_fn=text_fn)
+                            pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in (pB or [])])
+                        else:
+                            B = op.multiplicar_escalar_matriz(c, B)
+                        pasos_viz.append({"operacion": f"B ← {text_fn(c)}·B", "matriz": _render_matriz(M, text_fn)})
+                    else:
+                        if not A:
+                            raise ValueError("No hay matriz A para escalar.")
+                        if show_steps:
+                            A, pA = op.multiplicar_escalar_matriz(c, A, registrar_pasos=True, text_fn=text_fn)
+                            pasos_viz.extend([{"operacion": s.get("operacion"), "matriz": _render_matriz(s.get("matriz"), text_fn)} for s in (pA or [])])
+                        else:
+                            A = op.multiplicar_escalar_matriz(c, A)
+                        pasos_viz.append({"operacion": f"A ← {text_fn(c)}·A", "matriz": _render_matriz(M, text_fn)})
                 elif stype == "transposeother":
                     # Operar sobre la matriz que NO es la fuente actual
                     if src == "A":

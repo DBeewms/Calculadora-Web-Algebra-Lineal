@@ -1590,6 +1590,7 @@
         if(t === 'transpose') return `Transpuesta de matriz (${src})`;
         if(t === 'transposeother') { const other = src==='B' ? 'A' : 'B'; return `Transpuesta de ${other}`; }
         if(t === 'scale') return `Escalar (c·${src})`;
+        if(t === 'scaleother') { const other = src==='B' ? 'A' : 'B'; return `Escalar (c·${other})`; }
         if(t === 'lincomb' || t === 'combinacion') return `Combinación lineal (a·A + b·B)`;
         if(t === 'abcomb') return `a·A + b·B`;
     if(t === 'sumb') return `Sumar con B (${src}+B)`;
@@ -1610,6 +1611,7 @@
   const pSum = palette?.querySelector('[data-type="sumB"]'); if(pSum) pSum.textContent = typeToLabel('sumB', src);
   const pM = palette?.querySelector('[data-type="mulB"]'); if(pM) pM.textContent = typeToLabel('mulB', src);
         const pI = palette?.querySelector('[data-type="inverse"]'); if(pI) pI.textContent = typeToLabel('inverse', src);
+        const pSO = palette?.querySelector('[data-type="scaleOther"]'); if(pSO) pSO.textContent = typeToLabel('scaleOther', src);
         const pTO = palette?.querySelector('[data-type="transposeOther"]'); if(pTO) pTO.textContent = typeToLabel('transposeOther', src);
         const pIO = palette?.querySelector('[data-type="inverseOther"]'); if(pIO) pIO.textContent = typeToLabel('inverseOther', src);
       const pSumI = palette?.querySelector('[data-type="sumI"]'); if(pSumI) pSumI.textContent = typeToLabel('sumI', src);
@@ -1660,6 +1662,10 @@
           label.textContent = typeToLabel('transposeOther', currentSrc());
         } else if(type === 'scale'){
           label.textContent = typeToLabel('scale', currentSrc());
+          const p = document.createElement('input'); p.type='text'; p.placeholder='c (ej. 3/5)'; p.setAttribute('data-param','c'); paramInput=p;
+          ctrlWrap.appendChild(p);
+        } else if(type.toLowerCase() === 'scaleother'){
+          label.textContent = typeToLabel('scaleOther', currentSrc());
           const p = document.createElement('input'); p.type='text'; p.placeholder='c (ej. 3/5)'; p.setAttribute('data-param','c'); paramInput=p;
           ctrlWrap.appendChild(p);
         } else if(type === 'lincomb' || type === 'combinacion' || type === 'abcomb'){
