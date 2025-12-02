@@ -15,9 +15,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
-from core.views import home, preview_404
+from core.views import home, preview_404, custom_404
 
 # Custom 404 handler
 handler404 = 'core.views.custom_404'
@@ -33,3 +33,8 @@ if settings.DEBUG:
     urlpatterns += [
         path("debug/404/", preview_404, name="debug_404"),
     ]
+
+# Always show the custom 404 page for any unmatched route (works even in DEBUG)
+urlpatterns += [
+    re_path(r"^.*$", custom_404),
+]
