@@ -78,7 +78,8 @@
   --border-hover: rgba(255,255,255,.10);
   --icon-bg: rgba(255,255,255,.06);
   --placeholder: rgba(255,255,255,.68);
-  --sep: rgba(255,255,255,.08);
+  /* Slightly stronger separators in dark mode for clarity */
+  --sep: rgba(255,255,255,.12);
   --hover: rgba(255,255,255,.04);
   --active: rgba(255,255,255,.08);
   --shadow-1: 0 1px 2px rgba(0,0,0,.3);
@@ -144,6 +145,18 @@ header.topbar nav#mainMenu.menu .dropdown.megamenu .menu-subgroup > .dropdown-ti
 :root[data-theme="dark"] .menu .menu-link:hover{ background:rgba(255,255,255,0.06) }
 .dropdown a svg, .submenu-link svg{ stroke:currentColor; fill:none; color:inherit }
 .dropdown a *{ color:inherit }
+
+/* Ensure header menu SVG icons inherit text color (stroke and fill)
+  Works for both outline and filled icons without changing markup */
+.topbar .menu .menu-link svg,
+.topbar .menu .dropdown a svg,
+.topbar .menu .submenu-link svg{ width:1em; height:1em; color:inherit }
+.topbar .menu .menu-link svg *,
+.topbar .menu .dropdown a svg *,
+.topbar .menu .submenu-link svg *{ stroke:currentColor !important }
+.topbar .menu .menu-link svg [fill]:not([fill="none"]),
+.topbar .menu .dropdown a svg [fill]:not([fill="none"]),
+.topbar .menu .submenu-link svg [fill]:not([fill="none"]){ fill:currentColor !important }
 
 /* Dark-mode container styling for dropdowns to ensure readable contrast */
 :root[data-theme="dark"] .dropdown,
@@ -216,6 +229,8 @@ input::placeholder, textarea::placeholder{ color:var(--placeholder, rgba(15,23,4
 
 /* Improve divider-like elements and small helper text */
 .muted, .help-text, small{ color:var(--muted, #64748b); }
+.card p, .intro details.help, .howto-card .hc-desc, .howto-item p{ color:var(--muted) }
+.card h3, .howto-card .hc-title, .section-header h3{ color:var(--text-strong) }
 .topbar{ display:flex; align-items:center; justify-content:space-between; padding:14px 36px; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:var(--shadow-2); backdrop-filter:saturate(140%) blur(6px) }
 .topbar-left{ display:flex; align-items:center; gap:16px; flex:0 0 auto }
 .topbar-right{ display:flex; align-items:center; gap:8px; flex:0 0 auto }
@@ -305,6 +320,15 @@ nav#mainMenu.menu > .menu-item > .menu-link{ height:100%; display:flex; align-it
 .menu .menu-item.has-dropdown > .dropdown .submenu-link{ color:var(--text); }
 :root[data-theme="dark"] .menu .menu-item.has-dropdown > .dropdown .dropdown-title{ color:var(--text); }
 .menu .menu-item.has-dropdown > .dropdown hr{ display:none }
+
+/* Header dropdown separators: ensure they are visible and themed */
+header.topbar nav#mainMenu.menu .menu-item.has-dropdown > .dropdown hr{
+  display:block !important;
+  background:var(--sep) !important;
+}
+:root[data-theme="dark"] header.topbar nav#mainMenu.menu .menu-item.has-dropdown > .dropdown hr{
+  background:var(--sep) !important;
+}
 
 /* Styling for 'Acerca de' improved submenu: brief descriptions and subtle look */
 .about-submenu{ padding:10px 12px }
@@ -430,8 +454,8 @@ button{
   background:var(--primary); color:var(--on-primary); font-weight:700; cursor:pointer
 }
 button:hover{ opacity:.9 }
-.btn{ background:var(--primary) }
-.btn.primary{ background:var(--primary) }
+.btn{ background:var(--primary); color:var(--on-primary) }
+.btn.primary{ background:var(--primary); color:var(--on-primary) }
 .btn.secondary{ background:linear-gradient(135deg, var(--violet), var(--savoy)); color:var(--on-primary) }
 .btn.ghost{ background:transparent; color:var(--primary); border:1px solid var(--primary) }
 .inline{ display:inline-flex; align-items:center; gap:6px; margin-left:10px; color:var(--muted) }
@@ -535,6 +559,11 @@ button:hover{ opacity:.9 }
 /* Media pattern for cards/howto */
 .media{ display:flex; gap:12px; align-items:flex-start }
 .media .media-icon{ flex:0 0 auto; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--primary); background:rgba(126,87,194,.10) }
+.media .media-icon svg{ width:1em; height:1em; color:inherit }
+.media .media-icon svg *{ stroke:currentColor !important }
+.media .media-icon svg [fill]:not([fill="none"]){ fill:currentColor !important }
+:root[data-theme="dark"] .section-divider{ border-top-color:var(--sep) }
+:root[data-theme="dark"] .guide-transition:before{ opacity:.45 }
 .media .media-body{ flex:1 1 auto }
 .media.is-suma .media-icon{ color:var(--sky); background:rgba(123,187,196,.12) }
 .media.is-mul .media-icon{ color:var(--violet); background:var(--icon-bg) }
@@ -681,6 +710,14 @@ button:hover{ opacity:.9 }
 .inline-cards.mini{ gap:10px }
 .inline-cards > li{ background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,.04) }
 /* secondary/ghost redefinidos arriba */
+
+/* Method badges for numeric methods (cerrado/abierto) */
+.tag.method-badge{ display:inline-block; margin-left:8px; padding:4px 8px; border-radius:999px; font-weight:700; font-size:12px; line-height:1; border:1px solid var(--border); background:var(--card); color:var(--violet) }
+.tag.method-badge.cerrado{ background:rgba(57,73,171,.10); color:var(--violet); border-color:rgba(57,73,171,.25) }
+.tag.method-badge.abierto{ background:rgba(123,187,196,.12); color:var(--sky); border-color:rgba(123,187,196,.28) }
+:root[data-theme="dark"] .tag.method-badge{ background:rgba(255,255,255,.06); color:var(--text); border-color:var(--border) }
+:root[data-theme="dark"] .tag.method-badge.cerrado{ background:rgba(255,255,255,.10); color:var(--text-strong); border-color:var(--border) }
+:root[data-theme="dark"] .tag.method-badge.abierto{ background:rgba(255,255,255,.10); color:var(--text-strong); border-color:var(--border) }
 
 /* Floating action button */
 .kb-fab{ position:fixed; right:18px; bottom:18px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg, var(--violet), var(--savoy)); color:var(--on-primary); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 20px rgba(0,0,0,.18); cursor:pointer; z-index:1200 }

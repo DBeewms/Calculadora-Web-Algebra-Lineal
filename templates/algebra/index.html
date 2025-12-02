@@ -177,8 +177,8 @@
 <!-- Cálculo -->
 <section class="section" aria-labelledby="calculo-title">
   <div class="guide-transition"><span class="gt-label" id="calculo-title">Cálculo</span></div>
-  <div class="section-count"><span class="badge">1 herramienta</span></div>
-  <div class="cards cards-1 grid gap-4">
+  <div class="section-count"><span class="badge">2 herramientas</span></div>
+  <div class="cards cards-2x2 grid gap-4 md:grid-cols-2">
     <a class="card vertical media is-gen transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'limite' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
@@ -188,11 +188,6 @@
       </div>
       <p class="card-desc">Calcula límites de funciones y analiza comportamiento en puntos y en el infinito.</p>
     </a>
-  </div>
-</section>
-
-  <div class="section-count"><span class="badge">2 herramientas</span></div>
-  <div class="cards cards-2x2 grid gap-4 md:grid-cols-2" style="margin-top:8px;">
     <a class="card vertical media is-gen transition hover:shadow-elev hover:-translate-y-0.5" href="{% url 'derivadas' %}">
       <div class="card-header">
         <div class="media-icon" aria-hidden="true">
@@ -203,6 +198,7 @@
       <p class="card-desc">Calcula derivadas simbólicas y permite evaluar la derivada en un punto.</p>
     </a>
   </div>
+</section>
 
 <!-- Transición visual hacia sección de guía y ayuda -->
 <div class="guide-transition" aria-hidden="true"><span class="gt-label">Guía y ayuda</span></div>
