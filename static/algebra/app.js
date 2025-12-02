@@ -450,7 +450,7 @@
   function saveFormState(form){
     try{
       const key = getStateKey(form);
-      const state = { controls:{}, matrices:{} };
+      const state = { controls:{}, matrices:{}, equations:{} };
       form.querySelectorAll('[data-target]').forEach(el=>{
         const k = el.getAttribute('data-target');
         if(k) state.controls[k] = el.value;
@@ -464,6 +464,22 @@
         const cols = values.length ? values[0].length : 0;
         state.matrices[name] = { rows: rows.length, cols, values };
       });
+      // Persist equations lists if present
+      const listSingle = form.querySelector('#equationsList');
+      if(listSingle){
+        const arr = Array.from(listSingle.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value||'');
+        state.equations.single = arr;
+      }
+      const listA = form.querySelector('#equationsListA');
+      if(listA){
+        const arrA = Array.from(listA.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value||'');
+        state.equations.A = arrA;
+      }
+      const listB = form.querySelector('#equationsListB');
+      if(listB){
+        const arrB = Array.from(listB.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value||'');
+        state.equations.B = arrB;
+      }
       localStorage.setItem(key, JSON.stringify(state));
     }catch(e){ /* no-op */ }
   }
@@ -505,6 +521,29 @@
             }
           });
         }
+        // Restore equations hidden fields so they persist across submit
+        try{
+          const eqState = state.equations || {};
+          const hidSingle = form.querySelector('input[name="equations"]');
+          if(hidSingle && Array.isArray(eqState.single)){
+            // Trim trailing empties and join
+            const arr = eqState.single.slice();
+            while(arr.length && (arr[arr.length-1]||'').trim()===''){ arr.pop(); }
+            hidSingle.value = arr.join('\n');
+          }
+          const hidA = form.querySelector('input[name="equationsA"]');
+          if(hidA && Array.isArray(eqState.A)){
+            const arrA = eqState.A.slice();
+            while(arrA.length && (arrA[arrA.length-1]||'').trim()===''){ arrA.pop(); }
+            hidA.value = arrA.join('\n');
+          }
+          const hidB = form.querySelector('input[name="equationsB"]');
+          if(hidB && Array.isArray(eqState.B)){
+            const arrB = eqState.B.slice();
+            while(arrB.length && (arrB[arrB.length-1]||'').trim()===''){ arrB.pop(); }
+            hidB.value = arrB.join('\n');
+          }
+        }catch(_e){}
         // Re-apply controls so dynamically created equation inputs receive saved values
         if(state && state.controls){
           Object.keys(state.controls).forEach(k=>{
@@ -572,12 +611,18 @@
       } else if(mode === 'cramer'){
         const nCtl = form.querySelector('[data-target="rowsAcolsArowsB"]');
         const n = +(nCtl?.value) || 0; rVal = n; cVal = n;
+      } else if(mode === 'sum'){
+        rVal = +form.querySelector('[data-target="rows"]')?.value || 0;
+        cVal = +form.querySelector('[data-target="cols"]')?.value || 0;
+      } else if(mode === 'mul'){
+        rVal = +form.querySelector('[data-target="rowsA"]')?.value || 0;
+        cVal = +form.querySelector('[data-target="colsArowsB"]')?.value || 0;
       }
       if(eqCountEl) eqCountEl.textContent = String(rVal || 0);
       if(varCountEl) varCountEl.textContent = String(cVal || 0);
       if(hintEl){
         const varsPreview = cVal <= 3 ? ['x','y','z'].slice(0, Math.max(1,cVal)).join(', ') : `x1…x${cVal}`;
-        hintEl.textContent = `Ingresa ${rVal||0} ecuaciones con ${cVal||0} variables (p. ej., ${varsPreview}). Formato: a1·x1 + a2·x2 + … = b. Acepta fracciones (3/4), potencias (^), y raíces (√() o sqrt()).`;
+        hintEl.textContent = `Ingresa ${rVal||0} ecuaciones con ${cVal||0} variables (p. ej., ${varsPreview}). Formato: a1·x1 + a2·x2 + … = b.`;
       }
       // Compose equations hidden from per-line inputs if present
       const eqList = form.querySelector('#equationsList');
@@ -586,6 +631,81 @@
         const lines = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> getFieldPlain(inp));
         while(lines.length && lines[lines.length-1] === ''){ lines.pop(); }
         eqHidden.value = lines.join('\n');
+      }
+      // Compose per-matrix equations for sum/mul
+      const eqListA = form.querySelector('#equationsListA');
+      const eqHiddenA = form.querySelector('input[name="equationsA"]');
+      if(eqListA && eqHiddenA){
+        const linesA = Array.from(eqListA.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> getFieldPlain(inp));
+        while(linesA.length && linesA[linesA.length-1] === ''){ linesA.pop(); }
+        eqHiddenA.value = linesA.join('\n');
+      }
+      const eqListB = form.querySelector('#equationsListB');
+      const eqHiddenB = form.querySelector('input[name="equationsB"]');
+      if(eqListB && eqHiddenB){
+        const linesB = Array.from(eqListB.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> getFieldPlain(inp));
+        while(linesB.length && linesB[linesB.length-1] === ''){ linesB.pop(); }
+        eqHiddenB.value = linesB.join('\n');
+      }
+
+      // If equations for A/B are present, parse coefficients and populate matrices so server reads correctly
+      function parseCoeffMatrix(lines, vars){
+        const rows = [];
+        const names = (vars <= 3) ? ['x','y','z'].slice(0, Math.max(1,vars)) : Array.from({length:vars}, (_,i)=> 'x'+(i+1));
+        for(const raw of lines){
+          const plain = String(latexToPlain(raw||''));
+          const lhs = plain.includes('=') ? plain.split('=')[0].trim() : plain;
+          const row = new Array(vars).fill(0);
+          // Normalize implicit multiplications
+          const norm = latexToFunction(lhs);
+          // Extract terms for each variable
+          names.forEach((name, idx)=>{
+            // Patterns: 3x, -x, + 5*x, (1/2)x
+            const re = new RegExp(`([\+\-]?[^\+\-]*)${name}(?![A-Za-z0-9])`,'g');
+            let m; let acc = 0;
+            while((m = re.exec(norm))){
+              let coeff = m[1].trim();
+              if(coeff === '' || coeff === '+' ) coeff = '1';
+              else if(coeff === '-') coeff = '-1';
+              // remove trailing '*' or parentheses around numeric
+              coeff = coeff.replace(/\*\s*$/,'');
+              // evaluate numeric expression
+              const val = tryEvalNumeric(coeff);
+              acc += (val != null ? val : parseFloat(coeff)||0);
+            }
+            row[idx] = acc;
+          });
+          rows.push(row);
+        }
+        return rows;
+      }
+      function fillMatrix(boxSelector, rows){
+        const box = form.querySelector(boxSelector);
+        const table = box?.querySelector('table');
+        if(!table || !rows.length) return;
+        const trs = table.querySelectorAll('tr');
+        for(let i=0;i<Math.min(rows.length, trs.length); i++){
+          const inputs = trs[i]?.querySelectorAll('math-field, input')||[];
+          const r = rows[i];
+          for(let j=0;j<Math.min(r.length, inputs.length); j++){
+            if(inputs[j]) inputs[j].value = String(r[j]);
+          }
+        }
+      }
+      if(mode === 'sum' || mode === 'mul'){
+        // A
+        const linesA = (form.querySelector('input[name="equationsA"]')?.value || '').split('\n').filter(s=> s.trim()!=='');
+        const linesB = (form.querySelector('input[name="equationsB"]')?.value || '').split('\n').filter(s=> s.trim()!=='');
+        let cA = 0, cB = 0;
+        if(mode === 'sum'){
+          cA = +form.querySelector('[data-target="cols"]')?.value || 0;
+          cB = cA;
+        } else {
+          cA = +form.querySelector('[data-target="colsArowsB"]')?.value || 0;
+          cB = +form.querySelector('[data-target="colsB"]')?.value || 0;
+        }
+        if(linesA.length && cA>0){ const matA = parseCoeffMatrix(linesA, cA); fillMatrix('.matrix[data-name="matrizA"]', matA); }
+        if(linesB.length && cB>0){ const matB = parseCoeffMatrix(linesB, cB); fillMatrix('.matrix[data-name="matrizB"], .matrix[data-name="vectorB"]', matB); }
       }
     })();
   }
@@ -808,7 +928,7 @@
     form.querySelectorAll('[data-action="clear"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         form.querySelectorAll('.matrix input, .matrix math-field').forEach(inp=> inp.value='');
-        form.querySelectorAll('#equationsList input.eq-line, #equationsList math-field.eq-line').forEach(inp=> inp.value='');
+        form.querySelectorAll('#equationsList input.eq-line, #equationsList math-field.eq-line, #equationsListA input.eq-line, #equationsListA math-field.eq-line, #equationsListB input.eq-line, #equationsListB math-field.eq-line').forEach(inp=> inp.value='');
         updateHidden(form);
         try{ localStorage.removeItem(getStateKey(form)); }catch(e){}
       });
@@ -2461,6 +2581,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(!openBtn) return;
     function geti(sel){ const el = form.querySelector(sel); if(!el) return null; const v = parseInt(el.value,10); return isNaN(v)? null : v; }
     function setBadge(id, val){ const b = form.querySelector('#'+id+' strong'); if(b){ b.textContent = (val!=null? String(val) : '—'); } }
+    function inferFromMatrix(){
+      const coeff = form.querySelector('table.matrix[data-role="coeff"], .matrix[data-role="coeff"] table');
+      const aug = form.querySelector('table.matrix[data-role="aug"], .matrix-augmented table, [data-matrix-type="augmented"] table');
+      const table = coeff || aug || form.querySelector('.matrix table') || form.querySelector('table');
+      if(!table) return null;
+      const rows = table.querySelectorAll('tr').length;
+      const firstRow = table.querySelector('tr');
+      const cols = firstRow ? firstRow.querySelectorAll('td, th').length : 0;
+      const isAug = !!aug || !!form.querySelector('[data-augmented="true"], .matrix-augmented, [data-matrix-type="augmented"]');
+      return { rows, cols, isAug };
+    }
     function computeCounts(){
       const mode = form.dataset.mode || '';
       let eqs = geti('[data-target="rows"]');
@@ -2482,6 +2613,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
           vars = geti('[data-target="cols"][data-matrix="B"]');
         }
       }
+      // Fallback to matrix inspection if controls are missing
+      if(eqs == null || vars == null){
+        const inf = inferFromMatrix();
+        if(inf){
+          eqs = eqs ?? inf.rows;
+          vars = vars ?? (inf.isAug ? Math.max(inf.cols - 1, 0) : inf.cols);
+        }
+      }
+      eqs = Math.max(0, (eqs||0)|0);
+      vars = Math.max(0, (vars||0)|0);
       return {eqs, vars};
     }
     function updateEqBadges(){
@@ -2489,11 +2630,193 @@ document.addEventListener('DOMContentLoaded', ()=>{
       setBadge('eqCountBadge', eqs);
       setBadge('varCountBadge', vars);
     }
-    openBtn.addEventListener('click', updateEqBadges);
+    function ensureEquationLines(){
+      const mode = form.dataset.mode||'';
+      const box = form.querySelector('#equationsBox'); if(!box) return;
+      // Read saved equations from localStorage for this form
+      function getSavedEqState(){
+        try{
+          const raw = localStorage.getItem(`lin-alg:form:${location.pathname}`);
+          if(!raw) return {};
+          const st = JSON.parse(raw);
+          return st && st.equations ? st.equations : {};
+        }catch(_e){ return {}; }
+      }
+      const savedEq = getSavedEqState();
+      // Helper to build a section (title + list + hidden) for a matrix key
+      function ensureSection(key, title){
+        let section = box.querySelector(`.eq-section[data-matrix="${key}"]`);
+        if(!section){
+          section = document.createElement('div');
+          section.className = 'eq-section';
+          section.setAttribute('data-matrix', key);
+          const h = document.createElement('h4'); h.textContent = title; h.className = 'panel-title'; h.style.marginTop = '8px';
+          const list = document.createElement('div'); list.className = 'eq-list'; list.id = `equationsList${key}`;
+          const hid = document.createElement('input'); hid.type='hidden'; hid.name = `equations${key}`;
+          section.appendChild(h); section.appendChild(list); section.appendChild(hid);
+          box.appendChild(section);
+        }
+        return section.querySelector(`#equationsList${key}`);
+      }
+      // Single-matrix modes use default list
+      if(mode !== 'sum' && mode !== 'mul'){
+        const eqList = form.querySelector('#equationsList');
+        if(!eqList) return;
+        const existing = eqList.querySelectorAll('.eq-item').length;
+        const { eqs, vars } = computeCounts();
+        if(eqs <= 0) return;
+        if(existing === eqs && existing > 0) return;
+        let prevVals = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value);
+        if(Array.isArray(savedEq.single)) prevVals = savedEq.single;
+        eqList.innerHTML = '';
+        for(let i=0;i<eqs;i++){
+          const wrap = document.createElement('div'); wrap.className = 'eq-item';
+          const badge = document.createElement('span'); badge.className = 'eq-index'; badge.setAttribute('aria-hidden','true'); badge.textContent = String(i+1);
+          const inp = document.createElement('math-field'); inp.className = 'eq-line'; inp.setAttribute('virtualkeyboardmode','onfocus'); inp.setAttribute('virtualkeyboardtogglevisible','false');
+          try{ if(typeof inp.setOptions==='function') inp.setOptions({ menuItems: [] }); inp.menuToggleVisible=false; inp.virtualKeyboardToggleVisible=false; }catch(_e){}
+          let example = 'x + 2y = 5'; if(vars <= 1){ example='3x = 6'; } else if(vars===2){ example='x + 2y = 5'; } else if(vars===3){ example='x + 2y - z = 7'; } else { example='x1 + 2x2 + … = 7'; }
+          inp.placeholder = `Ecuación ${i+1} (ej: ${example})`; inp.setAttribute('data-target', `eq${i}`); inp.setAttribute('aria-label', `Ecuación ${i+1} de ${eqs}`);
+          if(prevVals[i] != null) inp.value = prevVals[i]; inp.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+          wrap.appendChild(badge); wrap.appendChild(inp); eqList.appendChild(wrap);
+        }
+        updateHidden(form);
+        return;
+      }
+      // For Escalar page (mode="sum" but only matrix A), fallback to single list
+      if(mode === 'sum' && !form.querySelector('.matrix[data-name="matrizB"]')){
+        const eqList = form.querySelector('#equationsList');
+        if(!eqList) return;
+        const existing = eqList.querySelectorAll('.eq-item').length;
+        const { eqs, vars } = computeCounts();
+        if(eqs <= 0) return;
+        if(existing === eqs && existing > 0) return;
+        let prevVals = Array.from(eqList.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value);
+        if(Array.isArray(savedEq.single)) prevVals = savedEq.single;
+        eqList.innerHTML = '';
+        for(let i=0;i<eqs;i++){
+          const wrap = document.createElement('div'); wrap.className = 'eq-item';
+          const badge = document.createElement('span'); badge.className = 'eq-index'; badge.setAttribute('aria-hidden','true'); badge.textContent = String(i+1);
+          const inp = document.createElement('math-field'); inp.className = 'eq-line'; inp.setAttribute('virtualkeyboardmode','onfocus'); inp.setAttribute('virtualkeyboardtogglevisible','false');
+          try{ if(typeof inp.setOptions==='function') inp.setOptions({ menuItems: [] }); inp.menuToggleVisible=false; inp.virtualKeyboardToggleVisible=false; }catch(_e){}
+          let example = 'x + 2y = 5'; if(vars <= 1){ example='3x = 6'; } else if(vars===2){ example='x + 2y = 5'; } else if(vars===3){ example='x + 2y - z = 7'; } else { example='x1 + 2x2 + … = 7'; }
+          inp.placeholder = `Ecuación ${i+1} (ej: ${example})`; inp.setAttribute('data-target', `eq${i}`); inp.setAttribute('aria-label', `Ecuación ${i+1} de ${eqs}`);
+          if(prevVals[i] != null) inp.value = prevVals[i]; inp.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+          wrap.appendChild(badge); wrap.appendChild(inp); eqList.appendChild(wrap);
+        }
+        updateHidden(form);
+        return;
+      }
+      // Multi-matrix modes (sum, mul): build separate lists for A and B
+      const listA = ensureSection('A', 'Sistema para A');
+      const listB = ensureSection('B', 'Sistema para B');
+      // Determine rows/vars per matrix from controls
+      let rA=0,cA=0,rB=0,cB=0;
+      if(mode==='sum'){
+        rA = +(form.querySelector('[data-target="rows"]')?.value)||0;
+        cA = +(form.querySelector('[data-target="cols"]')?.value)||0;
+        rB = rA; cB = cA; // suma requiere mismas dimensiones
+      } else if(mode==='mul'){
+        rA = +(form.querySelector('[data-target="rowsA"]')?.value)||0;
+        cA = +(form.querySelector('[data-target="colsArowsB"]')?.value)||0; // punto común
+        rB = cA; cB = +(form.querySelector('[data-target="colsB"]')?.value)||0;
+      }
+      function rebuild(list, rows, vars, key){
+        if(!list) return;
+        const existing = list.querySelectorAll('.eq-item').length;
+        if(rows<=0) return;
+        if(existing===rows && existing>0) return;
+        let prevVals = Array.from(list.querySelectorAll('math-field.eq-line, input.eq-line')).map(inp=> inp.value);
+        if(key==='A' && Array.isArray(savedEq.A)) prevVals = savedEq.A;
+        if(key==='B' && Array.isArray(savedEq.B)) prevVals = savedEq.B;
+        list.innerHTML='';
+        for(let i=0;i<rows;i++){
+          const wrap = document.createElement('div'); wrap.className='eq-item';
+          const badge=document.createElement('span'); badge.className='eq-index'; badge.setAttribute('aria-hidden','true'); badge.textContent=String(i+1);
+          const inp=document.createElement('math-field'); inp.className='eq-line'; inp.setAttribute('virtualkeyboardmode','onfocus'); inp.setAttribute('virtualkeyboardtogglevisible','false');
+          try{ if(typeof inp.setOptions==='function') inp.setOptions({ menuItems: [] }); inp.menuToggleVisible=false; inp.virtualKeyboardToggleVisible=false; }catch(_e){}
+          let example='x + 2y = 5'; if(vars<=1){ example='3x = 6'; } else if(vars===2){ example='x + 2y = 5'; } else if(vars===3){ example='x + 2y - z = 7'; } else { example='x1 + 2x2 + … = 7'; }
+          inp.placeholder = `Ecuación ${i+1} (${key}) (ej: ${example})`;
+          inp.setAttribute('data-target', `eq${key}${i}`);
+          inp.setAttribute('aria-label', `Ecuación ${i+1} de ${rows} (${key})`);
+          if(prevVals[i] != null) inp.value = prevVals[i];
+          inp.addEventListener('input', ()=>{ updateHidden(form); saveFormState(form); });
+          wrap.appendChild(badge); wrap.appendChild(inp); list.appendChild(wrap);
+        }
+      }
+      rebuild(listA, rA, cA, 'A');
+      rebuild(listB, rB, cB, 'B');
+      updateHidden(form);
+    }
+    openBtn.addEventListener('click', ()=>{ ensureEquationLines(); updateEqBadges(); });
     form.addEventListener('input', (ev)=>{
       const t = ev.target;
       if(!t) return;
       if(t.matches('[data-target], select[name="source"]')) updateEqBadges();
     });
+    // Also link badges to underlying inputs for quick editing
+    const eqBadgeWrap = form.querySelector('#eqCountBadge');
+    const varBadgeWrap = form.querySelector('#varCountBadge');
+    function focusRowsInput(){
+      const mode = form.dataset.mode||'';
+      let target = form.querySelector('[data-target="rows"]');
+      if(mode === 'mul') target = form.querySelector('[data-target="rowsA"]') || target;
+      else if(mode === 'cramer') target = form.querySelector('[data-target="rowsAcolsArowsB"]') || target;
+      else if(mode === 'compuestas'){
+        const srcSel = form.querySelector('select[name="source"]');
+        const src = (srcSel && srcSel.value) || 'A';
+        target = form.querySelector(`[data-target="rows"][data-matrix="${src}"]`) || target;
+      }
+      target?.focus();
+    }
+    function focusColsInput(){
+      const mode = form.dataset.mode||'';
+      let target = form.querySelector('[data-target="cols"]');
+      if(mode === 'mul') target = form.querySelector('[data-target="colsArowsB"]') || target;
+      else if(mode === 'cramer') target = form.querySelector('[data-target="rowsAcolsArowsB"]') || target; // n x n
+      else if(mode === 'compuestas'){
+        const srcSel = form.querySelector('select[name="source"]');
+        const src = (srcSel && srcSel.value) || 'A';
+        target = form.querySelector(`[data-target="cols"][data-matrix="${src}"]`) || target;
+      }
+      target?.focus();
+    }
+    eqBadgeWrap?.addEventListener('click', focusRowsInput);
+    varBadgeWrap?.addEventListener('click', focusColsInput);
+    // Keep badges in sync if matrix DOM changes (resize/rebuild) with throttling
+    let badgeReq = false;
+    function requestBadges(){
+      if(badgeReq) return;
+      badgeReq = true;
+      requestAnimationFrame(()=>{ badgeReq = false; updateEqBadges(); });
+    }
+    const observer = new MutationObserver((mutations)=>{
+      for(const m of mutations){
+        if(m.type === 'childList'){
+          if(m.target && (m.target.id === 'eqCountBadge' || m.target.id === 'varCountBadge')) continue;
+          requestBadges();
+          break;
+        }
+      }
+    });
+    // Observe only matrix boxes (reduces noise while building rows/cols)
+    form.querySelectorAll('.matrix').forEach(box=>{
+      observer.observe(box, { childList:true, subtree:true });
+    });
+    // Observe future matrix containers added dynamically
+    const matrixAdder = new MutationObserver((mutations)=>{
+      let added=false;
+      for(const m of mutations){
+        m.addedNodes.forEach(n=>{
+          if(n.nodeType===1 && n.classList.contains('matrix')){
+            observer.observe(n, { childList:true, subtree:true });
+            added=true;
+          }
+        });
+      }
+      if(added) requestBadges();
+    });
+    matrixAdder.observe(form, { childList:true });
+    // Initial sync after first frame (allows buildMatrix to finish)
+    requestBadges();
   });
 });
