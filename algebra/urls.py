@@ -11,6 +11,7 @@ urlpatterns = [
     path("inversa/", views.inversa, name="inversa"),
     path("determinante/", views.determinante, name="determinante"),
     path("cramer/", views.cramer, name="cramer"),
+    path("leontief/", views.leontief, name="leontief"),
     path("gauss/", views.gauss, name="gauss"),
     path("gauss-jordan/", views.gauss_jordan, name="gauss_jordan"),
     path("homogeneo/", views.homogeneo, name="homogeneo"),

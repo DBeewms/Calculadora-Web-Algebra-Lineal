@@ -84,6 +84,13 @@ def index(request: HttpRequest):
             "icon": "inv",
             "style": "mul",
         },
+        {
+            "name": "leontief",
+            "title": "Modelo de Leontief",
+            "desc": "Calcula X = (I − A)^{-1}·Y para análisis input‑output.",
+            "icon": "inv",
+            "style": "mul",
+        },
     ]
     # Se usan directamente en una sola cuadrícula 3×2 (orden preservado)
     ctx = {"operations_matrices": operations_matrices}
@@ -655,6 +662,98 @@ def cramer(request: HttpRequest):
             logger.exception("Error en vista cramer")
             ctx["error"] = friendly_error(e)
     return render(request, "algebra/cramer.html", ctx)
+
+def leontief(request: HttpRequest):
+    """Modelo de Leontief: X = (I − A)^{-1} · Y
+
+    - A debe ser n×n (cuadrada)
+    - Y debe ser n×1 (vector columna)
+    - Si (I−A) no es invertible, se muestra mensaje.
+    """
+    ctx = {}
+    if request.method == "POST":
+        try:
+            fmt = request.POST.get("result_format")
+            prec = request.POST.get("precision") or 6
+            text_fn = _make_text_fn(fmt, prec)
+            A = _parse_matriz_simple(request.POST.get("matrizA"))
+            Y = _parse_matriz_simple(request.POST.get("vectorY"))
+            if not A or not Y:
+                raise ValueError("Debes ingresar la matriz A y el vector Y.")
+            n = len(A)
+            # Validaciones
+            if any(len(f) != len(A[0]) for f in A):
+                raise ValueError("Todas las filas de A deben tener la misma cantidad de columnas.")
+            if len(A) != len(A[0]):
+                raise ValueError("A debe ser cuadrada (n×n).")
+            if len(Y[0]) != 1:
+                raise ValueError("Y debe ser un vector columna (n×1).")
+            if len(Y) != n:
+                raise ValueError("El tamaño de Y debe coincidir con n (filas de A).")
+
+            want_steps = bool(request.POST.get("show_steps"))
+
+            # Construir I y (I − A)
+            I = []
+            i = 0
+            while i < n:
+                fila = []
+                j = 0
+                while j < n:
+                    fila.append([1,1] if i == j else [0,1])
+                    j += 1
+                I.append(fila)
+                i += 1
+            # (I − A)
+            IA = []
+            i = 0
+            while i < n:
+                fila = []
+                j = 0
+                while j < n:
+                    # (1 if i==j else 0) - A[i][j]
+                    base = [1,1] if i == j else [0,1]
+                    fila.append(u.restar_fracciones(base, A[i][j]))
+                    j += 1
+                IA.append(fila)
+                i += 1
+
+            # Inversa de (I − A)
+            info = op.inversa_matriz(IA, registrar_pasos=want_steps, text_fn=text_fn)
+            if isinstance(info, tuple):
+                info, pasos = info
+            else:
+                pasos = None
+            if not info.get("invertible"):
+                raise ValueError(info.get("razon", "(I − A) no es invertible."))
+            IA_inv = info.get("inversa")
+
+            # X = (I − A)^{-1} · Y
+            X, pasos_mul = op.multiplicar_matrices(IA_inv, Y, registrar_pasos=want_steps, text_fn=text_fn)
+
+            ctx["resultado"] = _render_matriz(X, text_fn)
+            ctx["dims"] = {"A": f"{n}×{n}", "Y": f"{len(Y)}×1", "X": f"{len(X)}×{len(X[0])}"}
+
+            if want_steps:
+                ctx["pasos"] = []
+                # Paso conceptual
+                ctx["pasos"].append({
+                    "operacion": "Modelo de Leontief: X = (I − A)^{-1} · Y",
+                    "matriz": _render_matriz(X, text_fn)
+                })
+                # Pasos de inversa
+                if pasos:
+                    ctx["pasos"].extend([{"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)} for p in pasos])
+                # Pasos de multiplicación
+                if pasos_mul:
+                    ctx["pasos"].extend([{"operacion": p.get("operacion"), "matriz": _render_matriz(p.get("matriz"), text_fn)} for p in pasos_mul])
+
+            ctx["result_format"] = (fmt or 'frac')
+            ctx["precision"] = int(prec)
+        except Exception as e:
+            logger.exception("Error en vista leontief")
+            ctx["error"] = friendly_error(e)
+    return render(request, "algebra/leontief.html", ctx)
 
 def compuestas(request: HttpRequest):
     """Vista base para operaciones compuestas.

@@ -1,0 +1,156 @@
+{% extends "algebra/base.html" %}
+{% block title %}Modelo de Leontief{% endblock %}
+{% block content %}
+<h2>Modelo de Leontief (X = (I − A)^{-1} · Y)</h2>
+<form method="post" class="matrix-form" data-page="leontief">{% csrf_token %}
+  <div class="controls">
+    <div class="control">
+      <label>Filas (n)</label>
+      <input type="number" min="1" value="3" data-target="rowsA" />
+    </div>
+    <div class="control">
+      <label>Columnas (n)</label>
+      <input type="number" min="1" value="3" data-target="colsA" />
+    </div>
+    <div class="control">
+      <label>Formato de resultado</label>
+      <select name="result_format">
+        <option value="frac" {% if result_format == 'frac' or not result_format %}selected{% endif %}>Fracciones exactas</option>
+        <option value="dec" {% if result_format == 'dec' %}selected{% endif %}>Decimales</option>
+        <option value="auto" {% if result_format == 'auto' %}selected{% endif %}>Automático (exacto si finito)</option>
+      </select>
+    </div>
+    <div class="control" style="display:none">
+      <label>Precisión (decimales)</label>
+      <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
+    </div>
+    <label class="control"><input type="checkbox" name="show_steps"> Mostrar pasos</label>
+    <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
+  </div>
+
+  <div class="grid matrices panel">
+    <div>
+      <label>Matriz A (n×n)</label>
+      <div class="matrix" id="matrizA" data-name="matrizA"></div>
+      <input type="hidden" name="matrizA" />
+    </div>
+    <div>
+      <label>Vector Y (n×1)</label>
+      <div class="matrix" id="vectorY" data-name="vectorY" data-cols-fixed="1"></div>
+      <input type="hidden" name="vectorY" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn secondary" data-action="clear">Limpiar</button>
+    <button type="submit" class="btn primary">Calcular</button>
+  </div>
+</form>
+
+{% if resultado %}
+<section class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Resultado</h3>
+    <div class="panel-actions">
+      {% if dims %}
+      <span class="badge">A {{ dims.A }}</span>
+      <span class="badge">Y {{ dims.Y }}</span>
+      <span class="badge">X {{ dims.X }}</span>
+      {% endif %}
+      <span class="badge">(I − A)^{-1} · Y</span>
+    </div>
+  </div>
+  <div class="matrix-result">
+    <table class="matriz">
+      {% for fila in resultado %}
+        <tr>{% for celda in fila %}<td><span>{{ celda }}</span></td>{% endfor %}</tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+{% endif %}
+{% if pasos %}
+<section class="panel">
+  <div class="panel-header"><h3 class="panel-title">Pasos</h3></div>
+  <div class="matrix-steps">
+    {% for p in pasos %}
+      <details>
+        <summary>{{ p.operacion }}</summary>
+        {% if p.matriz %}
+        <table class="matriz small">
+          {% for fila in p.matriz %}
+            <tr>{% for v in fila %}<td><span>{{ v }}</span></td>{% endfor %}</tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+      </details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    try{
+      var form = document.querySelector('form.matrix-form[data-page="leontief"]');
+      if(!form) return;
+      var rowsA = form.querySelector('[data-target="rowsA"]');
+      var colsA = form.querySelector('[data-target="colsA"]');
+      var boxA = form.querySelector('#matrizA');
+      var boxY = form.querySelector('#vectorY');
+      function buildGrid(container, rows, cols){
+        if(!container) return;
+        container.innerHTML = '';
+        var table = document.createElement('table');
+        table.className = 'matriz editable';
+        for(var i=0;i<rows;i++){
+          var tr = document.createElement('tr');
+          for(var j=0;j<cols;j++){
+            var td = document.createElement('td');
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.placeholder = '0';
+            td.appendChild(inp);
+            tr.appendChild(td);
+          }
+          table.appendChild(tr);
+        }
+        container.appendChild(table);
+      }
+      function rebuild(){
+        var r = Math.max(1, parseInt((rowsA && rowsA.value)||'1',10)||1);
+        var c = Math.max(1, parseInt((colsA && colsA.value)||'1',10)||1);
+        buildGrid(boxA, r, c);
+        buildGrid(boxY, r, 1);
+      }
+      // initial build and on resize
+      rebuild();
+      var btn = form.querySelector('[data-action="resize"]');
+      if(btn) btn.addEventListener('click', rebuild);
+      rowsA && rowsA.addEventListener('input', rebuild);
+      colsA && colsA.addEventListener('input', rebuild);
+      // serialize on submit
+      function serialize(container){
+        if(!container) return '';
+        var rows = [];
+        container.querySelectorAll('tr').forEach(function(tr){
+          var row = [];
+          tr.querySelectorAll('input').forEach(function(inp){
+            var v = (inp.value||'').trim();
+            row.push(v || '0');
+          });
+          rows.push(row.join(' '));
+        });
+        return rows.join('\n');
+      }
+      form.addEventListener('submit', function(){
+        var hidA = form.querySelector('input[name="matrizA"]');
+        var hidY = form.querySelector('input[name="vectorY"]');
+        if(hidA) hidA.value = serialize(boxA);
+        if(hidY) hidY.value = serialize(boxY);
+      });
+    }catch(e){ console.warn('Leontief inline init failed:', e); }
+  });
+</script>
+{% endblock %}
+{% endblock %}

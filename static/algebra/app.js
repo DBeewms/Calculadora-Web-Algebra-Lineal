@@ -2648,6 +2648,50 @@ document.addEventListener('DOMContentLoaded', ()=>{
       }catch(e){ console.warn('Pre-submit normalization (secante) failed:', e); }
     });
   });
+  // Pre-submit for Leontief: serialize A and Y
+  document.querySelectorAll('form.matrix-form[data-page="leontief"]').forEach(form=>{
+    form.addEventListener('submit', ()=>{
+      try{
+        const A = form.querySelector('#matrizA');
+        const Y = form.querySelector('#vectorY');
+        if(A){ const sA = serializeMatrix(A); const hidA = form.querySelector('input[name="matrizA"]'); if(hidA) hidA.value = sA; }
+        if(Y){ const sY = serializeMatrix(Y); const hidY = form.querySelector('input[name="vectorY"]'); if(hidY) hidY.value = sY; }
+      }catch(e){ console.warn('Pre-submit (leontief) failed:', e); }
+    });
+  });
+  // Build/resync grids for Leontief and keep Y height = rowsA, cols(Y)=1
+  document.querySelectorAll('form.matrix-form[data-page="leontief"]').forEach(form=>{
+    const rowsA = form.querySelector('[data-target="rowsA"]');
+    const colsA = form.querySelector('[data-target="colsA"]');
+    const boxA = form.querySelector('#matrizA');
+    const boxY = form.querySelector('#vectorY');
+    function rebuild(){
+      const r = Math.max(1, parseInt(rowsA?.value||'1',10)||1);
+      const c = Math.max(1, parseInt(colsA?.value||'1',10)||1);
+      // A is r×c (should be square; server validates). We still build as requested.
+      if(boxA) buildMatrix(boxA, r, c);
+      if(boxY) buildMatrix(boxY, r, 1);
+    }
+    // Hook resize button
+    const btn = form.querySelector('[data-action="resize"]');
+    btn?.addEventListener('click', rebuild);
+    // Sync on rows/cols changes
+    rowsA?.addEventListener('input', rebuild);
+    colsA?.addEventListener('input', rebuild);
+    // Initial build
+    rebuild();
+    // Pre-submit: serialize A and Y
+    form.addEventListener('submit', ()=>{
+      try{
+        const sA = serializeMatrix(boxA);
+        const sY = serializeMatrix(boxY);
+        const hidA = form.querySelector('input[name="matrizA"]');
+        const hidY = form.querySelector('input[name="vectorY"]');
+        if(hidA) hidA.value = sA;
+        if(hidY) hidY.value = sY;
+      }catch(e){ console.warn('Pre-submit (leontief) failed:', e); }
+    });
+  });
 });
 
 // Sync equations popup counts (Ecuaciones / Variables) with current form controls per method

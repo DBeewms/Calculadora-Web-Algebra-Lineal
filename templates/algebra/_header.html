@@ -18,7 +18,7 @@
       <a href="{% url 'index' %}" class="menu-link">Inicio</a>
     </div>
 
-      <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' or url_name == 'determinante' or url_name == 'inversa' or url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' %}active{% endif %}">
+      <div class="menu-item has-dropdown {% if url_name == 'suma' or url_name == 'multiplicacion' or url_name == 'escalar' or url_name == 'transposicion' or url_name == 'determinante' or url_name == 'inversa' or url_name == 'leontief' or url_name == 'gauss' or url_name == 'gauss_jordan' or url_name == 'cramer' or url_name == 'homogeneo' %}active{% endif %}">
         <button class="menu-link" type="button" aria-haspopup="true" aria-expanded="false">Matrices</button>
         <div class="dropdown megamenu" role="menu">
             <div class="menu-subgroup">
@@ -46,6 +46,10 @@
               <a href="{% url 'inversa' %}" role="menuitem" class="submenu-link {% if url_name == 'inversa' %}current{% endif %}">
                 <strong>Inversa</strong>
                 <small>Obtén la inversa si existe</small>
+              </a>
+              <a href="{% url 'leontief' %}" role="menuitem" class="submenu-link {% if url_name == 'leontief' %}current{% endif %}">
+                <strong>Modelo de Leontief</strong>
+                <small>X = (I − A)^{-1} · Y</small>
               </a>
             </div>
           </div>
