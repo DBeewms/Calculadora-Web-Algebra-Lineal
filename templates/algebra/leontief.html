@@ -24,7 +24,12 @@
       <label>Precisión (decimales)</label>
       <input type="number" name="precision" min="0" max="12" value="{{ precision|default:6 }}" />
     </div>
-    <label class="control"><input type="checkbox" name="show_steps"> Mostrar pasos</label>
+    <label class="toggle" id="toggle-steps-leontief">
+      <input type="checkbox" name="show_steps" checked>
+      <span class="toggle-track"></span>
+      <span class="toggle-thumb"></span>
+      <span class="toggle-label">Mostrar pasos</span>
+    </label>
     <button type="button" class="btn" data-action="resize">Actualizar tamaño</button>
   </div>
 
@@ -70,8 +75,8 @@
 </section>
 {% endif %}
 {% if pasos %}
-<section class="panel">
-  <div class="panel-header"><h3 class="panel-title">Pasos</h3></div>
+<details open class="panel" id="steps-panel">
+  <summary class="panel-title">Pasos del procedimiento</summary>
   <div class="matrix-steps">
     {% for p in pasos %}
       <details>
@@ -86,7 +91,7 @@
       </details>
     {% endfor %}
   </div>
-</section>
+</details>
 {% endif %}
 {% block extra_js %}
 <script>
@@ -129,6 +134,11 @@
       if(btn) btn.addEventListener('click', rebuild);
       rowsA && rowsA.addEventListener('input', rebuild);
       colsA && colsA.addEventListener('input', rebuild);
+      // Toggle steps panel visibility with checkbox
+      var chkSteps = form.querySelector('input[name="show_steps"]');
+      var stepsPanel = document.getElementById('steps-panel');
+      function syncSteps(){ if(!stepsPanel) return; stepsPanel.style.display = (chkSteps && chkSteps.checked) ? '' : 'none'; }
+      if(chkSteps){ chkSteps.addEventListener('change', syncSteps); syncSteps(); }
       // serialize on submit
       function serialize(container){
         if(!container) return '';
